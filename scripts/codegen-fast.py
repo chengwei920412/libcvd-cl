@@ -71,8 +71,16 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // Specify a threshold for pixel difference.
 #define THRESH  60
 
-// Create a bitwise mask with the given rotation, modulo 16.
-#define MASK(x) ((((1 << 9) - 1) << (x)) | (((1 << 9) - 1) >> (15 - (x))))
+// Generate bitwise mask of n bits.
+#define MASK(n) ((1 << (n)) - 1)
+
+// Create a bitwise mask of n bits, rotated by r bits, in a ring of w bits.
+#define MASK_TURN(n, w, r) (((MASK(n) << (r)) | (MASK(n) >> ((w) - (r)))) & MASK(w))
+
+// Test a value x against a bitwise mask of n bits, rotated by r bits, in a ring of w bits.
+#define MASK_TEST(x, n, w, r) (((x) & MASK_TURN(n, w, r)) == MASK_TURN(n, w, r))
+
+#define MASK_TEST_9_16(x, r) MASK_TEST((x), 9, 16, (r))
 
 kernel void fast_gray_9(
     read_only image2d_t   image,
@@ -111,7 +119,7 @@ print
 print "    // Check if at least one mask applies entirely."
 print "    int  const yes = ("
 print " ||\n".join([
-    ("        ((sum & MASK(%2d)) == MASK(%2d))" % (shift, shift))
+    ("        MASK_TEST_9_16(sum, %2d)" % (shift))
     for shift in range(0, 16)
 ])
 print "    );"
