@@ -8,9 +8,9 @@ SOURCES  = $(shell find src -iname "*.cc")
 LIBS     = -lOpenCL -lcvd -lm -lboost_program_options-mt
 
 all:
-    mkdir -p obj bin
-    python scripts/codegen-fast.py > opencl/fast.cl
-    g++ -o $(BINARY) $(CFLAGS) $(SOURCES) $(LIBS)
+	mkdir -p obj bin
+	python scripts/codegen-fast.py > opencl/fast.cl
+	g++ -o $(BINARY) $(CFLAGS) $(SOURCES) $(LIBS)
 
 clean:
-    rm -rf obj bin
+	rm -rf obj bin
