@@ -21,21 +21,24 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#include <boost/cstdint.hpp>
-#include <boost/foreach.hpp>
-
 #include <iomanip>
 #include <iostream>
 #include <string>
 #include <vector>
 
+#include <boost/cstdint.hpp>
+#include <boost/date_time.hpp>
+#include <boost/foreach.hpp>
+#include <boost/thread/thread_time.hpp>
+
 // Include official OpenCL C++ wrapper, with exceptions enabled.
 #define __CL_ENABLE_EXCEPTIONS
 #include "CL/cl.hpp"
 
+#include <cvd/fast_corner.h>
+#include <cvd/gl_helpers.h>
 #include <cvd/image_io.h>
 #include <cvd/videodisplay.h>
-#include <cvd/gl_helpers.h>
 
 // Wrapper OpenCL source code.
 static const char   clCode[] = "#include <fast.cl>\n";
@@ -51,6 +54,31 @@ static void reportBuild(cl::Device &device, cl::Program &program) {
     std::string log = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
     if (log.empty() == false)
         std::cerr << log << std::endl;
+}
+
+static void testCVDFAST(CVD::BasicImage<CVD::byte> const & image) {
+    const CVD::ImageRef size = image.size();
+	std::vector<CVD::ImageRef> corners;
+
+    boost::system_time const t1 = boost::get_system_time();
+	CVD::fast_corner_detect_9(image, corners, 60);
+    boost::system_time const t2 = boost::get_system_time();
+
+    std::cerr << "CVD FAST9 runtime:  " << std::setw(8) << (t2 - t1).total_microseconds() << std::endl;
+    std::cerr << "CVD FAST9 corners:  " << std::setw(8) << corners.size() << std::endl << std::endl;
+
+    CVD::VideoDisplay window(size);           //Create an OpenGL window with the dimensions of `in'
+    CVD::glDrawPixels(image);
+
+    glColor3f(1, 0, 0);
+    glBegin(GL_POINTS);
+    BOOST_FOREACH(CVD::ImageRef const & xy, corners) {
+        glVertex2i(xy.x, xy.y);
+    }
+    glEnd();
+    glFlush();
+
+    sleep(5);
 }
 
 static void testFAST(CVD::Image<CVD::byte> const & image,
@@ -79,21 +107,37 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     region[1] = 1024;
     region[2] =    1;
 
-    queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, size.x, 0, (void *) image.data());
-
     cl::Kernel clKernel(program, "fast_gray_9");
     clKernel.setArg(0, clImage);
     clKernel.setArg(1, clCorners);
     clKernel.setArg(2, clCursor);
 
-    queue.enqueueNDRangeKernel(clKernel, cl::NullRange, cl::NDRange(1024, 1024), cl::NDRange(32, 32));
+    // Warmup OpenCL runtime.
+    for (int i = 0; i < 100; i++) {
+        queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, size.x, 0, (void *) image.data());
+		queue.enqueueWriteBuffer(clCursor, CL_FALSE, 0, sizeof(cursor0), &cursor0);
+		queue.enqueueNDRangeKernel(clKernel, cl::NullRange, cl::NDRange(1024, 1024), cl::NDRange(16, 16));
+	}
     queue.finish();
+
+    boost::system_time const t1 = boost::get_system_time();
+    queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, size.x, 0, (void *) image.data());
+    boost::system_time const t2 = boost::get_system_time();
+    std::cerr << "    Image runtime:  " << std::setw(8) << (t2 - t1).total_microseconds() << std::endl;
+
+    boost::system_time const t3 = boost::get_system_time();
+    for (int i = 0; i < 10; i++) {
+        queue.enqueueWriteBuffer(clCursor, CL_FALSE, 0, sizeof(cursor0), &cursor0);
+    	queue.enqueueNDRangeKernel(clKernel, cl::NullRange, cl::NDRange(1024, 1024), cl::NDRange(16, 16));
+    }
+    queue.finish();
+    boost::system_time const t4 = boost::get_system_time();
+    std::cerr << "    FAST9 runtime:  " << std::setw(8) << (t4 - t3).total_microseconds() / 10 << std::endl;
 
     cl_int cursorN = 0;
     queue.enqueueReadBuffer(clCursor, CL_TRUE, 0, sizeof(cursorN), &cursorN);
 
-    std::cerr << "    Total runtime:  " << std::endl;
-    std::cerr << "    Found corners:  " << cursorN << std::endl;
+    std::cerr << "    Found corners:  " << std::setw(8) << cursorN << std::endl;
 
     std::vector<cl_int2> corners(cursorN);
     queue.enqueueReadBuffer(clCorners, CL_TRUE, 0, sizeof(cl_int2) * cursorN, corners.data());
@@ -103,23 +147,31 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
 
     glColor3f(1, 0, 0);
     glBegin(GL_POINTS);
-    BOOST_FOREACH(const cl_int2 &xy, corners) {
+    BOOST_FOREACH(cl_int2 const & xy, corners) {
         glVertex2i(xy.x, xy.y);
     }
     glEnd();
     glFlush();
 
-    sleep(30);
+    sleep(5);
 }
 
+static const CVD::ImageRef ref0(0, 0);
+static const CVD::ImageRef ref1024(1024, 1024);
+
 int main(int argc, char **argv) {
-    CVD::Image<CVD::byte> image;
+    CVD::Image<CVD::byte> fullImage;
 
-    image = CVD::img_load("/usr/share/backgrounds/Grey_day_by_Drew__.jpg");
+    fullImage = CVD::img_load("/usr/share/backgrounds/Grey_day_by_Drew__.jpg");
 
-    const CVD::ImageRef size = image.size();
+    const CVD::ImageRef size = fullImage.size();
 
     std::cerr << "Image size: " << size.x << " x " << size.y << std::endl;
+
+    CVD::Image<CVD::byte> cropImage(ref1024);
+    cropImage.copy_from(fullImage.sub_image(ref0, ref1024));
+
+    testCVDFAST(cropImage);
 
     try {
         std::vector<cl::Platform> platforms;
@@ -155,7 +207,7 @@ int main(int argc, char **argv) {
                     program.build(thisdev, "-Iopencl");
                     reportBuild(dev, program);
 
-                    testFAST(image, context, dev, program);
+                    testFAST(cropImage, context, dev, program);
                 } catch (cl::Error & err) {
                     reportBuild(dev, program);
                     std::cerr << err.what() << " (code " << err.err() << ")" << std::endl;
