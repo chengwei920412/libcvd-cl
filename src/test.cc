@@ -58,10 +58,10 @@ static void reportBuild(cl::Device &device, cl::Program &program) {
 
 static void testCVDFAST(CVD::BasicImage<CVD::byte> const & image) {
     const CVD::ImageRef size = image.size();
-	std::vector<CVD::ImageRef> corners;
+    std::vector<CVD::ImageRef> corners;
 
     boost::system_time const t1 = boost::get_system_time();
-	CVD::fast_corner_detect_9(image, corners, 60);
+    CVD::fast_corner_detect_9(image, corners, 60);
     boost::system_time const t2 = boost::get_system_time();
 
     std::cerr << "CVD FAST9 runtime:  " << std::setw(8) << (t2 - t1).total_microseconds() << std::endl;
@@ -93,8 +93,10 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
 
     cl::Buffer clCorners(context, CL_MEM_WRITE_ONLY, 1024 * 1024 * sizeof(cl_int2));
     cl::Buffer clCursor(context, CL_MEM_READ_WRITE, sizeof(cl_int));
+    cl::Buffer clBins(context, CL_MEM_READ_WRITE, 1024 * 1024 * sizeof(cl_ulong4));
 
     const cl_int cursor0 = 0;
+    cl_int cursorN = 0;
     queue.enqueueWriteBuffer(clCursor, CL_TRUE, 0, sizeof(cursor0), &cursor0);
 
     cl::size_t<3> origin;
@@ -107,17 +109,24 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     region[1] = 1024;
     region[2] =    1;
 
-    cl::Kernel clKernel(program, "fast_gray_9");
-    clKernel.setArg(0, clImage);
-    clKernel.setArg(1, clCorners);
-    clKernel.setArg(2, clCursor);
+    cl::Kernel clKernelFAST(program, "fast_gray_9");
+    clKernelFAST.setArg(0, clImage);
+    clKernelFAST.setArg(1, clCorners);
+    clKernelFAST.setArg(2, clCursor);
+
+    cl::Kernel clKernelHIPS(program, "hips_gray");
+    clKernelHIPS.setArg(0, clImage);
+    clKernelHIPS.setArg(1, clCorners);
+    clKernelHIPS.setArg(2, clBins);
 
     // Warmup OpenCL runtime.
     for (int i = 0; i < 100; i++) {
         queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, size.x, 0, (void *) image.data());
-		queue.enqueueWriteBuffer(clCursor, CL_FALSE, 0, sizeof(cursor0), &cursor0);
-		queue.enqueueNDRangeKernel(clKernel, cl::NullRange, cl::NDRange(1024, 1024), cl::NDRange(16, 16));
-	}
+        queue.enqueueWriteBuffer(clCursor, CL_FALSE, 0, sizeof(cursor0), &cursor0);
+        queue.enqueueNDRangeKernel(clKernelFAST, cl::NullRange, cl::NDRange(1024, 1024), cl::NDRange(16, 16));
+        queue.enqueueReadBuffer(clCursor, CL_TRUE, 0, sizeof(cursorN), &cursorN);
+        queue.enqueueNDRangeKernel(clKernelHIPS, cl::NullRange, cl::NDRange(cursorN), cl::NullRange);
+    }
     queue.finish();
 
     boost::system_time const t1 = boost::get_system_time();
@@ -128,19 +137,24 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     boost::system_time const t3 = boost::get_system_time();
     for (int i = 0; i < 10; i++) {
         queue.enqueueWriteBuffer(clCursor, CL_FALSE, 0, sizeof(cursor0), &cursor0);
-    	queue.enqueueNDRangeKernel(clKernel, cl::NullRange, cl::NDRange(1024, 1024), cl::NDRange(16, 16));
+        queue.enqueueNDRangeKernel(clKernelFAST, cl::NullRange, cl::NDRange(1024, 1024), cl::NDRange(16, 16));
     }
     queue.finish();
     boost::system_time const t4 = boost::get_system_time();
     std::cerr << "    FAST9 runtime:  " << std::setw(8) << (t4 - t3).total_microseconds() / 10 << std::endl;
 
-    cl_int cursorN = 0;
-    queue.enqueueReadBuffer(clCursor, CL_TRUE, 0, sizeof(cursorN), &cursorN);
-
     std::cerr << "    Found corners:  " << std::setw(8) << cursorN << std::endl;
 
     std::vector<cl_int2> corners(cursorN);
     queue.enqueueReadBuffer(clCorners, CL_TRUE, 0, sizeof(cl_int2) * cursorN, corners.data());
+
+    boost::system_time const t5 = boost::get_system_time();
+    for (int i = 0; i < 10; i++) {
+        queue.enqueueNDRangeKernel(clKernelHIPS, cl::NullRange, cl::NDRange(cursorN), cl::NullRange);
+    }
+    queue.finish();
+    boost::system_time const t6 = boost::get_system_time();
+    std::cerr << "    HIPS  runtime:  " << std::setw(8) << (t6 - t5).total_microseconds() / 10 << std::endl;
 
     CVD::VideoDisplay window(size);           //Create an OpenGL window with the dimensions of `in'
     CVD::glDrawPixels(image);
