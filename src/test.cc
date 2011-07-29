@@ -173,7 +173,7 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     boost::system_time const t6 = boost::get_system_time();
 
     queue.enqueueReadBuffer(clCursor, CL_TRUE, 0, sizeof(filterN), &filterN);
-    std::cerr << "    FILT9 runtime:  " << std::setw(8) << (t4 - t3).total_microseconds() / 10 << std::endl;
+    std::cerr << "    FILT9 runtime:  " << std::setw(8) << (t6 - t5).total_microseconds() / 10 << std::endl;
     std::cerr << "    FILT9 corners:  " << std::setw(8) << filterN << std::endl;
 
     std::vector<cl_int2> corners(filterN);
@@ -185,7 +185,7 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     }
     queue.finish();
     boost::system_time const t8 = boost::get_system_time();
-    std::cerr << "    HIPS  runtime:  " << std::setw(8) << (t6 - t5).total_microseconds() / 10 << std::endl;
+    std::cerr << "    HIPS  runtime:  " << std::setw(8) << (t8 - t7).total_microseconds() / 10 << std::endl;
 
     CVD::VideoDisplay window(size);           //Create an OpenGL window with the dimensions of `in'
     CVD::glDrawPixels(image);
