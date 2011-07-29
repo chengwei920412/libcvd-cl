@@ -42,6 +42,23 @@ OFFSETS = [
     (-1,  3),
 ]
 
+RING = [
+    # x   y   f
+
+    # Top row.
+    (-1, -1,  1),
+    ( 0, -1,  2),
+    ( 1, -1,  1),
+    # Middle row.
+    (-1,  0,  2),
+    ( 0,  0,  4),
+    ( 1,  0,  2),
+    # Bottom row.
+    (-1,  1,  1),
+    ( 0,  1,  2),
+    ( 1,  1,  1),
+]
+
 print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 //
 // Permission is hereby granted, free of charge, to any person
@@ -103,10 +120,17 @@ kernel void fast_gray_9(
     int  const y   = get_global_id(1);
     int2 const xy  = (int2)(x, y);
 
-    // Read the candidate pixel.
-    int  const p00 = read_imageui(image, sampler, xy).x;
+    // Read a ring of pixels, forming a weighted average candidate pixel.
+    int  const p00 = ("""
 
-    // Read other pixels in a circle around the candidate pixel."""
+print " +\n".join([
+    ("        (%d * read_imageui(image, sampler, xy + (int2)(%2d, %2d)).x)" % (f, x, y))
+    for x, y, f in RING
+])
+print "    ) / 16;"
+print
+
+print "    // Read other pixels in a circle around the candidate pixel."""
 
 for (shift, (x, y)) in enumerate(OFFSETS):
     print ("    int  const p%02d = read_imageui(image, sampler, xy + (int2)(%2d, %2d)).x;" % (shift + 1, x, y))
