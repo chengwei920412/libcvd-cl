@@ -93,9 +93,10 @@ int mask_test_9_16(int x, int r) {
 }
 
 kernel void fast_gray_9(
-    read_only image2d_t   image,
-    global    int2      * corners,
-    global    int       * icorner
+    read_only  image2d_t   image,
+    write_only image2d_t   scores,
+    global     int2      * corners,
+    global     int       * icorner
 ) {
 
     // Prepare a suitable OpenCL image sampler.
@@ -113,13 +114,27 @@ kernel void fast_gray_9(
 
 for (shift, (x, y)) in enumerate(OFFSETS):
     print ("    int  const p%02d = read_imagei(image, sampler, xy + (int2)(%2d, %2d)).x;" % (shift + 1, x, y))
+print
 
+print "    // Calculate the absolute difference of each circle pixel."
+for (shift, _) in enumerate(OFFSETS):
+    print ("    int  const d%02d = abs(p%02d - p00);" % (shift + 1, shift + 1))
+print
+
+print "    // Select the maximum difference."
+print "    int        sco = 0;"
+for (shift, _) in enumerate(OFFSETS):
+    print "               sco = max(sco, d%02d);" % (shift + 1)
+print
+
+print "    // Record maximum difference as score."
+print "    write_imageui(scores, xy, (uint4)(sco, 0, 0, 0));"
 print
 
 print "    // Threshold the absolute difference of each circle pixel."
 print "    int  const sum = ("
 print " |\n".join([
-    ("        ((abs(p%02d - p00) > THRESH) << %2d)" % (shift + 1, shift))
+    ("        ((d%02d > THRESH) << %2d)" % (shift + 1, shift))
     for shift in range(0, 16)
 ])
 

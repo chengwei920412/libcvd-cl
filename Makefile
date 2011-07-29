@@ -9,8 +9,9 @@ LIBS     = -lOpenCL -lcvd -lm -lboost_program_options-mt
 
 all:
 	mkdir -p obj bin
-	python scripts/codegen-fast.py >  opencl/fast.cl
-	python scripts/codegen-hips.py >> opencl/fast.cl
+	python scripts/codegen-fast.py > opencl/fast.cl
+	python scripts/codegen-filt.py > opencl/filt.cl
+	python scripts/codegen-hips.py > opencl/hips.cl
 	g++ -o $(BINARY) $(CFLAGS) $(SOURCES) $(LIBS)
 
 clean:

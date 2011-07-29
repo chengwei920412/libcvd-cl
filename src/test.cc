@@ -41,7 +41,7 @@
 #include <cvd/videodisplay.h>
 
 // Wrapper OpenCL source code.
-static const char   clCode[] = "#include <fast.cl>\n";
+static const char   clCode[] = "#include <fast.cl>\n#include <filt.cl>\n#include <hips.cl>";
 static const size_t clSize   = sizeof(clCode) - 1; // Exclude \0
 static const std::pair<const char *, size_t> clPair(clCode, clSize);
 static const cl::Program::Sources clSources(1, clPair);
@@ -90,13 +90,16 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
 
     cl::ImageFormat format(CL_INTENSITY, CL_UNSIGNED_INT8);
     cl::Image2D clImage(context, CL_MEM_READ_ONLY, format, 1024, 1024, 0);
+    cl::Image2D clScores(context, CL_MEM_WRITE_ONLY, format, 1024, 1024, 0);
 
     cl::Buffer clCorners(context, CL_MEM_WRITE_ONLY, 1024 * 1024 * sizeof(cl_int2));
+    cl::Buffer clFiltered(context, CL_MEM_WRITE_ONLY, 1024 * 1024 * sizeof(cl_int2));
     cl::Buffer clCursor(context, CL_MEM_READ_WRITE, sizeof(cl_int));
     cl::Buffer clBins(context, CL_MEM_READ_WRITE, 1024 * 1024 * sizeof(cl_ulong4));
 
     const cl_int cursor0 = 0;
     cl_int cursorN = 0;
+    cl_int filterN = 0;
     queue.enqueueWriteBuffer(clCursor, CL_TRUE, 0, sizeof(cursor0), &cursor0);
 
     cl::size_t<3> origin;
@@ -111,8 +114,15 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
 
     cl::Kernel clKernelFAST(program, "fast_gray_9");
     clKernelFAST.setArg(0, clImage);
-    clKernelFAST.setArg(1, clCorners);
-    clKernelFAST.setArg(2, clCursor);
+    clKernelFAST.setArg(1, clScores);
+    clKernelFAST.setArg(2, clCorners);
+    clKernelFAST.setArg(3, clCursor);
+
+    cl::Kernel clKernelFILT(program, "fast_filter");
+    clKernelFILT.setArg(0, clScores);
+    clKernelFILT.setArg(1, clCorners);
+    clKernelFILT.setArg(2, clFiltered);
+    clKernelFILT.setArg(3, clCursor);
 
     cl::Kernel clKernelHIPS(program, "hips_gray");
     clKernelHIPS.setArg(0, clImage);
@@ -122,9 +132,17 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     // Warmup OpenCL runtime.
     for (int i = 0; i < 100; i++) {
         queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, size.x, 0, (void *) image.data());
+
         queue.enqueueWriteBuffer(clCursor, CL_FALSE, 0, sizeof(cursor0), &cursor0);
         queue.enqueueNDRangeKernel(clKernelFAST, cl::NullRange, cl::NDRange(1024, 1024), cl::NDRange(16, 16));
+
         queue.enqueueReadBuffer(clCursor, CL_TRUE, 0, sizeof(cursorN), &cursorN);
+
+        queue.enqueueWriteBuffer(clCursor, CL_FALSE, 0, sizeof(cursor0), &cursor0);
+        queue.enqueueNDRangeKernel(clKernelFILT, cl::NullRange, cl::NDRange(cursorN), cl::NullRange);
+
+        queue.enqueueReadBuffer(clCursor, CL_TRUE, 0, sizeof(cursorN), &cursorN);
+
         queue.enqueueNDRangeKernel(clKernelHIPS, cl::NullRange, cl::NDRange(cursorN), cl::NullRange);
     }
     queue.finish();
@@ -141,19 +159,32 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     }
     queue.finish();
     boost::system_time const t4 = boost::get_system_time();
+
+    queue.enqueueReadBuffer(clCursor, CL_TRUE, 0, sizeof(cursorN), &cursorN);
     std::cerr << "    FAST9 runtime:  " << std::setw(8) << (t4 - t3).total_microseconds() / 10 << std::endl;
-
-    std::cerr << "    Found corners:  " << std::setw(8) << cursorN << std::endl;
-
-    std::vector<cl_int2> corners(cursorN);
-    queue.enqueueReadBuffer(clCorners, CL_TRUE, 0, sizeof(cl_int2) * cursorN, corners.data());
+    std::cerr << "    FAST9 corners:  " << std::setw(8) << cursorN << std::endl;
 
     boost::system_time const t5 = boost::get_system_time();
     for (int i = 0; i < 10; i++) {
-        queue.enqueueNDRangeKernel(clKernelHIPS, cl::NullRange, cl::NDRange(cursorN), cl::NullRange);
+        queue.enqueueWriteBuffer(clCursor, CL_FALSE, 0, sizeof(cursor0), &cursor0);
+        queue.enqueueNDRangeKernel(clKernelFILT, cl::NullRange, cl::NDRange(cursorN), cl::NullRange);
     }
     queue.finish();
     boost::system_time const t6 = boost::get_system_time();
+
+    queue.enqueueReadBuffer(clCursor, CL_TRUE, 0, sizeof(filterN), &filterN);
+    std::cerr << "    FILT9 runtime:  " << std::setw(8) << (t4 - t3).total_microseconds() / 10 << std::endl;
+    std::cerr << "    FILT9 corners:  " << std::setw(8) << filterN << std::endl;
+
+    std::vector<cl_int2> corners(filterN);
+    queue.enqueueReadBuffer(clFiltered, CL_TRUE, 0, sizeof(cl_int2) * filterN, corners.data());
+
+    boost::system_time const t7 = boost::get_system_time();
+    for (int i = 0; i < 10; i++) {
+        queue.enqueueNDRangeKernel(clKernelHIPS, cl::NullRange, cl::NDRange(filterN), cl::NullRange);
+    }
+    queue.finish();
+    boost::system_time const t8 = boost::get_system_time();
     std::cerr << "    HIPS  runtime:  " << std::setw(8) << (t6 - t5).total_microseconds() / 10 << std::endl;
 
     CVD::VideoDisplay window(size);           //Create an OpenGL window with the dimensions of `in'
