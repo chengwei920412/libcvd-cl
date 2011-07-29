@@ -88,10 +88,6 @@ int mask_test(int x, int n, int w, int r) {
     return ((x & m) == m);
 }
 
-int mask_test_9_16(int x, int r) {
-    return mask_test(x, 9, 16, r);
-}
-
 kernel void fast_gray_9(
     read_only  image2d_t   image,
     write_only image2d_t   scores,
@@ -144,7 +140,7 @@ print
 print "    // Check if at least one mask applies entirely."
 print "    int  const yes = ("
 print " ||\n".join([
-    ("        mask_test_9_16(sum, %2d)" % (shift))
+    ("        mask_test(sum, 9, 16, %2d)" % (shift))
     for shift in range(0, 16)
 ])
 print "    );"
