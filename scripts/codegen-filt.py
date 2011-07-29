@@ -20,12 +20,12 @@ kernel void fast_filter(
     int2 const xy  = corners[ic];
 
     // Read the candidate score.
-    int  const p00 = read_imagei(scores, sampler, xy).x;
+    int  const p00 = read_imageui(scores, sampler, xy).x;
 
     // Read other scores in a tight square around the candidate score."""
 
 for (shift, (x, y)) in enumerate(OFFSETS):
-    print ("    int  const p%02d = read_imagei(scores, sampler, xy + (int2)(%2d, %2d)).x;" % (shift + 1, x, y))
+    print ("    int  const p%02d = read_imageui(scores, sampler, xy + (int2)(%2d, %2d)).x;" % (shift + 1, x, y))
 print
 
 print "    // Select the maximum score."
