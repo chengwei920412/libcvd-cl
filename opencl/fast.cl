@@ -27,16 +27,23 @@
 // Specify a threshold for pixel difference.
 #define THRESH  60
 
-// Generate bitwise mask of n bits.
-#define MASK(n) ((1 << (n)) - 1)
+int mask(int n) {
+    return ((1 << n) - 1);
+}
 
-// Create a bitwise mask of n bits, rotated by r bits, in a ring of w bits.
-#define MASK_TURN(n, w, r) (((MASK(n) << (r)) | (MASK(n) >> ((w) - (r)))) & MASK(w))
+int mask_turn(int n, int w, int r) {
+    int const m = mask(n);
+    return (((m << r) | (m >> (w - r))) & mask(w));
+}
 
-// Test a value x against a bitwise mask of n bits, rotated by r bits, in a ring of w bits.
-#define MASK_TEST(x, n, w, r) (((x) & MASK_TURN(n, w, r)) == MASK_TURN(n, w, r))
+int mask_test(int x, int n, int w, int r) {
+    int const m = mask_turn(n, w, r);
+    return ((x & m) == m);
+}
 
-#define MASK_TEST_9_16(x, r) MASK_TEST((x), 9, 16, (r))
+int mask_test_9_16(int x, int r) {
+    return mask_test(x, 9, 16, r);
+}
 
 kernel void fast_gray_9(
     read_only image2d_t   image,
@@ -95,22 +102,22 @@ kernel void fast_gray_9(
 
     // Check if at least one mask applies entirely.
     int  const yes = (
-        MASK_TEST_9_16(sum,  0) ||
-        MASK_TEST_9_16(sum,  1) ||
-        MASK_TEST_9_16(sum,  2) ||
-        MASK_TEST_9_16(sum,  3) ||
-        MASK_TEST_9_16(sum,  4) ||
-        MASK_TEST_9_16(sum,  5) ||
-        MASK_TEST_9_16(sum,  6) ||
-        MASK_TEST_9_16(sum,  7) ||
-        MASK_TEST_9_16(sum,  8) ||
-        MASK_TEST_9_16(sum,  9) ||
-        MASK_TEST_9_16(sum, 10) ||
-        MASK_TEST_9_16(sum, 11) ||
-        MASK_TEST_9_16(sum, 12) ||
-        MASK_TEST_9_16(sum, 13) ||
-        MASK_TEST_9_16(sum, 14) ||
-        MASK_TEST_9_16(sum, 15)
+        mask_test_9_16(sum,  0) ||
+        mask_test_9_16(sum,  1) ||
+        mask_test_9_16(sum,  2) ||
+        mask_test_9_16(sum,  3) ||
+        mask_test_9_16(sum,  4) ||
+        mask_test_9_16(sum,  5) ||
+        mask_test_9_16(sum,  6) ||
+        mask_test_9_16(sum,  7) ||
+        mask_test_9_16(sum,  8) ||
+        mask_test_9_16(sum,  9) ||
+        mask_test_9_16(sum, 10) ||
+        mask_test_9_16(sum, 11) ||
+        mask_test_9_16(sum, 12) ||
+        mask_test_9_16(sum, 13) ||
+        mask_test_9_16(sum, 14) ||
+        mask_test_9_16(sum, 15)
     );
 
     if (yes) {
