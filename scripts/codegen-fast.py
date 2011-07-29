@@ -71,15 +71,18 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // Specify a threshold for pixel difference.
 #define THRESH  60
 
+// Generate bitwise mask of n bits.
 int mask(int n) {
     return ((1 << n) - 1);
 }
 
+// Create a bitwise mask of n bits, rotated by r bits, in a ring of w bits.
 int mask_turn(int n, int w, int r) {
     int const m = mask(n);
     return (((m << r) | (m >> (w - r))) & mask(w));
 }
 
+// Test a value x against a bitwise mask of n bits, rotated by r bits, in a ring of w bits.
 int mask_test(int x, int n, int w, int r) {
     int const m = mask_turn(n, w, r);
     return ((x & m) == m);
