@@ -50,6 +50,9 @@ static const cl::Program::Sources clSources(1, clPair);
 static const size_t KiB = 1024;
 static const size_t MiB = KiB * KiB;
 
+static const CVD::ImageRef ref0(0, 0);
+static const CVD::ImageRef ref1024(1024, 1024);
+
 static void reportBuild(cl::Device &device, cl::Program &program) {
     std::string log = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
     if (log.empty() == false)
@@ -86,9 +89,15 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
 
     const CVD::ImageRef size = image.size();
 
+    CVD::Image<CVD::Rgba<CVD::byte> > cropImage(ref1024);
+    for (int x = 0; x < size.x; x++) {
+        for (int y = 0; y < size.y; y++)
+            cropImage[x][y].red = image[x][y];
+    }
+
     cl::CommandQueue queue(context, device);
 
-    cl::ImageFormat format(CL_INTENSITY, CL_UNSIGNED_INT8);
+    cl::ImageFormat format(CL_RGBA, CL_UNSIGNED_INT8);
     cl::Image2D clImage(context, CL_MEM_READ_ONLY, format, 1024, 1024, 0);
     cl::Image2D clScores(context, CL_MEM_WRITE_ONLY, format, 1024, 1024, 0);
 
@@ -131,7 +140,7 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
 
     // Warmup OpenCL runtime.
     for (int i = 0; i < 100; i++) {
-        queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, size.x, 0, (void *) image.data());
+        queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, 0, 0, (void *) cropImage.data());
 
         queue.enqueueWriteBuffer(clCursor, CL_FALSE, 0, sizeof(cursor0), &cursor0);
         queue.enqueueNDRangeKernel(clKernelFAST, cl::NullRange, cl::NDRange(1024, 1024), cl::NDRange(16, 16));
@@ -148,7 +157,7 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     queue.finish();
 
     boost::system_time const t1 = boost::get_system_time();
-    queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, size.x, 0, (void *) image.data());
+    queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, 0, 0, (void *) cropImage.data());
     boost::system_time const t2 = boost::get_system_time();
     std::cerr << "    Image runtime:  " << std::setw(8) << (t2 - t1).total_microseconds() << std::endl;
 
@@ -200,9 +209,6 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
 
     sleep(5);
 }
-
-static const CVD::ImageRef ref0(0, 0);
-static const CVD::ImageRef ref1024(1024, 1024);
 
 int main(int argc, char **argv) {
     CVD::Image<CVD::byte> fullImage;
