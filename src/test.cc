@@ -50,7 +50,10 @@ static const cl::Program::Sources clSources(1, clPair);
 static const size_t KiB = 1024;
 static const size_t MiB = KiB * KiB;
 
-static const CVD::ImageRef ref0(0, 0);
+// Timing repetition constant.
+static const int REPEAT = 10;
+
+// Cropped image size.
 static const CVD::ImageRef ref1024(1024, 1024);
 
 static void reportBuild(cl::Device &device, cl::Program &program) {
@@ -88,23 +91,26 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
         cl::Context &context, cl::Device &device, cl::Program &program) {
 
     const CVD::ImageRef size = image.size();
+    const int           nx   = size.x;
+    const int           ny   = size.y;
+    const int           nxy  = nx * ny;
 
     CVD::Image<CVD::Rgba<CVD::byte> > cropImage(ref1024);
-    for (int x = 0; x < size.x; x++) {
-        for (int y = 0; y < size.y; y++)
+    for (int x = 0; x < nx; x++) {
+        for (int y = 0; y < ny; y++)
             cropImage[x][y].red = image[x][y];
     }
 
-    cl::CommandQueue queue(context, device);
+    cl::CommandQueue queue (context, device);
 
-    cl::ImageFormat format(CL_RGBA, CL_UNSIGNED_INT8);
-    cl::Image2D clImage(context, CL_MEM_READ_ONLY, format, 1024, 1024, 0);
-    cl::Image2D clScores(context, CL_MEM_WRITE_ONLY, format, 1024, 1024, 0);
+    cl::ImageFormat format (CL_RGBA, CL_UNSIGNED_INT8);
+    cl::Image2D clImage    (context, CL_MEM_READ_ONLY,  format, nx, ny, 0);
+    cl::Image2D clScores   (context, CL_MEM_WRITE_ONLY, format, nx, ny, 0);
 
-    cl::Buffer clCorners(context, CL_MEM_WRITE_ONLY, 1024 * 1024 * sizeof(cl_int2));
-    cl::Buffer clFiltered(context, CL_MEM_WRITE_ONLY, 1024 * 1024 * sizeof(cl_int2));
-    cl::Buffer clCursor(context, CL_MEM_READ_WRITE, sizeof(cl_int));
-    cl::Buffer clBins(context, CL_MEM_READ_WRITE, 1024 * 1024 * sizeof(cl_ulong4));
+    cl::Buffer  clCorners  (context, CL_MEM_WRITE_ONLY, nxy * sizeof(cl_int2  ));
+    cl::Buffer  clFiltered (context, CL_MEM_WRITE_ONLY, nxy * sizeof(cl_int2  ));
+    cl::Buffer  clCursor   (context, CL_MEM_READ_WRITE,       sizeof(cl_int   ));
+    cl::Buffer  clBins     (context, CL_MEM_READ_WRITE, nxy * sizeof(cl_ulong4));
 
     const cl_int cursor0 = 0;
     cl_int cursorN = 0;
@@ -112,14 +118,14 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     queue.enqueueWriteBuffer(clCursor, CL_TRUE, 0, sizeof(cursor0), &cursor0);
 
     cl::size_t<3> origin;
-    origin[0] =    0;
-    origin[1] =    0;
-    origin[2] =    0;
+    origin[0] = 0;
+    origin[1] = 0;
+    origin[2] = 0;
 
     cl::size_t<3> region;
-    region[0] = 1024;
-    region[1] = 1024;
-    region[2] =    1;
+    region[0] = nx;
+    region[1] = ny;
+    region[2] = 1;
 
     cl::Kernel clKernelFAST(program, "fast_gray_9");
     clKernelFAST.setArg(0, clImage);
@@ -139,11 +145,11 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     clKernelHIPS.setArg(2, clBins);
 
     // Warmup OpenCL runtime.
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < REPEAT; i++) {
         queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, 0, 0, (void *) cropImage.data());
 
         queue.enqueueWriteBuffer(clCursor, CL_FALSE, 0, sizeof(cursor0), &cursor0);
-        queue.enqueueNDRangeKernel(clKernelFAST, cl::NullRange, cl::NDRange(1024, 1024), cl::NDRange(16, 16));
+        queue.enqueueNDRangeKernel(clKernelFAST, cl::NullRange, cl::NDRange(nx, ny), cl::NDRange(16, 16));
 
         queue.enqueueReadBuffer(clCursor, CL_TRUE, 0, sizeof(cursorN), &cursorN);
 
@@ -159,22 +165,19 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     boost::system_time const t1 = boost::get_system_time();
     queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, 0, 0, (void *) cropImage.data());
     boost::system_time const t2 = boost::get_system_time();
-    std::cerr << "    Image runtime:  " << std::setw(8) << (t2 - t1).total_microseconds() << std::endl;
 
     boost::system_time const t3 = boost::get_system_time();
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < REPEAT; i++) {
         queue.enqueueWriteBuffer(clCursor, CL_FALSE, 0, sizeof(cursor0), &cursor0);
-        queue.enqueueNDRangeKernel(clKernelFAST, cl::NullRange, cl::NDRange(1024, 1024), cl::NDRange(16, 16));
+        queue.enqueueNDRangeKernel(clKernelFAST, cl::NullRange, cl::NDRange(nx, ny), cl::NDRange(16, 16));
     }
     queue.finish();
     boost::system_time const t4 = boost::get_system_time();
 
     queue.enqueueReadBuffer(clCursor, CL_TRUE, 0, sizeof(cursorN), &cursorN);
-    std::cerr << "    FAST9 runtime:  " << std::setw(8) << (t4 - t3).total_microseconds() / 10 << std::endl;
-    std::cerr << "    FAST9 corners:  " << std::setw(8) << cursorN << std::endl;
 
     boost::system_time const t5 = boost::get_system_time();
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < REPEAT; i++) {
         queue.enqueueWriteBuffer(clCursor, CL_FALSE, 0, sizeof(cursor0), &cursor0);
         queue.enqueueNDRangeKernel(clKernelFILT, cl::NullRange, cl::NDRange(cursorN), cl::NullRange);
     }
@@ -182,19 +185,26 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     boost::system_time const t6 = boost::get_system_time();
 
     queue.enqueueReadBuffer(clCursor, CL_TRUE, 0, sizeof(filterN), &filterN);
-    std::cerr << "    FILT9 runtime:  " << std::setw(8) << (t6 - t5).total_microseconds() / 10 << std::endl;
-    std::cerr << "    FILT9 corners:  " << std::setw(8) << filterN << std::endl;
 
     std::vector<cl_int2> corners(filterN);
     queue.enqueueReadBuffer(clFiltered, CL_TRUE, 0, sizeof(cl_int2) * filterN, corners.data());
 
     boost::system_time const t7 = boost::get_system_time();
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < REPEAT; i++) {
         queue.enqueueNDRangeKernel(clKernelHIPS, cl::NullRange, cl::NDRange(filterN), cl::NullRange);
     }
     queue.finish();
     boost::system_time const t8 = boost::get_system_time();
-    std::cerr << "    HIPS  runtime:  " << std::setw(8) << (t8 - t7).total_microseconds() / 10 << std::endl;
+
+    std::cerr << std::endl;
+    std::cerr << "    Image runtime:  " << std::setw(8) << (t2 - t1).total_microseconds() << std::endl;
+    std::cerr << "    FAST9 runtime:  " << std::setw(8) << (t4 - t3).total_microseconds() / REPEAT << std::endl;
+    std::cerr << "    FILT9 runtime:  " << std::setw(8) << (t6 - t5).total_microseconds() / REPEAT << std::endl;
+    std::cerr << "    HIPS  runtime:  " << std::setw(8) << (t8 - t7).total_microseconds() / REPEAT << std::endl;
+    std::cerr << std::endl;
+    std::cerr << "    FAST9 corners:  " << std::setw(8) << cursorN << std::endl;
+    std::cerr << "    FILT9 corners:  " << std::setw(8) << filterN << std::endl;
+    std::cerr << std::endl;
 
     CVD::VideoDisplay window(size);           //Create an OpenGL window with the dimensions of `in'
     CVD::glDrawPixels(image);
@@ -220,7 +230,7 @@ int main(int argc, char **argv) {
     std::cerr << "Image size: " << size.x << " x " << size.y << std::endl;
 
     CVD::Image<CVD::byte> cropImage(ref1024);
-    cropImage.copy_from(fullImage.sub_image(ref0, ref1024));
+    cropImage.copy_from(fullImage.sub_image(CVD::ImageRef(600, 300), ref1024));
 
     testCVDFAST(cropImage);
 
