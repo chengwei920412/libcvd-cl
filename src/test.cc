@@ -41,7 +41,7 @@
 #include <cvd/videodisplay.h>
 
 // Wrapper OpenCL source code.
-static const char   clCode[] = "#include <fast.cl>\n#include <filt.cl>\n#include <hips.cl>";
+static const char   clCode[] = "#include <blur.cl>\n#include <fast.cl>\n#include <filt.cl>\n#include <hips.cl>";
 static const size_t clSize   = sizeof(clCode) - 1; // Exclude \0
 static const std::pair<const char *, size_t> clPair(clCode, clSize);
 static const cl::Program::Sources clSources(1, clPair);
@@ -73,7 +73,7 @@ static void testCVDFAST(CVD::BasicImage<CVD::byte> const & image) {
     std::cerr << "CVD FAST9 runtime:  " << std::setw(8) << (t2 - t1).total_microseconds() << std::endl;
     std::cerr << "CVD FAST9 corners:  " << std::setw(8) << corners.size() << std::endl << std::endl;
 
-    CVD::VideoDisplay window(size);           //Create an OpenGL window with the dimensions of `in'
+    CVD::VideoDisplay window(size);
     CVD::glDrawPixels(image);
 
     glColor3f(1, 0, 0);
@@ -105,7 +105,8 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
 
     cl::ImageFormat format (CL_RGBA, CL_UNSIGNED_INT8);
     cl::Image2D clImage    (context, CL_MEM_READ_ONLY,  format, nx, ny, 0);
-    cl::Image2D clScores   (context, CL_MEM_WRITE_ONLY, format, nx, ny, 0);
+    cl::Image2D clBlur     (context, CL_MEM_READ_WRITE, format, nx, ny, 0);
+    cl::Image2D clScores   (context, CL_MEM_READ_WRITE, format, nx, ny, 0);
 
     cl::Buffer  clCorners  (context, CL_MEM_WRITE_ONLY, nxy * sizeof(cl_int2  ));
     cl::Buffer  clFiltered (context, CL_MEM_WRITE_ONLY, nxy * sizeof(cl_int2  ));
@@ -127,8 +128,12 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     region[1] = ny;
     region[2] = 1;
 
+    cl::Kernel clKernelBLUR(program, "blur_gray");
+    clKernelBLUR.setArg(0, clImage);
+    clKernelBLUR.setArg(1, clBlur);
+
     cl::Kernel clKernelFAST(program, "fast_gray_9");
-    clKernelFAST.setArg(0, clImage);
+    clKernelFAST.setArg(0, clBlur);
     clKernelFAST.setArg(1, clScores);
     clKernelFAST.setArg(2, clCorners);
     clKernelFAST.setArg(3, clCursor);
@@ -140,13 +145,15 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     clKernelFILT.setArg(3, clCursor);
 
     cl::Kernel clKernelHIPS(program, "hips_gray");
-    clKernelHIPS.setArg(0, clImage);
+    clKernelHIPS.setArg(0, clBlur);
     clKernelHIPS.setArg(1, clCorners);
     clKernelHIPS.setArg(2, clBins);
 
     // Warmup OpenCL runtime.
     for (int i = 0; i < REPEAT; i++) {
         queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, 0, 0, (void *) cropImage.data());
+
+        queue.enqueueNDRangeKernel(clKernelBLUR, cl::NullRange, cl::NDRange(nx, ny), cl::NDRange(16, 16));
 
         queue.enqueueWriteBuffer(clCursor, CL_FALSE, 0, sizeof(cursor0), &cursor0);
         queue.enqueueNDRangeKernel(clKernelFAST, cl::NullRange, cl::NDRange(nx, ny), cl::NDRange(16, 16));
@@ -163,10 +170,20 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     queue.finish();
 
     boost::system_time const t1 = boost::get_system_time();
-    queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, 0, 0, (void *) cropImage.data());
+    for (int i = 0; i < REPEAT; i++) {
+        queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, 0, 0, (void *) cropImage.data());
+    }
+    queue.finish();
+
     boost::system_time const t2 = boost::get_system_time();
 
+    for (int i = 0; i < REPEAT; i++) {
+        queue.enqueueNDRangeKernel(clKernelBLUR, cl::NullRange, cl::NDRange(nx, ny), cl::NDRange(16, 16));
+    }
+    queue.finish();
+
     boost::system_time const t3 = boost::get_system_time();
+
     for (int i = 0; i < REPEAT; i++) {
         queue.enqueueWriteBuffer(clCursor, CL_FALSE, 0, sizeof(cursor0), &cursor0);
         queue.enqueueNDRangeKernel(clKernelFAST, cl::NullRange, cl::NDRange(nx, ny), cl::NDRange(16, 16));
@@ -197,7 +214,8 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     boost::system_time const t8 = boost::get_system_time();
 
     std::cerr << std::endl;
-    std::cerr << "    Image runtime:  " << std::setw(8) << (t2 - t1).total_microseconds() << std::endl;
+    std::cerr << "    Image runtime:  " << std::setw(8) << (t2 - t1).total_microseconds() / REPEAT << std::endl;
+    std::cerr << "    BLUR  runtime:  " << std::setw(8) << (t3 - t2).total_microseconds() / REPEAT << std::endl;
     std::cerr << "    FAST9 runtime:  " << std::setw(8) << (t4 - t3).total_microseconds() / REPEAT << std::endl;
     std::cerr << "    FILT9 runtime:  " << std::setw(8) << (t6 - t5).total_microseconds() / REPEAT << std::endl;
     std::cerr << "    HIPS  runtime:  " << std::setw(8) << (t8 - t7).total_microseconds() / REPEAT << std::endl;
@@ -206,7 +224,7 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     std::cerr << "    FILT9 corners:  " << std::setw(8) << filterN << std::endl;
     std::cerr << std::endl;
 
-    CVD::VideoDisplay window(size);           //Create an OpenGL window with the dimensions of `in'
+    CVD::VideoDisplay window(size);
     CVD::glDrawPixels(image);
 
     glColor3f(1, 0, 0);

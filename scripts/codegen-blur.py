@@ -21,26 +21,24 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-# 2D offsets from "corner" candidate pixel.
-# Corresponds to lines 17-32 in fast_9_detect.cxx
-OFFSETS = [
-    ( 0,  3),
-    ( 1,  3),
-    ( 2,  2),
-    ( 3,  1),
-    ( 3,  0),
-    ( 3, -1),
-    ( 2, -2),
-    ( 1, -3),
-    ( 0, -3),
-    (-1, -3),
-    (-2, -2),
-    (-3, -1),
-    (-3,  0),
-    (-3,  1),
-    (-2,  2),
-    (-1,  3),
+RING = [
+    # x   y   f
+
+    # Top row.
+    (-1, -1,  1),
+    ( 0, -1,  2),
+    ( 1, -1,  1),
+    # Middle row.
+    (-1,  0,  2),
+    ( 0,  0,  4),
+    ( 1,  0,  2),
+    # Bottom row.
+    (-1,  1,  1),
+    ( 0,  1,  2),
+    ( 1,  1,  1),
 ]
+
+TOTAL = sum([w for (x, y, w) in RING])
 
 print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 //
@@ -65,34 +63,9 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-// Enable OpenCL 32-bit integer atomic functions.
-#pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
-
-// Specify a threshold for pixel difference.
-#define THRESH  60
-
-// Generate bitwise mask of n bits.
-int mask(int n) {
-    return ((1 << n) - 1);
-}
-
-// Create a bitwise mask of n bits, rotated by r bits, in a ring of w bits.
-int mask_turn(int n, int w, int r) {
-    int const m = mask(n);
-    return (((m << r) | (m >> (w - r))) & mask(w));
-}
-
-// Test a value x against a bitwise mask of n bits, rotated by r bits, in a ring of w bits.
-int mask_test(int x, int n, int w, int r) {
-    int const m = mask_turn(n, w, r);
-    return ((x & m) == m);
-}
-
-kernel void fast_gray_9(
-    read_only  image2d_t   image,
-    write_only image2d_t   scores,
-    global     int2      * corners,
-    global     int       * icorner
+kernel void blur_gray(
+    read_only  image2d_t   imageI,
+    write_only image2d_t   imageO
 ) {
 
     // Prepare a suitable OpenCL image sampler.
@@ -103,53 +76,17 @@ kernel void fast_gray_9(
     int  const y   = get_global_id(1);
     int2 const xy  = (int2)(x, y);
 
-    // Read the candidate pixel.
-    int  const p00 = read_imageui(image, sampler, xy).x;
-"""
+    // Read a ring of pixels, forming a blurred pixel.
+    uint const mix = ("""
 
-print "    // Read other pixels in a circle around the candidate pixel."""
-
-for (shift, (x, y)) in enumerate(OFFSETS):
-    print ("    int  const p%02d = read_imageui(image, sampler, xy + (int2)(%2d, %2d)).x;" % (shift + 1, x, y))
-print
-
-print "    // Calculate the absolute difference of each circle pixel."
-for (shift, _) in enumerate(OFFSETS):
-    print ("    int  const d%02d = abs(p%02d - p00);" % (shift + 1, shift + 1))
-print
-
-print "    // Select the maximum difference."
-print "    int        sco = 0;"
-for (shift, _) in enumerate(OFFSETS):
-    print "               sco = max(sco, d%02d);" % (shift + 1)
-print
-
-print "    // Record maximum difference as score."
-print "    write_imageui(scores, xy, (uint4)(sco, 0, 0, 0));"
-print
-
-print "    // Threshold the absolute difference of each circle pixel."
-print "    int  const sum = ("
-print " |\n".join([
-    ("        ((d%02d > THRESH) << %2d)" % (shift + 1, shift))
-    for shift in range(0, 16)
+print " +\n".join([
+    ("        (read_imageui(imageI, sampler, xy + (int2)(%2d, %2d)).x * %d)" % (x, y, w))
+    for x, y, w in RING
 ])
 
-print "    );"
-print
+print """    ) / %d;
 
-print "    // Check if at least one mask applies entirely."
-print "    int  const yes = ("
-print " ||\n".join([
-    ("        mask_test(sum, 9, 16, %2d)" % (shift))
-    for shift in range(0, 16)
-])
-print "    );"
-
-print """
-    if (yes) {
-        // Atomically append to corner buffer.
-        corners[atom_inc(icorner)] = xy;
-    }
+    // Write blurred pixel to output image.
+    write_imageui(imageO, xy, (uint4)(mix, 0, 0, 0));
 }
-"""
+""" % TOTAL
