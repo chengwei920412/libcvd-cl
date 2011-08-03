@@ -14,6 +14,7 @@ all:
 	python scripts/codegen-fast.py > opencl/fast.cl
 	python scripts/codegen-filt.py > opencl/filt.cl
 	python scripts/codegen-hips.py > opencl/hips.cl
+	python scripts/codegen-find.py > opencl/find.cl
 	g++ -o $(BINARY) $(CFLAGS) $(SOURCES) $(LIBS)
 
 clean:

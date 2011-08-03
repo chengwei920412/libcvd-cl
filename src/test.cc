@@ -41,7 +41,7 @@
 #include <cvd/videodisplay.h>
 
 // Wrapper OpenCL source code.
-static const char   clCode[] = "#include <blur.cl>\n#include <cull.cl>\n#include <fast.cl>\n#include <filt.cl>\n#include <hips.cl>";
+static const char   clCode[] = "#include <blur.cl>\n#include <cull.cl>\n#include <fast.cl>\n#include <filt.cl>\n#include <hips.cl>\n#include <find.cl>";
 static const size_t clSize   = sizeof(clCode) - 1; // Exclude \0
 static const std::pair<const char *, size_t> clPair(clCode, clSize);
 static const cl::Program::Sources clSources(1, clPair);
@@ -111,6 +111,11 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
         }
     }
 
+    // Store for HIPS descriptors.
+    // They will be matched against themselves.
+    cl_ulong4 hash0 = {{0, 0, 0, 0}};
+    std::vector<cl_ulong4> hashes(512, hash0);
+
     cl::CommandQueue queue (context, device);
 
     cl::ImageFormat format (CL_INTENSITY, CL_UNSIGNED_INT8);
@@ -122,6 +127,7 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     cl::Buffer  clFiltered (context, CL_MEM_READ_WRITE, nxy * sizeof(cl_int2  ));
     cl::Buffer  clCursor   (context, CL_MEM_READ_WRITE,       sizeof(cl_int   ));
     cl::Buffer  clBins     (context, CL_MEM_READ_WRITE, nxy * sizeof(cl_ulong4));
+    cl::Buffer  clMatches  (context, CL_MEM_READ_WRITE, nxy * sizeof(cl_int   ));
 
     const cl_int cursor0 = 0;
     cl_int nculled = 0;
@@ -175,6 +181,11 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     clKernelHIPS.setArg(1, clFiltered);
     clKernelHIPS.setArg(2, clBins);
 
+    cl::Kernel clKernelFIND(program, "hips_find");
+    clKernelFIND.setArg(0, clBins);
+    clKernelFIND.setArg(1, clBins);
+    clKernelFIND.setArg(2, clMatches);
+
     // Warmup OpenCL runtime.
     for (int i = 0; i < REPEAT; i++) {
         queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, 0, 0, clPinImage);
@@ -197,7 +208,10 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
 
         queue.enqueueReadBuffer(clCursor, CL_TRUE, 0, sizeof(nfilted), &nfilted);
 
+        queue.enqueueWriteBuffer(clBins, CL_TRUE, 0, sizeof(cl_ulong4) * nfilted, hashes.data());
         queue.enqueueNDRangeKernel(clKernelHIPS, cl::NullRange, cl::NDRange(nfilted), cl::NullRange);
+
+        queue.enqueueNDRangeKernel(clKernelFIND, cl::NullRange, cl::NDRange(nfilted, 512), cl::NDRange(1, 512));
     }
     queue.finish();
 
@@ -252,11 +266,21 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     queue.enqueueReadBuffer(clFiltered, CL_TRUE, 0, sizeof(cl_int2) * nfilted, corners.data());
 
     boost::system_time const t7 = boost::get_system_time();
+
     for (int i = 0; i < REPEAT; i++) {
         queue.enqueueNDRangeKernel(clKernelHIPS, cl::NullRange, cl::NDRange(nfilted), cl::NullRange);
     }
     queue.finish();
+
     boost::system_time const t8 = boost::get_system_time();
+
+    for (int i = 0; i < REPEAT; i++) {
+        queue.enqueueNDRangeKernel(clKernelFIND, cl::NullRange, cl::NDRange(nfilted, 512), cl::NDRange(1, 512));
+    }
+    queue.finish();
+
+    boost::system_time const t9 = boost::get_system_time();
+
 
     // Release pinned memory.
     queue.enqueueUnmapMemObject(clImage, clPinImage);
@@ -268,6 +292,7 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     std::cerr << std::setw(8) << (t5 - t4).total_microseconds() / REPEAT << " us running FAST" << std::endl;
     std::cerr << std::setw(8) << (t6 - t5).total_microseconds() / REPEAT << " us filtering corners" << std::endl;
     std::cerr << std::setw(8) << (t8 - t7).total_microseconds() / REPEAT << " us making HIPS descriptors" << std::endl;
+    std::cerr << std::setw(8) << (t9 - t8).total_microseconds() / REPEAT << " us matching HIPS descriptors" << std::endl;
     std::cerr << std::endl;
     std::cerr << std::setw(8) << nxy     << " corner candidates in image" << std::endl;
     std::cerr << std::setw(8) << nculled << " corners after culling" << std::endl;
