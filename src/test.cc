@@ -95,7 +95,12 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     const int           ny   = size.y;
     const int           nxy  = nx * ny;
 
+    // For cropped and RGBA-extended image.
     CVD::Image<CVD::Rgba<CVD::byte> > cropImage(ref1024);
+
+    // For initial scores, then written sparsely.
+    CVD::Image<CVD::Rgba<CVD::byte> > zeroImage(ref1024);
+
     for (int x = 0; x < nx; x++) {
         for (int y = 0; y < ny; y++)
             cropImage[x][y].red = image[x][y];
@@ -108,8 +113,8 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     cl::Image2D clBlur     (context, CL_MEM_READ_WRITE, format, nx, ny, 0);
     cl::Image2D clScores   (context, CL_MEM_READ_WRITE, format, nx, ny, 0);
 
-    cl::Buffer  clCorners  (context, CL_MEM_WRITE_ONLY, nxy * sizeof(cl_int2  ));
-    cl::Buffer  clFiltered (context, CL_MEM_WRITE_ONLY, nxy * sizeof(cl_int2  ));
+    cl::Buffer  clCorners  (context, CL_MEM_READ_WRITE, nxy * sizeof(cl_int2  ));
+    cl::Buffer  clFiltered (context, CL_MEM_READ_WRITE, nxy * sizeof(cl_int2  ));
     cl::Buffer  clCursor   (context, CL_MEM_READ_WRITE,       sizeof(cl_int   ));
     cl::Buffer  clBins     (context, CL_MEM_READ_WRITE, nxy * sizeof(cl_ulong4));
 
@@ -153,12 +158,13 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
 
     cl::Kernel clKernelHIPS(program, "hips_gray");
     clKernelHIPS.setArg(0, clBlur);
-    clKernelHIPS.setArg(1, clCorners);
+    clKernelHIPS.setArg(1, clFiltered);
     clKernelHIPS.setArg(2, clBins);
 
     // Warmup OpenCL runtime.
     for (int i = 0; i < REPEAT; i++) {
         queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, 0, 0, (void *) cropImage.data());
+        queue.enqueueWriteImage(clScores, CL_TRUE, origin, region, 0, 0, (void *) zeroImage.data());
 
         queue.enqueueNDRangeKernel(clKernelBLUR, cl::NullRange, cl::NDRange(nx, ny), cl::NDRange(16, 16));
 
@@ -180,6 +186,8 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
         queue.enqueueNDRangeKernel(clKernelHIPS, cl::NullRange, cl::NDRange(nfilted), cl::NullRange);
     }
     queue.finish();
+
+    queue.enqueueWriteImage(clScores, CL_TRUE, origin, region, 0, 0, (void *) zeroImage.data());
 
     boost::system_time const t1 = boost::get_system_time();
     for (int i = 0; i < REPEAT; i++) {
@@ -206,8 +214,6 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
 
     boost::system_time const t4 = boost::get_system_time();
 
-    queue.enqueueWriteBuffer(clCursor, CL_FALSE, 0, sizeof(cursor0), &cursor0);
-
     for (int i = 0; i < REPEAT; i++) {
         queue.enqueueWriteBuffer(clCursor, CL_FALSE, 0, sizeof(cursor0), &cursor0);
         queue.enqueueNDRangeKernel(clKernelFAST, cl::NullRange, cl::NDRange(nculled), cl::NullRange);
@@ -224,9 +230,9 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     }
     queue.finish();
 
-    boost::system_time const t6 = boost::get_system_time();
-
     queue.enqueueReadBuffer(clCursor, CL_TRUE, 0, sizeof(nfilted), &nfilted);
+
+    boost::system_time const t6 = boost::get_system_time();
 
     std::vector<cl_int2> corners(nfilted);
     queue.enqueueReadBuffer(clFiltered, CL_TRUE, 0, sizeof(cl_int2) * nfilted, corners.data());
