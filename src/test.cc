@@ -126,7 +126,8 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     cl::Buffer  clCorners  (context, CL_MEM_READ_WRITE, nxy * sizeof(cl_int2  ));
     cl::Buffer  clFiltered (context, CL_MEM_READ_WRITE, nxy * sizeof(cl_int2  ));
     cl::Buffer  clCursor   (context, CL_MEM_READ_WRITE,       sizeof(cl_int   ));
-    cl::Buffer  clBins     (context, CL_MEM_READ_WRITE, nxy * sizeof(cl_ulong4));
+    cl::Buffer  clBins1    (context, CL_MEM_READ_WRITE, nxy * sizeof(cl_ulong4));
+    cl::Buffer  clBins2    (context, CL_MEM_READ_WRITE, nxy * sizeof(cl_ulong4));
     cl::Buffer  clMatches  (context, CL_MEM_READ_WRITE, nxy * sizeof(cl_int   ));
 
     const cl_int cursor0 = 0;
@@ -154,6 +155,8 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     // Copy image data to the pinned memory.
     ::memcpy(clPinImage, cropImage.data(), nxy * sizeof(Pixel));
 
+    std::vector<cl_int> matches(512, 0);
+
     cl::Kernel clKernelBLUR(program, "blur_gray");
     clKernelBLUR.setArg(0, clImage);
     clKernelBLUR.setArg(1, clBlur);
@@ -179,11 +182,11 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     cl::Kernel clKernelHIPS(program, "hips_gray");
     clKernelHIPS.setArg(0, clBlur);
     clKernelHIPS.setArg(1, clFiltered);
-    clKernelHIPS.setArg(2, clBins);
+    clKernelHIPS.setArg(2, clBins1);
 
     cl::Kernel clKernelFIND(program, "hips_find");
-    clKernelFIND.setArg(0, clBins);
-    clKernelFIND.setArg(1, clBins);
+    clKernelFIND.setArg(0, clBins1);
+    clKernelFIND.setArg(1, clBins2);
     clKernelFIND.setArg(2, clMatches);
 
     // Warmup OpenCL runtime.
@@ -208,10 +211,11 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
 
         queue.enqueueReadBuffer(clCursor, CL_TRUE, 0, sizeof(nfilted), &nfilted);
 
-        queue.enqueueWriteBuffer(clBins, CL_TRUE, 0, sizeof(cl_ulong4) * nfilted, hashes.data());
-        queue.enqueueNDRangeKernel(clKernelHIPS, cl::NullRange, cl::NDRange(nfilted), cl::NullRange);
+        queue.enqueueWriteBuffer(clBins1, CL_TRUE, 0, sizeof(cl_ulong4) * nfilted, hashes.data());
+        queue.enqueueNDRangeKernel(clKernelHIPS, cl::NullRange, cl::NDRange(1), cl::NullRange);
 
-        queue.enqueueNDRangeKernel(clKernelFIND, cl::NullRange, cl::NDRange(nfilted, 512), cl::NDRange(1, 512));
+        queue.enqueueWriteBuffer(clMatches, CL_TRUE, 0, sizeof(cl_int) * 512, matches.data());
+        queue.enqueueNDRangeKernel(clKernelFIND, cl::NullRange, cl::NDRange(1, 512), cl::NDRange(1, 512));
     }
     queue.finish();
 
@@ -274,8 +278,10 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
 
     boost::system_time const t8 = boost::get_system_time();
 
+    queue.enqueueCopyBuffer(clBins1, clBins2, 0, 0, nxy * sizeof(cl_ulong4));
+
     for (int i = 0; i < REPEAT; i++) {
-        queue.enqueueNDRangeKernel(clKernelFIND, cl::NullRange, cl::NDRange(nfilted, 512), cl::NDRange(1, 512));
+        queue.enqueueNDRangeKernel(clKernelFIND, cl::NullRange, cl::NDRange(nfilted , 512), cl::NDRange(1, 512));
     }
     queue.finish();
 
@@ -284,6 +290,10 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
 
     // Release pinned memory.
     queue.enqueueUnmapMemObject(clImage, clPinImage);
+
+    queue.enqueueReadBuffer(clMatches, CL_TRUE, 0, sizeof(cl_int) * nfilted, matches.data());
+
+    CVD::ImageRef size2(nx * 2, ny);
 
     std::cerr << std::endl;
     std::cerr << std::setw(8) << (t2 - t1).total_microseconds() / REPEAT << " us writing image" << std::endl;
@@ -300,8 +310,25 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     std::cerr << std::setw(8) << nfilted << " corners after filtering" << std::endl;
     std::cerr << std::endl;
 
-    CVD::VideoDisplay window(size);
+    CVD::VideoDisplay window(size2);
     CVD::glDrawPixels(image);
+    CVD::glRasterPos(CVD::ImageRef(nx, 0));
+    CVD::glDrawPixels(image);
+
+    glColor3f(0, 0, 1);
+    glBegin(GL_LINES);
+    for (int icorner1 = 0; icorner1 < nfilted; icorner1++) {
+        int const icorner2 = matches.at(icorner1);
+
+        if (icorner2 >= 0) {
+            cl_int2 const xy1 = corners.at(icorner1);
+            cl_int2 const xy2 = corners.at(icorner2);
+
+            glVertex2i(xy1.x, xy1.y);
+            glVertex2i(xy2.x + nx, xy2.y);
+        }
+    }
+    glEnd();
 
     glColor3f(1, 0, 0);
     glBegin(GL_POINTS);

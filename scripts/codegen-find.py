@@ -76,8 +76,8 @@ int bitcount4(ulong4 v) {
 }
 
 kernel void hips_find(
-    constant  ulong4   * hashes1,  // T
-    constant  ulong4   * hashes2,  // R
+    global    ulong4   * hashes1,  // T
+    global    ulong4   * hashes2,  // R
     global    int      * ihashes2  // For each hash1, index of best hash2.
 ) {
 
@@ -111,7 +111,7 @@ kernel void hips_find(
     int ti1              = ihash2;
 
     // Perform parallel reduction.
-    for (int width = 512; width > 1; width >>= 1) {
+    for (int width = 256; width > 1; width >>= 1) {
         if (ithread < width) {
             int const te2  = errors  [ithread + width];
             int const ti2  = ihashes [ithread + width];
