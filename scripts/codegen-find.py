@@ -45,6 +45,7 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // OTHER DEALINGS IN THE SOFTWARE.
 
 int bitcount(ulong x) {
+    // http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetTable
     uchar const bits[256] = {
 #   define B2(n)     n,     n+1,     n+1,     n+2
 #   define B4(n)  B2(n), B2(n+1), B2(n+1), B2(n+2)
