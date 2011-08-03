@@ -56,14 +56,14 @@ int bitcount(ulong x) {
     uchar8 const uc = as_uchar8(x);
 
     return (
-        bits[0xff & uc.s0] +
-        bits[0xff & uc.s1] +
-        bits[0xff & uc.s2] +
-        bits[0xff & uc.s3] +
-        bits[0xff & uc.s4] +
-        bits[0xff & uc.s5] +
-        bits[0xff & uc.s6] +
-        bits[0xff & uc.s7]
+        bits[uc.s0] +
+        bits[uc.s1] +
+        bits[uc.s2] +
+        bits[uc.s3] +
+        bits[uc.s4] +
+        bits[uc.s5] +
+        bits[uc.s6] +
+        bits[uc.s7]
     );
 }
 
