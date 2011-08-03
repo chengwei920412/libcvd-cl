@@ -90,25 +90,30 @@ static void testCVDFAST(CVD::BasicImage<CVD::byte> const & image) {
 static void testFAST(CVD::Image<CVD::byte> const & image,
         cl::Context &context, cl::Device &device, cl::Program &program) {
 
+    // typedef CVD::Rgba<CVD::byte> Pixel;
+    typedef CVD::byte Pixel;
+
     const CVD::ImageRef size = image.size();
     const int           nx   = size.x;
     const int           ny   = size.y;
     const int           nxy  = nx * ny;
 
     // For cropped and RGBA-extended image.
-    CVD::Image<CVD::Rgba<CVD::byte> > cropImage(ref1024);
+    CVD::Image<Pixel> cropImage(ref1024);
 
     // For initial scores, then written sparsely.
-    CVD::Image<CVD::Rgba<CVD::byte> > zeroImage(ref1024);
+    CVD::Image<Pixel> zeroImage(ref1024);
 
     for (int x = 0; x < nx; x++) {
-        for (int y = 0; y < ny; y++)
-            cropImage[x][y].red = image[x][y];
+        for (int y = 0; y < ny; y++) {
+            cropImage[x][y]/*.red*/ = image[x][y];
+            zeroImage[x][y]/*.red*/ = 0;
+        }
     }
 
     cl::CommandQueue queue (context, device);
 
-    cl::ImageFormat format (CL_RGBA, CL_UNSIGNED_INT8);
+    cl::ImageFormat format (CL_INTENSITY, CL_UNSIGNED_INT8);
     cl::Image2D clImage    (context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,  format, nx, ny, 0);
     cl::Image2D clBlur     (context, CL_MEM_READ_WRITE, format, nx, ny, 0);
     cl::Image2D clScores   (context, CL_MEM_READ_WRITE, format, nx, ny, 0);
@@ -135,13 +140,13 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     region[2] = 1;
 
     // Calculate image row pitch in bytes.
-    size_t image_row_pitch = nx * sizeof(CVD::Rgba<CVD::byte>);
+    size_t image_row_pitch = nx * sizeof(Pixel);
 
     // Allocate pinned memory for fast IO.
     void * clPinImage = queue.enqueueMapImage(clImage, CL_TRUE, CL_MAP_WRITE, origin, region, &image_row_pitch, NULL);
 
     // Copy image data to the pinned memory.
-    ::memcpy(clPinImage, cropImage.data(), nxy * sizeof(CVD::Rgba<CVD::byte>));
+    ::memcpy(clPinImage, cropImage.data(), nxy * sizeof(Pixel));
 
     cl::Kernel clKernelBLUR(program, "blur_gray");
     clKernelBLUR.setArg(0, clImage);
