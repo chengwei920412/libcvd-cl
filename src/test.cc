@@ -245,17 +245,17 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     boost::system_time const t8 = boost::get_system_time();
 
     std::cerr << std::endl;
-    std::cerr << "    Image runtime:  " << std::setw(8) << (t2 - t1).total_microseconds() / REPEAT << std::endl;
-    std::cerr << "    BLUR  runtime:  " << std::setw(8) << (t3 - t2).total_microseconds() / REPEAT << std::endl;
-    std::cerr << "    CULL  runtime:  " << std::setw(8) << (t4 - t3).total_microseconds() / REPEAT << std::endl;
-    std::cerr << "    FAST9 runtime:  " << std::setw(8) << (t5 - t4).total_microseconds() / REPEAT << std::endl;
-    std::cerr << "    FILT9 runtime:  " << std::setw(8) << (t6 - t5).total_microseconds() / REPEAT << std::endl;
-    std::cerr << "    HIPS  runtime:  " << std::setw(8) << (t8 - t7).total_microseconds() / REPEAT << std::endl;
+    std::cerr << std::setw(8) << (t2 - t1).total_microseconds() / REPEAT << " us writing image" << std::endl;
+    std::cerr << std::setw(8) << (t3 - t2).total_microseconds() / REPEAT << " us blurring image" << std::endl;
+    std::cerr << std::setw(8) << (t4 - t3).total_microseconds() / REPEAT << " us culling corners" << std::endl;
+    std::cerr << std::setw(8) << (t5 - t4).total_microseconds() / REPEAT << " us running FAST" << std::endl;
+    std::cerr << std::setw(8) << (t6 - t5).total_microseconds() / REPEAT << " us filtering corners" << std::endl;
+    std::cerr << std::setw(8) << (t8 - t7).total_microseconds() / REPEAT << " us making HIPS descriptors" << std::endl;
     std::cerr << std::endl;
-    std::cerr << "    MAX   corners:  " << std::setw(8) << nxy     << std::endl;
-    std::cerr << "    CULL  corners:  " << std::setw(8) << nculled << std::endl;
-    std::cerr << "    FAST9 corners:  " << std::setw(8) << nfasted << std::endl;
-    std::cerr << "    FILT9 corners:  " << std::setw(8) << nfilted << std::endl;
+    std::cerr << std::setw(8) << nxy     << " corner candidates in image" << std::endl;
+    std::cerr << std::setw(8) << nculled << " corners after culling" << std::endl;
+    std::cerr << std::setw(8) << nfasted << " corners after FAST" << std::endl;
+    std::cerr << std::setw(8) << nfilted << " corners after filtering" << std::endl;
     std::cerr << std::endl;
 
     CVD::VideoDisplay window(size);
