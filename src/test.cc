@@ -215,7 +215,7 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
         queue.enqueueNDRangeKernel(clKernelHIPS, cl::NullRange, cl::NDRange(1), cl::NullRange);
 
         queue.enqueueWriteBuffer(clMatches, CL_TRUE, 0, sizeof(cl_int) * 512, matches.data());
-        queue.enqueueNDRangeKernel(clKernelFIND, cl::NullRange, cl::NDRange(1, 512), cl::NDRange(1, 512));
+        queue.enqueueNDRangeKernel(clKernelFIND, cl::NullRange, cl::NDRange(256, 16), cl::NDRange(16, 16));
     }
     queue.finish();
 
@@ -278,10 +278,10 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
 
     boost::system_time const t8 = boost::get_system_time();
 
-    queue.enqueueCopyBuffer(clBins1, clBins2, 0, 0, nxy * sizeof(cl_ulong4));
+    queue.enqueueCopyBuffer(clBins1, clBins2, 0, 0, 512 * sizeof(cl_ulong4));
 
     for (int i = 0; i < REPEAT; i++) {
-        queue.enqueueNDRangeKernel(clKernelFIND, cl::NullRange, cl::NDRange(nfilted , 512), cl::NDRange(1, 512));
+        queue.enqueueNDRangeKernel(clKernelFIND, cl::NullRange, cl::NDRange(256, 16), cl::NDRange(16, 16));
     }
     queue.finish();
 

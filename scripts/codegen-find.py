@@ -82,62 +82,81 @@ kernel void hips_find(
     global    int      * ihashes2  // For each hash1, index of best hash2.
 ) {
 
-    // Prepare local memory for error and ihash2.
-    local  int   errors  [512];
-    local  int   ihashes [512];
+    // Prepare local memory for hash caching.
+    local ulong4 cache1  [16];
+    local ulong4 cache2  [16];
+    local int    errors [256];
+    local int    idxs   [256];
+    local int    ebest   [16];
+    local int    ibest   [16];
 
-    // Use global work item as hash1, hash2 index.
+    // Use global work item for dimension 1 as hash1 index.
+    // Global work item for dimension 2 is *unused*.
     int    const ihash1  = get_global_id(0);
-    int    const ihash2  = get_global_id(1);
 
-    // Use local work item for indexing into errors and hashes.
-    int    const ithread = get_local_id(1);
+    // Use local work items for indexing into errors and hashes.
+    int    const ithr1   = get_local_id(0);
+    int    const ithr2   = get_local_id(1);
 
-    // Cache first hash.
-    local  ulong4 hash1;
-    if (ithread == 0) {
-        hash1            = hashes1[ihash1];
+    // Cache from hash1.
+    if (ithr2 == 0) {
+        cache1 [ithr1]    = hashes1[ihash1];
+        ebest  [ithr1]    = 0xffff;
+        ibest  [ithr1]    = 0;
     }
 
-    // Synchronise work group.
-    barrier(CLK_LOCAL_MEM_FENCE);
-
-    // Take hash2 for comparison.
-    ulong4 const hash2   = hashes2[ihash2];
-
-    // Calculate number of bits in error.
-    int    const error   = bitcount4(hash1 & ~hash2);
-
-    // Initialise local memory.
-    errors  [ithread]    = error;
-    ihashes [ithread]    = ihash2;
-
-    // Synchronise work group.
-    barrier(CLK_LOCAL_MEM_FENCE);
-
-    // Prepare state for parallel reduction.
-    int te1              = error;
-    int ti1              = ihash2;
-
-    // Perform parallel reduction.
-    for (int width = 256; width > 1; width >>= 1) {
-        if (ithread < width) {
-            int const te2  = errors  [ithread + width];
-            int const ti2  = ihashes [ithread + width];
-
-            if (te2 < te1) {
-                // Update with lower error.
-                errors  [ithread] = te1 = te2;
-                ihashes [ithread] = ti1 = ti2;
-            }
+    // Loop while consuming hash2.
+    for (int offset = 0; offset < 256; offset += 16) {
+        // Cache from hash2.
+        if (ithr2 == 0) {
+            cache2[ithr1]  = hashes2[offset + ithr1];
         }
 
-        // Synchronise after this round of reduction.
+        // Synchronise work group.
         barrier(CLK_LOCAL_MEM_FENCE);
+
+        // Calculate pairwise error.
+        ulong4 const hash1 = cache1[ithr1];
+        ulong4 const hash2 = cache2[ithr2];
+        int    const cell  = mad24(ithr1, 16, ithr2);
+        errors [cell]      = bitcount4(hash1 & ~hash2);
+        idxs   [cell]      = offset + ithr2;
+
+        // Synchronise work group.
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        // Prepare state for parallel reduction.
+        int te1            = ebest [ithr1];
+        int ti1            = ibest [ithr1];
+
+        // Perform parallel reduction.
+        for (int width = 8; width > 1; width >>= 1) {
+            if (ithr2 < width) {
+                int const te2  = errors [cell + width];
+                int const ti2  = idxs   [cell + width];
+
+                if (te2 < te1) {
+                    // Update with lower error.
+                    errors [cell] = te1 = te2;
+                    idxs   [cell] = ti1 = ti2;
+                }
+            }
+
+            // Synchronise after this round of reduction.
+            barrier(CLK_LOCAL_MEM_FENCE);
+        }
+
+        if (ithr2 == 0) {
+            ebest [ithr1] = te1;
+            ibest [ithr1] = ti1;
+        }
     }
 
-    if (ithread == 0) {
-        ihashes2[ihash1] = ti1;
+    // Synchronise work group.
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (ithr2 == 0) {
+        ihashes2[ihash1] = ibest[ithr1];
     }
 }
 """
