@@ -109,7 +109,7 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     cl::CommandQueue queue (context, device);
 
     cl::ImageFormat format (CL_RGBA, CL_UNSIGNED_INT8);
-    cl::Image2D clImage    (context, CL_MEM_READ_ONLY,  format, nx, ny, 0);
+    cl::Image2D clImage    (context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,  format, nx, ny, 0);
     cl::Image2D clBlur     (context, CL_MEM_READ_WRITE, format, nx, ny, 0);
     cl::Image2D clScores   (context, CL_MEM_READ_WRITE, format, nx, ny, 0);
 
@@ -133,6 +133,15 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     region[0] = nx;
     region[1] = ny;
     region[2] = 1;
+
+    // Calculate image row pitch in bytes.
+    size_t image_row_pitch = nx * sizeof(CVD::Rgba<CVD::byte>);
+
+    // Allocate pinned memory for fast IO.
+    void * clPinImage = queue.enqueueMapImage(clImage, CL_TRUE, CL_MAP_WRITE, origin, region, &image_row_pitch, NULL);
+
+    // Copy image data to the pinned memory.
+    ::memcpy(clPinImage, cropImage.data(), nxy * sizeof(CVD::Rgba<CVD::byte>));
 
     cl::Kernel clKernelBLUR(program, "blur_gray");
     clKernelBLUR.setArg(0, clImage);
@@ -163,7 +172,7 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
 
     // Warmup OpenCL runtime.
     for (int i = 0; i < REPEAT; i++) {
-        queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, 0, 0, (void *) cropImage.data());
+        queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, 0, 0, clPinImage);
         queue.enqueueWriteImage(clScores, CL_TRUE, origin, region, 0, 0, (void *) zeroImage.data());
 
         queue.enqueueNDRangeKernel(clKernelBLUR, cl::NullRange, cl::NDRange(nx, ny), cl::NDRange(16, 16));
@@ -191,7 +200,7 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
 
     boost::system_time const t1 = boost::get_system_time();
     for (int i = 0; i < REPEAT; i++) {
-        queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, 0, 0, (void *) cropImage.data());
+        queue.enqueueWriteImage(clImage, CL_TRUE, origin, region, 0, 0, clPinImage);
     }
     queue.finish();
 
@@ -243,6 +252,9 @@ static void testFAST(CVD::Image<CVD::byte> const & image,
     }
     queue.finish();
     boost::system_time const t8 = boost::get_system_time();
+
+    // Release pinned memory.
+    queue.enqueueUnmapMemObject(clImage, clPinImage);
 
     std::cerr << std::endl;
     std::cerr << std::setw(8) << (t2 - t1).total_microseconds() / REPEAT << " us writing image" << std::endl;
