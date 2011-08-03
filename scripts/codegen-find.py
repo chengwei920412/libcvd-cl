@@ -93,8 +93,16 @@ kernel void hips_find(
     // Use local work item for indexing into errors and hashes.
     int    const ithread = get_local_id(1);
 
-    // Take hashes for comparison.
-    ulong4 const hash1   = hashes1[ihash1];
+    // Cache first hash.
+    local  ulong4 hash1;
+    if (ithread == 0) {
+        hash1            = hashes1[ihash1];
+    }
+
+    // Synchronise work group.
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    // Take hash2 for comparison.
     ulong4 const hash2   = hashes2[ihash2];
 
     // Calculate number of bits in error.
