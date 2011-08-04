@@ -15,6 +15,11 @@ all:
 	python scripts/codegen-filt.py > opencl/filt.cl
 	python scripts/codegen-hips.py > opencl/hips.cl
 	python scripts/codegen-find.py > opencl/find.cl
+
+	python scripts/codegen-cholesky.py 3 > opencl/cholesky3.cl
+	python scripts/codegen-cholesky.py 4 > opencl/cholesky4.cl
+	python scripts/codegen-cholesky.py 5 > opencl/cholesky5.cl
+
 	g++ -o $(BINARY) $(CFLAGS) $(SOURCES) $(LIBS)
 
 clean:
