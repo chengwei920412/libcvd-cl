@@ -49,7 +49,7 @@ static const size_t KiB = 1024;
 static const size_t MiB = KiB * KiB;
 
 // Timing repetition constant.
-int const static REPEAT = 100;
+int const static REPEAT = 1000;
 
 // Number of matrices and vectors to process.
 int const static COUNT = 8192;
@@ -88,9 +88,7 @@ static void randomMatrix(rng_t &rng, dist_t & dist, mat_t &m) {
 }
 
 static void testToonCholesky(mats_t const & mats, vecs_t const & vecs) {
-    vec_t total;
-    for (int i = 0; i < SIZE; i++)
-        total[i] = i;
+    std::vector<double> total(SIZE, 0.0);
 
     boost::system_time const t1 = boost::get_system_time();
 
@@ -99,7 +97,9 @@ static void testToonCholesky(mats_t const & mats, vecs_t const & vecs) {
             TooN::Cholesky<5, cl_float> chol;
             chol.compute(mats.at(i));
             vec_t x = chol.backsub(vecs.at(i));
-            total += x;
+
+            for (int j = 0; j < SIZE; j++)
+                total[j] += x[j];
         }
     }
 
@@ -180,13 +180,13 @@ static void testClCholesky(
             vector[col] = vbuf.at(off + ivector);
     }
 
-    vec_t total;
-    for (int i = 0; i < SIZE; i++)
-        total[i] = i;
+    std::vector<double> total(SIZE, 0.0);
 
     for (int i = 0; i < COUNT; i++) {
         vec_t & v = ovecs.at(i);
-        total += (v * REPEAT);
+
+        for (int j = 0; j < SIZE; j++)
+            total[j] += (double(v[j]) * REPEAT);
 
         TooN::Cholesky<5, cl_float> chol;
         chol.compute(mats.at(i));
