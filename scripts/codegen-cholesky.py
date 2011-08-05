@@ -80,7 +80,8 @@ print
 
 for col in range(size):
     print "    /* Column %d */ {" % col
-    print "        float inv     = 1;"
+    if (col + 1) < size:
+        print "        float inv     = 1;"
     for row in range(col, size):
         print "        /* Row %d */ {" % row
         print "            float val = r%dc%d;" % (row, col)
@@ -90,7 +91,8 @@ for col in range(size):
         if row == col:
             print "            // Diagonal element, don't divide."
             print "            r%dc%d      = val;" % (row, col)
-            print "            inv       = 1.0f / val;"
+            if (col + 1) < size:
+                print "            inv       = (1.0f / val);"
         else:
             print "            // Cache the value, without division, in the upper half."
             print "            r%dc%d      = val;" % (col, row)
