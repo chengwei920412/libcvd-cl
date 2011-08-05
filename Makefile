@@ -3,8 +3,6 @@ CFLAGS  += -I/usr/local/include -Iinclude -Isrc
 CFLAGS  += -Wall -Wextra -Wno-unused -Wno-ignored-qualifiers -fmessage-length=0
 #CFLAGS += -g3
 
-BINARY   = bin/test-cvd-cl
-SOURCES  = $(shell find src -iname "*.cc")
 LIBS     = -lOpenCL -lcvd -lm -lboost_program_options-mt
 
 all:
@@ -20,7 +18,8 @@ all:
 	python scripts/codegen-cholesky.py 4 > opencl/cholesky4.cl
 	python scripts/codegen-cholesky.py 5 > opencl/cholesky5.cl
 
-	g++ -o $(BINARY) $(CFLAGS) $(SOURCES) $(LIBS)
+	g++ -o bin/test-cvd-cl $(CFLAGS) $(LIBS) src/test.cc
+	g++ -o bin/test-cholesky $(CFLAGS) $(LIBS) src/cholesky.cc
 
 clean:
 	rm -rf obj bin
