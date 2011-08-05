@@ -5,6 +5,8 @@ CFLAGS  += -Wall -Wextra -Wno-unused -Wno-ignored-qualifiers -fmessage-length=0
 
 LIBS     = -lOpenCL -lcvd -lm -lboost_program_options-mt
 
+SOURCES  = $(shell ls src/*/*.cc)
+
 all:
 	mkdir -p obj bin
 	python scripts/codegen-blur.py > opencl/blur.cl
@@ -20,6 +22,8 @@ all:
 
 	g++ -o bin/test-cvd-cl $(CFLAGS) $(LIBS) src/test.cc
 	g++ -o bin/test-cholesky $(CFLAGS) $(LIBS) src/cholesky.cc
+
+	g++ -shared -fPIC -o bin/libcvdcl.so $(CFLAGS) $(LIBS) $(SOURCES)
 
 clean:
 	rm -rf obj bin
