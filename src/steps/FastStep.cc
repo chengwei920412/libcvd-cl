@@ -55,6 +55,9 @@ void FastStep::execute() {
     // Reset number of output points.
     opoints.setCount(0);
 
+    // Zero scores buffer (may be slow).
+    oscores.zero();
+
     // Queue kernel with global size set to number of input points.
     worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np), cl::NullRange);
 }

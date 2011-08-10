@@ -86,6 +86,11 @@ void ImageState::copyFromWorker() {
     worker.queue.enqueueReadImage(image, CL_TRUE, origin, region, 0, 0, bytes);
 }
 
+void ImageState::zero() {
+    ::memset(bytes, 0, nbytes);
+    copyToWorker();
+}
+
 void ImageState::set(ByteSubImage const & image) {
     CVD::ImageRef const size = image.size();
 

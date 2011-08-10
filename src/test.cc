@@ -73,24 +73,17 @@ static void testCVDFAST(CVD::BasicImage<CVD::byte> const & image) {
 }
 
 static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
-    typedef CVD::byte Pixel;
-
     const CVD::ImageRef size = image.size();
     const int           nx   = size.x;
     const int           ny   = size.y;
     const int           nxy  = nx * ny;
 
     // For cropped and RGBA-extended image.
-    CVD::Image<Pixel> cropImage(ref1024);
-
-    // For initial scores, then written sparsely.
-    CVD::Image<Pixel> zeroImage(ref1024);
+    CVD::Image<CVD::byte> cropImage(ref1024);
 
     for (int x = 0; x < nx; x++) {
-        for (int y = 0; y < ny; y++) {
+        for (int y = 0; y < ny; y++)
             cropImage[x][y]/*.red*/ = image[x][y];
-            zeroImage[x][y]/*.red*/ = 0;
-        }
     }
 
     // Create OpenCL worker.
@@ -116,9 +109,6 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
 
     // Write image to device.
     imageNeat.set(cropImage);
-
-    // Write zeroed scores to device.
-    scores.set(zeroImage);
 
     // Run and time steps.
     int64_t const timeBlur     = runBlur.measure();

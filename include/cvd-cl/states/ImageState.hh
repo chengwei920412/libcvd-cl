@@ -41,13 +41,14 @@ public:
     explicit ImageState(Worker & worker, CVD::ImageRef const & size);
     virtual ~ImageState();
 
-    virtual void set(ByteSubImage const & image);
-    virtual void get(ByteSubImage       * image);
+    void set(ByteSubImage const & image);
+    void get(ByteSubImage       * image);
 
     ByteImage asImage();
 
     void copyToWorker();
     void copyFromWorker();
+    void zero();
 
     // Public immutable members.
     CVD::ImageRef const   size;
