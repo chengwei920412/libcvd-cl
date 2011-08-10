@@ -50,12 +50,15 @@ void MatchStep::execute() {
     size_t const np1 = ihips1.getCount();
     size_t const np2 = ihips2.getCount();
 
+    // Round down number of output points.
+    size_t const np1_16 = (np1 / 16) * 16;
+
     // Reset number of output points.
     // TODO: Generalise kernel to arbitrary sizes.
-    obest.setCount(256);
+    obest.setCount(np1_16);
 
     // Queue kernel with global size set to number of input points.
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(256, 16), cl::NDRange(16, 16));
+    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np1_16, 16), cl::NDRange(16, 16));
 }
 
 } // namespace CL
