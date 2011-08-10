@@ -133,6 +133,19 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
     int64_t const timeHips     = runHips.measure();
     int64_t const timeMatch    = runMatch.measure();
 
+    // Time a single burst.
+    boost::system_time const t1 = boost::get_system_time();
+    imageNeat.copyToWorker();
+    runBlur.execute();
+    runPreFast.execute();
+    runFast.execute();
+    runMaxFast.execute();
+    runHips.execute();
+    runMatch.execute();
+    worker.finish();
+    boost::system_time const t2 = boost::get_system_time();
+    int64_t const timeBurst     = (t2 - t1).total_microseconds();
+
     // Read out final corner list.
     std::vector<cl_int2> corners;
     corners3.get(&corners);
@@ -151,6 +164,7 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
     std::cerr << std::setw(8) << timeMaxFast  << " us filtering corners" << std::endl;
     std::cerr << std::setw(8) << timeHips     << " us making HIPS descriptors" << std::endl;
     std::cerr << std::setw(8) << timeMatch    << " us matching HIPS descriptors" << std::endl;
+    std::cerr << std::setw(8) << timeBurst    << " us in a single burst" << std::endl;
     std::cerr << std::endl;
     std::cerr << std::setw(8) << nxy     << " corner candidates in image" << std::endl;
     std::cerr << std::setw(8) << nculled << " corners after culling" << std::endl;
