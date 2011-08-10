@@ -21,27 +21,42 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_WORKER_STEP_HH__
-#define __CVD_CL_WORKER_STEP_HH__
-
-#include <cvd-cl/core/Step.hh>
-#include <cvd-cl/worker/Worker.hh>
+#include "cvd-cl/steps/MatchStep.hh"
+#include "kernels/find.hh"
 
 namespace CVD {
 namespace CL  {
 
-class WorkerStep : public Step {
-public:
+MatchStep::MatchStep(HipsListState & ihips1, HipsListState & ihips2, IntListState & obest) :
+    WorkerStep (ihips1.worker),
+    ihips1     (ihips1),
+    ihips2     (ihips2),
+    obest      (obest)
+{
+    worker.compile(&program, &kernel, OCL_FIND, "hips_find");
+}
 
-    explicit WorkerStep(Worker & worker);
-    virtual ~WorkerStep();
+MatchStep::~MatchStep() {
+    // Do nothing.
+}
 
-    virtual int64_t measure(int repeat=10);
+void MatchStep::execute() {
+    // Assign kernel parameters.
+    kernel.setArg(0, ihips1.buffer);
+    kernel.setArg(1, ihips2.buffer);
+    kernel.setArg(2, obest.buffer);
 
-    Worker & worker;
-};
+    // Read number of input points.
+    size_t const np1 = ihips1.getCount();
+    size_t const np2 = ihips2.getCount();
+
+    // Reset number of output points.
+    // TODO: Generalise kernel to arbitrary sizes.
+    obest.setCount(256);
+
+    // Queue kernel with global size set to number of input points.
+    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(256, 16), cl::NDRange(16, 16));
+}
 
 } // namespace CL
 } // namespace CVD
-
-#endif /* __CVD_CL_WORKER_STEP_HH__ */

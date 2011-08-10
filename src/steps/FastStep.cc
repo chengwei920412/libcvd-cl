@@ -21,27 +21,43 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_WORKER_STEP_HH__
-#define __CVD_CL_WORKER_STEP_HH__
-
-#include <cvd-cl/core/Step.hh>
-#include <cvd-cl/worker/Worker.hh>
+#include "cvd-cl/steps/FastStep.hh"
+#include "kernels/fast.hh"
 
 namespace CVD {
 namespace CL  {
 
-class WorkerStep : public Step {
-public:
+FastStep::FastStep(ImageState & iimage, PointListState & ipoints, ImageState & oscores, PointListState & opoints) :
+    WorkerStep (iimage.worker),
+    iimage     (iimage),
+    ipoints    (ipoints),
+    oscores    (oscores),
+    opoints    (opoints)
+{
+    worker.compile(&program, &kernel, OCL_FAST, "fast_gray_9");
+}
 
-    explicit WorkerStep(Worker & worker);
-    virtual ~WorkerStep();
+FastStep::~FastStep() {
+    // Do nothing.
+}
 
-    virtual int64_t measure(int repeat=10);
+void FastStep::execute() {
+    // Assign kernel parameters.
+    kernel.setArg(0, iimage.image);
+    kernel.setArg(1, oscores.image);
+    kernel.setArg(2, ipoints.buffer);
+    kernel.setArg(3, opoints.buffer);
+    kernel.setArg(4, opoints.count);
 
-    Worker & worker;
-};
+    // Read number of input points.
+    size_t const np = ipoints.getCount();
+
+    // Reset number of output points.
+    opoints.setCount(0);
+
+    // Queue kernel with global size set to number of input points.
+    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np), cl::NullRange);
+}
 
 } // namespace CL
 } // namespace CVD
-
-#endif /* __CVD_CL_WORKER_STEP_HH__ */

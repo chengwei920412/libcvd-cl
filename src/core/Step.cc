@@ -21,27 +21,28 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_WORKER_STEP_HH__
-#define __CVD_CL_WORKER_STEP_HH__
-
-#include <cvd-cl/core/Step.hh>
-#include <cvd-cl/worker/Worker.hh>
+#include "cvd-cl/core/Step.hh"
 
 namespace CVD {
 namespace CL  {
 
-class WorkerStep : public Step {
-public:
+Step::Step() {
+    // Do nothing.
+}
 
-    explicit WorkerStep(Worker & worker);
-    virtual ~WorkerStep();
+Step::~Step() {
+    // Do nothing.
+}
 
-    virtual int64_t measure(int repeat=10);
+int64_t Step::measure(int repeat) {
+    boost::system_time const t1 = boost::get_system_time();
 
-    Worker & worker;
-};
+    for (int i = 0; i < repeat; i++)
+        execute();
+
+    boost::system_time const t2 = boost::get_system_time();
+    return ((t2 - t1).total_microseconds() / repeat);
+}
 
 } // namespace CL
 } // namespace CVD
-
-#endif /* __CVD_CL_WORKER_STEP_HH__ */

@@ -21,5 +21,41 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#include "cvd-cl/states/ImageState.hh"
-#include "cvd-cl/core/Expect.hh"
+#include "cvd-cl/steps/PreFastStep.hh"
+#include "kernels/cull.hh"
+
+namespace CVD {
+namespace CL  {
+
+PreFastStep::PreFastStep(ImageState & image, PointListState & points) :
+    WorkerStep (image.worker),
+    image      (image),
+    points     (points)
+{
+    worker.compile(&program, &kernel, OCL_CULL, "cull_gray");
+}
+
+PreFastStep::~PreFastStep() {
+    // Do nothing.
+}
+
+void PreFastStep::execute() {
+    // Assign kernel parameters.
+    kernel.setArg(0, image.image);
+    kernel.setArg(1, points.buffer);
+    kernel.setArg(2, points.count);
+
+    // Read image dimensions.
+    size_t const nx = image.size.x;
+    size_t const ny = image.size.y;
+
+    // Reset number of output points.
+    points.setCount(0);
+
+    // Queue kernel with square local size.
+    // 16x16 appears to give good performance on most devices.
+    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(nx, ny), cl::NDRange(16, 16));
+}
+
+} // namespace CL
+} // namespace CVD

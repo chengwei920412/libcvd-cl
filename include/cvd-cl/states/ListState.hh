@@ -21,73 +21,62 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_IMAGE_STATE_HH__
-#define __CVD_CL_IMAGE_STATE_HH__
+#ifndef __CVD_CL_LIST_STATE_HH__
+#define __CVD_CL_LIST_STATE_HH__
 
-#include <cvd-cl/worker/WorkerState.hh>
-
-#include <cvd/byte.h>
-#include <cvd/image.h>
+#include <cvd-cl/states/CountState.hh>
+#include <cvd-cl/core/Expect.hh>
 
 namespace CVD {
 namespace CL  {
 
 template<class Item>
-class ListState : public WorkerState<std::vector<Item> > {
+class ListState : public CountState {
 public:
 
-    explicit ListState(Worker & worker, size_t size) :
-        Super(worker),
-        size(size),
-        nbytes(size * sizeof(cl_int2)),
-        m_fill(0) {
-
-        // Allocate buffer (may throw a CL exception).
-        m_buffer = cl::Buffer(worker.context, CL_MEM_READ_WRITE, nbytes);
+    explicit ListState(Worker & worker, cl_int size) :
+        CountState (worker, size),
+        size       (size),
+        nbytes     (size * sizeof(cl_int2))
+    {
+        // Allocate buffers (may throw a CL exception).
+        buffer = cl::Buffer(worker.context, CL_MEM_READ_WRITE, nbytes);
     }
 
     virtual ~ListState() {
         // Do nothing.
     }
 
-    void setFill(size_t fill) {
-        expect("PointListState::setFill() must be within size",
-                fill <= size);
+    virtual void set(std::vector<Item> const & items) {
+        // Write new count to device.
+        setCount(items.size());
 
-        m_fill = fill;
+        // Write item data directly to device.
+        size_t const pnbytes = items.size() * sizeof(Item);
+        worker.queue.enqueueWriteBuffer(buffer, CL_TRUE, 0, pnbytes, items.data());
     }
 
-    size_t fill() const {
-        assert(m_fill <= size);
-        return m_fill;
-    }
+    virtual void get(std::vector<Item>       * items) {
+        // Read count from device.
+        cl_int const ncount = getCount();
 
-    virtual void set(PointList const & points) {
-        expect("ListState::set() must be given a vector small enough",
-                    points.size() <= size);
+        // Allocate memory for item data.
+        items->resize(ncount);
 
-        size_t const pnbytes = points.size() * sizeof(Item);
-        worker.queue.enqueueWriteBuffer(m_buffer, CL_TRUE, 0, pnbytes, points.data());
-    }
-
-    virtual void get(PointList       * points) {
-        points->resize(m_fill);
-
-        size_t const pnbytes = m_fill * sizeof(Item);
-        worker.queue.enqueueReadBuffer(m_buffer, CL_TRUE, 0, pnbytes, points->data());
+        // Read item data directly from device.
+        size_t const pnbytes = ncount * sizeof(Item);
+        worker.queue.enqueueReadBuffer(buffer, CL_TRUE, 0, pnbytes, items->data());
     }
 
     // Public immutable member.
     size_t const size;
     size_t const nbytes;
 
-protected:
-
-    cl::Buffer   m_buffer;
-    size_t       m_fill;
+    // Members left public for WorkerStep access.
+    cl::Buffer   buffer;
 };
 
 } // namespace CL
 } // namespace CVD
 
-#endif /* __CVD_CL_IMAGE_STATE_HH__ */
+#endif /* __CVD_CL_LIST_STATE_HH__ */

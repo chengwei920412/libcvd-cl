@@ -160,7 +160,7 @@ static void testClCholesky(
     boost::system_time const t1 = boost::get_system_time();
 
     for (int repeat = 0; repeat < REPEAT; repeat++) {
-        queue.enqueueNDRangeKernel(clKernel, cl::NullRange, cl::NDRange(COUNT), cl::NDRange(512));
+        queue.enqueueNDRangeKernel(clKernel, cl::NullRange, cl::NDRange(COUNT), cl::NullRange);
     }
     queue.finish();
 

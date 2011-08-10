@@ -32,22 +32,15 @@
 namespace CVD {
 namespace CL  {
 
-template<class IState, class OState>
 class Step : public boost::noncopyable {
 public:
 
-    Step() {}
-    virtual ~Step() {}
+    explicit Step();
+    virtual ~Step();
 
-    virtual void execute(IState & istate, OState & ostate) = 0;
+    virtual void execute() = 0;
 
-    virtual boost::system_time::time_rep_type measure(IState & istate, OState & ostate, int repeat=10) {
-        boost::system_time const t1 = boost::get_system_time();
-        for (int i = 0; i < repeat; i++)
-            execute(istate, ostate);
-        boost::system_time const t2 = boost::get_system_time();
-        return ((t2 - t1).total_microseconds() / repeat);
-    }
+    virtual int64_t measure(int repeat=10);
 };
 
 } // namespace CL

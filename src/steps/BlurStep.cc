@@ -21,27 +21,42 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_WORKER_STEP_HH__
-#define __CVD_CL_WORKER_STEP_HH__
-
-#include <cvd-cl/core/Step.hh>
-#include <cvd-cl/worker/Worker.hh>
+#include "cvd-cl/steps/BlurStep.hh"
+#include "cvd-cl/core/Expect.hh"
+#include "kernels/blur.hh"
 
 namespace CVD {
 namespace CL  {
 
-class WorkerStep : public Step {
-public:
+BlurStep::BlurStep(ImageState & imagei, ImageState & imageo) :
+    WorkerStep (imagei.worker),
+    iimage     (imagei),
+    oimage     (imageo)
+{
+    // Expect identical image dimensions.
+    expect("BlurStep::BlurStep() must have identical image sizes",
+        imagei.size == imageo.size);
 
-    explicit WorkerStep(Worker & worker);
-    virtual ~WorkerStep();
+    worker.compile(&program, &kernel, OCL_BLUR, "blur_gray");
+}
 
-    virtual int64_t measure(int repeat=10);
+BlurStep::~BlurStep() {
+    // Do nothing.
+}
 
-    Worker & worker;
-};
+void BlurStep::execute() {
+    // Assign kernel parameters.
+    kernel.setArg(0, iimage.image);
+    kernel.setArg(1, oimage.image);
+
+    // Read image dimensions.
+    size_t const nx = iimage.size.x;
+    size_t const ny = iimage.size.y;
+
+    // Queue kernel with square local size.
+    // 16x16 appears to give good performance on most devices.
+    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(nx, ny), cl::NDRange(16, 16));
+}
 
 } // namespace CL
 } // namespace CVD
-
-#endif /* __CVD_CL_WORKER_STEP_HH__ */

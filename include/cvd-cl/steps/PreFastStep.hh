@@ -26,28 +26,31 @@
 
 #include <cvd-cl/worker/WorkerStep.hh>
 #include <cvd-cl/states/ImageState.hh>
+#include <cvd-cl/states/ListState.hh>
 
 namespace CVD {
 namespace CL  {
 
-class PreFastStep : public WorkerStep<IState, OState> {
+typedef ListState<cl_int2> PointListState;
+
+class PreFastStep : public WorkerStep {
 public:
 
-    // Type alias for the convenience of sub-classes.
-    typedef WorkerStep<IState, OState> Super;
+    explicit PreFastStep(ImageState & image, PointListState & points);
+    virtual ~PreFastStep();
 
-    explicit WorkerStep(Worker & worker) :
-        worker(worker) {
-        // Do nothing.
-    }
-
-    virtual ~WorkerStep() {
-        // Do nothing.
-    }
+    virtual void execute();
 
 protected:
 
-    Worker & worker;
+    // Inputs.
+    ImageState     & image;
+
+    // Outputs.
+    PointListState & points;
+
+    cl::Program      program;
+    cl::Kernel       kernel;
 };
 
 } // namespace CL

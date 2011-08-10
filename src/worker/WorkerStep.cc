@@ -21,29 +21,34 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#include "cvd-cl/worker/Worker.hh"
+#include "cvd-cl/worker/WorkerStep.hh"
 
 namespace CVD {
 namespace CL  {
 
-Worker::Worker(cl::Context & context, cl::Device & device, cl::CommandQueue & queue) :
-    context (context),
-    device  (device),
-    queue   (queue)
+WorkerStep::WorkerStep(Worker & worker) :
+    worker(worker)
 {
     // Do nothing.
 }
 
-Worker::~Worker() {
+WorkerStep::~WorkerStep() {
     // Do nothing.
 }
 
-void Worker::barrier() {
-    queue.enqueueBarrier();
-}
+int64_t WorkerStep::measure(int repeat) {
+    // Finish worker queue before starting timing.
+    worker.finish();
 
-void Worker::finish() {
-    queue.finish();
+    boost::system_time const t1 = boost::get_system_time();
+
+    for (int i = 0; i < repeat; i++)
+        execute();
+
+    // Finish worker queue before stopping timing.
+    worker.finish();
+    boost::system_time const t2 = boost::get_system_time();
+    return ((t2 - t1).total_microseconds() / repeat);
 }
 
 } // namespace CL

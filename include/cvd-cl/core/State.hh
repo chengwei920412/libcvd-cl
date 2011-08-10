@@ -29,15 +29,11 @@
 namespace CVD {
 namespace CL  {
 
-template<class Type>
 class State : public boost::noncopyable {
 public:
 
-    State() {}
-    virtual ~State() {}
-
-    virtual void set(Type const & state) = 0;
-    virtual void get(Type       * state) = 0;
+    explicit State();
+    virtual ~State();
 };
 
 } // namespace CL

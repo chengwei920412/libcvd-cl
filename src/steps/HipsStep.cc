@@ -21,27 +21,40 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_WORKER_STEP_HH__
-#define __CVD_CL_WORKER_STEP_HH__
-
-#include <cvd-cl/core/Step.hh>
-#include <cvd-cl/worker/Worker.hh>
+#include "cvd-cl/steps/HipsStep.hh"
+#include "kernels/hips.hh"
 
 namespace CVD {
 namespace CL  {
 
-class WorkerStep : public Step {
-public:
+HipsStep::HipsStep(ImageState & iimage, PointListState & ipoints, HipsListState & ohips) :
+    WorkerStep (iimage.worker),
+    iimage     (iimage),
+    ipoints    (ipoints),
+    ohips      (ohips)
+{
+    worker.compile(&program, &kernel, OCL_HIPS, "hips_gray");
+}
 
-    explicit WorkerStep(Worker & worker);
-    virtual ~WorkerStep();
+HipsStep::~HipsStep() {
+    // Do nothing.
+}
 
-    virtual int64_t measure(int repeat=10);
+void HipsStep::execute() {
+    // Assign kernel parameters.
+    kernel.setArg(0, iimage.image);
+    kernel.setArg(1, ipoints.buffer);
+    kernel.setArg(2, ohips.buffer);
 
-    Worker & worker;
-};
+    // Read number of input points.
+    size_t const np = ipoints.getCount();
+
+    // Reset number of output points.
+    ohips.setCount(np);
+
+    // Queue kernel with global size set to number of input points.
+    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np), cl::NullRange);
+}
 
 } // namespace CL
 } // namespace CVD
-
-#endif /* __CVD_CL_WORKER_STEP_HH__ */

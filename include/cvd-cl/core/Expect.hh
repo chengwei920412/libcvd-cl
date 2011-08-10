@@ -24,6 +24,7 @@
 #ifndef __CVD_CL_EXPECT_HH__
 #define __CVD_CL_EXPECT_HH__
 
+#include <cassert>
 #include <stdexcept>
 
 namespace CVD {

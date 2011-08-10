@@ -30,23 +30,11 @@
 namespace CVD {
 namespace CL  {
 
-template<class Type>
-class WorkerState : public State<Type> {
+class WorkerState : public State {
 public:
 
-    // Type alias for the convenience of sub-classes.
-    typedef WorkerState<Type> Super;
-
-    explicit WorkerState(Worker & worker) :
-        worker(worker) {
-        // Do nothing.
-    }
-
-    virtual ~WorkerState() {
-        // Do nothing.
-    }
-
-protected:
+    explicit WorkerState(Worker & worker);
+    virtual ~WorkerState();
 
     Worker & worker;
 };

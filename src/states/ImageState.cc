@@ -31,57 +31,59 @@ cl::ImageFormat const static FORMAT  (CL_INTENSITY, CL_UNSIGNED_INT8);
 cl_mem_flags    const static FLAGS = (CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR);
 
 ImageState::ImageState(Worker & worker, CVD::ImageRef const & size) :
-    Super(worker),
+    WorkerState(worker),
     size(size),
     nbytes(size.x * size.y),
-    m_bytes(NULL) {
+    bytes(NULL)
+{
 
     // Allocate image (may throw a CL exception).
     // Most exceptions here are from an unsupported format or a lack of memory.
-    m_image = cl::Image2D(worker.context, FLAGS, FORMAT, size.x, size.y, 0);
+    image = cl::Image2D(worker.context, FLAGS, FORMAT, size.x, size.y, 0);
 
     // Create origin at 0, 0, 0.
-    m_origin[0] = 0;
-    m_origin[1] = 0;
-    m_origin[2] = 0;
+    origin[0] = 0;
+    origin[1] = 0;
+    origin[2] = 0;
 
     // Create 3D region for full 2D plane.
-    m_region[0] = size.y;
-    m_region[1] = size.y;
-    m_region[2] = 1;
+    region[0] = size.y;
+    region[1] = size.y;
+    region[2] = 1;
 
     // Calculate image row pitch in bytes.
     size_t rpitch = size.x * sizeof(CVD::byte);
 
     // Map image memory.
-    void * bytes = worker.queue.enqueueMapImage(m_image, CL_TRUE, CL_MAP_WRITE, m_origin, m_region, &rpitch, NULL);
+    void * data = worker.queue.enqueueMapImage(image, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, origin, region, &rpitch, NULL);
 
     // Re-interpret image memory pointer.
-    m_bytes = reinterpret_cast<CVD::byte *>(bytes);
+    bytes = reinterpret_cast<CVD::byte *>(data);
 }
 
 ImageState::~ImageState() {
-    if (m_bytes != NULL) {
+    if (bytes != NULL) {
         try {
-            worker.queue.enqueueUnmapMemObject(m_image, m_bytes);
+            worker.queue.enqueueUnmapMemObject(image, bytes);
+            worker.finish();
         } catch (...) {
             // Ignore any unmapping error.
         }
 
-        m_bytes = NULL;
+        bytes = NULL;
     }
 }
 
 ByteImage ImageState::asImage() {
-    return ByteImage(m_bytes, size);
+    return ByteImage(bytes, size);
 }
 
 void ImageState::copyToWorker() {
-    worker.queue.enqueueWriteImage(m_image, CL_TRUE, m_origin, m_region, 0, 0, m_bytes);
+    worker.queue.enqueueWriteImage(image, CL_TRUE, origin, region, 0, 0, bytes);
 }
 
 void ImageState::copyFromWorker() {
-    worker.queue.enqueueReadImage(m_image, CL_TRUE, m_origin, m_region, 0, 0, m_bytes);
+    worker.queue.enqueueReadImage(image, CL_TRUE, origin, region, 0, 0, bytes);
 }
 
 void ImageState::set(ByteSubImage const & image) {

@@ -21,27 +21,33 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_WORKER_STEP_HH__
-#define __CVD_CL_WORKER_STEP_HH__
+#ifndef __CVD_CL_BLUR_STEP_HH__
+#define __CVD_CL_BLUR_STEP_HH__
 
-#include <cvd-cl/core/Step.hh>
-#include <cvd-cl/worker/Worker.hh>
+#include <cvd-cl/worker/WorkerStep.hh>
+#include <cvd-cl/states/ImageState.hh>
 
 namespace CVD {
 namespace CL  {
 
-class WorkerStep : public Step {
+class BlurStep : public WorkerStep {
 public:
 
-    explicit WorkerStep(Worker & worker);
-    virtual ~WorkerStep();
+    explicit BlurStep(ImageState & iimage, ImageState & oimage);
+    virtual ~BlurStep();
 
-    virtual int64_t measure(int repeat=10);
+    virtual void execute();
 
-    Worker & worker;
+protected:
+
+    ImageState     & iimage;
+    ImageState     & oimage;
+
+    cl::Program      program;
+    cl::Kernel       kernel;
 };
 
 } // namespace CL
 } // namespace CVD
 
-#endif /* __CVD_CL_WORKER_STEP_HH__ */
+#endif /* __CVD_CL_BLUR_STEP_HH__ */

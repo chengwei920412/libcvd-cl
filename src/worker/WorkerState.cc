@@ -21,27 +21,20 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_WORKER_STEP_HH__
-#define __CVD_CL_WORKER_STEP_HH__
-
-#include <cvd-cl/core/Step.hh>
-#include <cvd-cl/worker/Worker.hh>
+#include "cvd-cl/worker/WorkerState.hh"
 
 namespace CVD {
 namespace CL  {
 
-class WorkerStep : public Step {
-public:
+WorkerState::WorkerState(Worker & worker) :
+    worker(worker)
+{
+    // Do nothing.
+}
 
-    explicit WorkerStep(Worker & worker);
-    virtual ~WorkerStep();
-
-    virtual int64_t measure(int repeat=10);
-
-    Worker & worker;
-};
+WorkerState::~WorkerState() {
+    // Do nothing.
+}
 
 } // namespace CL
 } // namespace CVD
-
-#endif /* __CVD_CL_WORKER_STEP_HH__ */

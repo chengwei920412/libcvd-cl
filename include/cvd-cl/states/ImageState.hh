@@ -35,7 +35,7 @@ namespace CL  {
 typedef CVD::BasicImage<CVD::byte> ByteImage;
 typedef CVD::SubImage<CVD::byte> ByteSubImage;
 
-class ImageState : public WorkerState<ByteSubImage> {
+class ImageState : public WorkerState {
 public:
 
     explicit ImageState(Worker & worker, CVD::ImageRef const & size);
@@ -53,13 +53,11 @@ public:
     CVD::ImageRef const   size;
     size_t        const   nbytes;
 
-protected:
-
-    CVD::byte           * m_bytes;
-    cl::Image2D           m_image;
-
-    cl::size_t<3>         m_origin;
-    cl::size_t<3>         m_region;
+    // Members left public for WorkerStep access.
+    CVD::byte           * bytes;
+    cl::Image2D           image;
+    cl::size_t<3>         origin;
+    cl::size_t<3>         region;
 };
 
 } // namespace CL

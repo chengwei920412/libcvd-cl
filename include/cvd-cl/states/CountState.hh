@@ -21,27 +21,36 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_WORKER_STEP_HH__
-#define __CVD_CL_WORKER_STEP_HH__
+#ifndef __CVD_CL_COUNT_STATE_HH__
+#define __CVD_CL_COUNT_STATE_HH__
 
-#include <cvd-cl/core/Step.hh>
-#include <cvd-cl/worker/Worker.hh>
+#include <cvd-cl/worker/WorkerState.hh>
 
 namespace CVD {
 namespace CL  {
 
-class WorkerStep : public Step {
+class CountState : public WorkerState {
 public:
 
-    explicit WorkerStep(Worker & worker);
-    virtual ~WorkerStep();
+    explicit CountState(Worker & worker, cl_int size);
+    virtual ~CountState();
 
-    virtual int64_t measure(int repeat=10);
+    void setCount(cl_int ncount);
+    cl_int getCount();
 
-    Worker & worker;
+    // Public immutable member.
+    cl_int       const size;
+
+    // Public OpenCL buffer for state access.
+    cl::Buffer         count;
+
+protected:
+
+    // Pinned memory for fast IO.
+    cl_int     *       stage;
 };
 
 } // namespace CL
 } // namespace CVD
 
-#endif /* __CVD_CL_WORKER_STEP_HH__ */
+#endif /* __CVD_CL_COUNT_STATE_HH__ */

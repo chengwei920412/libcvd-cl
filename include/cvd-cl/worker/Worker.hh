@@ -37,16 +37,21 @@ namespace CL  {
 class Worker : public boost::noncopyable {
 public:
 
-    explicit Worker(cl::Context & context, cl::Device & device, cl::CommandQueue & queue);
+    explicit Worker(cl::Device & device);
     virtual ~Worker();
+
+    void compile(cl::Program * program, cl::Kernel * kernel,
+                 char const  * source,  char const * name,
+                 char const  * options = "");
 
     void barrier();
     void finish();
 
     // Leave public for direct access by steps and states.
-    cl::Context      & context;
-    cl::Device       & device;
-    cl::CommandQueue & queue;
+    cl::Device               device;
+    std::vector<cl::Device>  devices;
+    cl::Context              context;
+    cl::CommandQueue         queue;
 };
 
 } // namespace CL

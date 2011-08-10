@@ -21,27 +21,38 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_WORKER_STEP_HH__
-#define __CVD_CL_WORKER_STEP_HH__
+#ifndef __CVD_CL_MATCH_STEP_HH__
+#define __CVD_CL_MATCH_STEP_HH__
 
-#include <cvd-cl/core/Step.hh>
-#include <cvd-cl/worker/Worker.hh>
+#include <cvd-cl/steps/HipsStep.hh>
 
 namespace CVD {
 namespace CL  {
 
-class WorkerStep : public Step {
+typedef ListState<cl_int> IntListState;
+
+class MatchStep : public WorkerStep {
 public:
 
-    explicit WorkerStep(Worker & worker);
-    virtual ~WorkerStep();
+    explicit MatchStep(HipsListState & ihips1, HipsListState & ihips2, IntListState & obest);
+    virtual ~MatchStep();
 
-    virtual int64_t measure(int repeat=10);
+    virtual void execute();
 
-    Worker & worker;
+protected:
+
+    // Inputs.
+    HipsListState  & ihips1;
+    HipsListState  & ihips2;
+
+    // Outputs.
+    IntListState   & obest;
+
+    cl::Program      program;
+    cl::Kernel       kernel;
 };
 
 } // namespace CL
 } // namespace CVD
 
-#endif /* __CVD_CL_WORKER_STEP_HH__ */
+#endif /* __CVD_CL_FIND_STEP_HH__ */
