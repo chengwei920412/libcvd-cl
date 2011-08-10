@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+#
 print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 //
 // Permission is hereby granted, free of charge, to any person
