@@ -108,7 +108,7 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
     CVD::CL::MatchStep       runMatch    (                                                            hips, hips, best);
 
     // Write image to device.
-    imageNeat.set(cropImage);
+    int64_t const timeWrite = imageNeat.measure(cropImage);
 
     // Run warmups.
     runBlur.measure();
@@ -143,7 +143,7 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
     CVD::ImageRef size2(nx * 2, ny);
 
     std::cerr << std::endl;
-    // std::cerr << std::setw(8) << timeWrite    << " us writing image" << std::endl;
+    std::cerr << std::setw(8) << timeWrite    << " us writing image" << std::endl;
     std::cerr << std::setw(8) << timeBlur     << " us blurring image" << std::endl;
     std::cerr << std::setw(8) << timePreFast  << " us culling corners" << std::endl;
     std::cerr << std::setw(8) << timeFast     << " us running FAST" << std::endl;

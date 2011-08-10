@@ -101,6 +101,27 @@ void ImageState::set(ByteSubImage const & image) {
     copyToWorker();
 }
 
+int64_t ImageState::measure(ByteSubImage const & image) {
+    CVD::ImageRef const size = image.size();
+
+    expect("ImageState::set() must be given an image of the same size",
+            this->size == size);
+
+    asImage().copy_from(image);
+
+    // Finish worker queue before starting timing.
+    worker.finish();
+
+    boost::system_time const t1 = boost::get_system_time();
+
+    copyToWorker();
+
+    // Finish worker queue before stopping timing.
+    worker.finish();
+    boost::system_time const t2 = boost::get_system_time();
+    return (t2 - t1).total_microseconds();
+}
+
 void ImageState::get(ByteSubImage       * image) {
     CVD::ImageRef const size = image->size();
 

@@ -26,6 +26,9 @@
 
 #include <cvd-cl/worker/WorkerState.hh>
 
+#include <boost/date_time.hpp>
+#include <boost/thread/thread_time.hpp>
+
 #include <cvd/byte.h>
 #include <cvd/image.h>
 
@@ -43,6 +46,8 @@ public:
 
     void set(ByteSubImage const & image);
     void get(ByteSubImage       * image);
+
+    int64_t measure(ByteSubImage const & image);
 
     ByteImage asImage();
 
