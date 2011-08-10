@@ -21,46 +21,33 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#include "cvd-cl/steps/FastStep.hh"
-#include "kernels/fast-gray.hh"
+#ifndef __CVD_CL_BLUR_STEP_HH__
+#define __CVD_CL_BLUR_STEP_HH__
+
+#include <cvd-cl/worker/WorkerStep.hh>
+#include <cvd-cl/states/ImageState.hh>
 
 namespace CVD {
 namespace CL  {
 
-FastStep::FastStep(GrayImageState & iimage, PointListState & ipoints, GrayImageState & oscores, PointListState & opoints) :
-    WorkerStep (iimage.worker),
-    iimage     (iimage),
-    ipoints    (ipoints),
-    oscores    (oscores),
-    opoints    (opoints)
-{
-    worker.compile(&program, &kernel, OCL_FAST_GRAY, "fast_gray");
-}
+class BlurGrayStep : public WorkerStep {
+public:
 
-FastStep::~FastStep() {
-    // Do nothing.
-}
+    explicit BlurGrayStep(GrayImageState & iimage, GrayImageState & oimage);
+    virtual ~BlurGrayStep();
 
-void FastStep::execute() {
-    // Assign kernel parameters.
-    kernel.setArg(0, iimage.image);
-    kernel.setArg(1, oscores.image);
-    kernel.setArg(2, ipoints.buffer);
-    kernel.setArg(3, opoints.buffer);
-    kernel.setArg(4, opoints.count);
+    virtual void execute();
 
-    // Read number of input points.
-    size_t const np = ipoints.getCount();
+protected:
 
-    // Reset number of output points.
-    opoints.setCount(0);
+    GrayImageState & iimage;
+    GrayImageState & oimage;
 
-    // Zero scores buffer (may be slow).
-    // oscores.zero();
-
-    // Queue kernel with global size set to number of input points.
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np), cl::NullRange);
-}
+    cl::Program      program;
+    cl::Kernel       kernel;
+};
 
 } // namespace CL
 } // namespace CVD
+
+#endif /* __CVD_CL_BLUR_STEP_HH__ */

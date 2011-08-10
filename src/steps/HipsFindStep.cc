@@ -21,40 +21,44 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#include "cvd-cl/steps/PreFastStep.hh"
-#include "kernels/prefast-gray.hh"
+#include "cvd-cl/steps/HipsFindStep.hh"
+#include "kernels/hips-find.hh"
 
 namespace CVD {
 namespace CL  {
 
-PreFastStep::PreFastStep(GrayImageState & image, PointListState & points) :
-    WorkerStep (image.worker),
-    image      (image),
-    points     (points)
+HipsFindStep::HipsFindStep(HipsListState & ihips1, HipsListState & ihips2, IntListState & obest) :
+    WorkerStep (ihips1.worker),
+    ihips1     (ihips1),
+    ihips2     (ihips2),
+    obest      (obest)
 {
-    worker.compile(&program, &kernel, OCL_PRE_FAST_GRAY, "prefast_gray");
+    worker.compile(&program, &kernel, OCL_HIPS_FIND, "hips_find");
 }
 
-PreFastStep::~PreFastStep() {
+HipsFindStep::~HipsFindStep() {
     // Do nothing.
 }
 
-void PreFastStep::execute() {
+void HipsFindStep::execute() {
     // Assign kernel parameters.
-    kernel.setArg(0, image.image);
-    kernel.setArg(1, points.buffer);
-    kernel.setArg(2, points.count);
+    kernel.setArg(0, ihips1.buffer);
+    kernel.setArg(1, ihips2.buffer);
+    kernel.setArg(2, obest.buffer);
 
-    // Read image dimensions.
-    size_t const nx = image.size.x;
-    size_t const ny = image.size.y;
+    // Read number of input points.
+    size_t const np1 = ihips1.getCount();
+    size_t const np2 = ihips2.getCount();
+
+    // Round down number of output points.
+    size_t const np1_16 = (np1 / 16) * 16;
 
     // Reset number of output points.
-    points.setCount(0);
+    // TODO: Generalise kernel to arbitrary sizes.
+    obest.setCount(np1_16);
 
-    // Queue kernel with square local size.
-    // 16x16 appears to give good performance on most devices.
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(nx, ny), cl::NDRange(16, 16));
+    // Queue kernel with global size set to number of input points.
+    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np1_16, 16), cl::NDRange(16, 16));
 }
 
 } // namespace CL

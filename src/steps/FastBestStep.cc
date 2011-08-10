@@ -21,13 +21,13 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#include "cvd-cl/steps/MaxFastStep.hh"
+#include "cvd-cl/steps/FastBestStep.hh"
 #include "kernels/fast-best.hh"
 
 namespace CVD {
 namespace CL  {
 
-MaxFastStep::MaxFastStep(GrayImageState & scores, PointListState & ipoints, PointListState & opoints) :
+FastBestStep::FastBestStep(GrayImageState & scores, PointListState & ipoints, PointListState & opoints) :
     WorkerStep (scores.worker),
     iscores    (scores),
     ipoints    (ipoints),
@@ -36,11 +36,11 @@ MaxFastStep::MaxFastStep(GrayImageState & scores, PointListState & ipoints, Poin
     worker.compile(&program, &kernel, OCL_FAST_BEST, "fast_best");
 }
 
-MaxFastStep::~MaxFastStep() {
+FastBestStep::~FastBestStep() {
     // Do nothing.
 }
 
-void MaxFastStep::execute() {
+void FastBestStep::execute() {
     // Assign kernel parameters.
     kernel.setArg(0, iscores.image);
     kernel.setArg(1, ipoints.buffer);

@@ -21,33 +21,41 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_BLUR_STEP_HH__
-#define __CVD_CL_BLUR_STEP_HH__
-
-#include <cvd-cl/worker/WorkerStep.hh>
-#include <cvd-cl/states/ImageState.hh>
+#include "cvd-cl/steps/PreFastGrayStep.hh"
+#include "kernels/prefast-gray.hh"
 
 namespace CVD {
 namespace CL  {
 
-class BlurStep : public WorkerStep {
-public:
+PreFastGrayStep::PreFastGrayStep(GrayImageState & image, PointListState & points) :
+    WorkerStep (image.worker),
+    image      (image),
+    points     (points)
+{
+    worker.compile(&program, &kernel, OCL_PRE_FAST_GRAY, "prefast_gray");
+}
 
-    explicit BlurStep(GrayImageState & iimage, GrayImageState & oimage);
-    virtual ~BlurStep();
+PreFastGrayStep::~PreFastGrayStep() {
+    // Do nothing.
+}
 
-    virtual void execute();
+void PreFastGrayStep::execute() {
+    // Assign kernel parameters.
+    kernel.setArg(0, image.image);
+    kernel.setArg(1, points.buffer);
+    kernel.setArg(2, points.count);
 
-protected:
+    // Read image dimensions.
+    size_t const nx = image.size.x;
+    size_t const ny = image.size.y;
 
-    GrayImageState & iimage;
-    GrayImageState & oimage;
+    // Reset number of output points.
+    points.setCount(0);
 
-    cl::Program      program;
-    cl::Kernel       kernel;
-};
+    // Queue kernel with square local size.
+    // 16x16 appears to give good performance on most devices.
+    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(nx, ny), cl::NDRange(16, 16));
+}
 
 } // namespace CL
 } // namespace CVD
-
-#endif /* __CVD_CL_BLUR_STEP_HH__ */

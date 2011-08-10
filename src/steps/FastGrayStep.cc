@@ -21,41 +21,45 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#include "cvd-cl/steps/BlurStep.hh"
-#include "cvd-cl/core/Expect.hh"
-#include "kernels/blur-gray.hh"
+#include "cvd-cl/steps/FastGrayStep.hh"
+#include "kernels/fast-gray.hh"
 
 namespace CVD {
 namespace CL  {
 
-BlurStep::BlurStep(GrayImageState & imagei, GrayImageState & imageo) :
-    WorkerStep (imagei.worker),
-    iimage     (imagei),
-    oimage     (imageo)
+FastGrayStep::FastGrayStep(GrayImageState & iimage, PointListState & ipoints, GrayImageState & oscores, PointListState & opoints) :
+    WorkerStep (iimage.worker),
+    iimage     (iimage),
+    ipoints    (ipoints),
+    oscores    (oscores),
+    opoints    (opoints)
 {
-    // Expect identical image dimensions.
-    expect("BlurStep::BlurStep() must have identical image sizes",
-        imagei.size == imageo.size);
-
-    worker.compile(&program, &kernel, OCL_BLUR_GRAY, "blur_gray");
+    worker.compile(&program, &kernel, OCL_FAST_GRAY, "fast_gray");
 }
 
-BlurStep::~BlurStep() {
+FastGrayStep::~FastGrayStep() {
     // Do nothing.
 }
 
-void BlurStep::execute() {
+void FastGrayStep::execute() {
     // Assign kernel parameters.
     kernel.setArg(0, iimage.image);
-    kernel.setArg(1, oimage.image);
+    kernel.setArg(1, oscores.image);
+    kernel.setArg(2, ipoints.buffer);
+    kernel.setArg(3, opoints.buffer);
+    kernel.setArg(4, opoints.count);
 
-    // Read image dimensions.
-    size_t const nx = iimage.size.x;
-    size_t const ny = iimage.size.y;
+    // Read number of input points.
+    size_t const np = ipoints.getCount();
 
-    // Queue kernel with square local size.
-    // 16x16 appears to give good performance on most devices.
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(nx, ny), cl::NDRange(16, 16));
+    // Reset number of output points.
+    opoints.setCount(0);
+
+    // Zero scores buffer (may be slow).
+    // oscores.zero();
+
+    // Queue kernel with global size set to number of input points.
+    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np), cl::NullRange);
 }
 
 } // namespace CL

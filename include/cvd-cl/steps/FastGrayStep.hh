@@ -24,16 +24,16 @@
 #ifndef __CVD_CL_FAST_STEP_HH__
 #define __CVD_CL_FAST_STEP_HH__
 
-#include <cvd-cl/steps/PreFastStep.hh>
+#include <cvd-cl/steps/PreFastGrayStep.hh>
 
 namespace CVD {
 namespace CL  {
 
-class FastStep : public WorkerStep {
+class FastGrayStep : public WorkerStep {
 public:
 
-    explicit FastStep(GrayImageState & iimage, PointListState & ipoints, GrayImageState & oscores, PointListState & opoints);
-    virtual ~FastStep();
+    explicit FastGrayStep(GrayImageState & iimage, PointListState & ipoints, GrayImageState & oscores, PointListState & opoints);
+    virtual ~FastGrayStep();
 
     virtual void execute();
 

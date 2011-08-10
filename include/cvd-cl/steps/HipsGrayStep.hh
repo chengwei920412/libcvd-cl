@@ -21,40 +21,38 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#include "cvd-cl/steps/HipsStep.hh"
-#include "kernels/hips-gray.hh"
+#ifndef __CVD_CL_HIPS_STEP_HH__
+#define __CVD_CL_HIPS_STEP_HH__
+
+#include <cvd-cl/steps/PreFastGrayStep.hh>
 
 namespace CVD {
 namespace CL  {
 
-HipsStep::HipsStep(GrayImageState & iimage, PointListState & ipoints, HipsListState & ohips) :
-    WorkerStep (iimage.worker),
-    iimage     (iimage),
-    ipoints    (ipoints),
-    ohips      (ohips)
-{
-    worker.compile(&program, &kernel, OCL_HIPS_GRAY, "hips_gray");
-}
+typedef ListState<cl_ulong4> HipsListState;
 
-HipsStep::~HipsStep() {
-    // Do nothing.
-}
+class HipsGrayStep : public WorkerStep {
+public:
 
-void HipsStep::execute() {
-    // Assign kernel parameters.
-    kernel.setArg(0, iimage.image);
-    kernel.setArg(1, ipoints.buffer);
-    kernel.setArg(2, ohips.buffer);
+    explicit HipsGrayStep(GrayImageState & iimage, PointListState & ipoints, HipsListState & ohips);
+    virtual ~HipsGrayStep();
 
-    // Read number of input points.
-    size_t const np = ipoints.getCount();
+    virtual void execute();
 
-    // Reset number of output points.
-    ohips.setCount(np);
+protected:
 
-    // Queue kernel with global size set to number of input points.
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np), cl::NullRange);
-}
+    // Inputs.
+    GrayImageState & iimage;
+    PointListState & ipoints;
+
+    // Outputs.
+    HipsListState  & ohips;
+
+    cl::Program      program;
+    cl::Kernel       kernel;
+};
 
 } // namespace CL
 } // namespace CVD
+
+#endif /* __CVD_CL_HIPS_STEP_HH__ */

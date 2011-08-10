@@ -21,30 +21,33 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_MAX_FAST_STEP_HH__
-#define __CVD_CL_MAX_FAST_STEP_HH__
+#ifndef __CVD_CL_PRE_FAST_STEP_HH__
+#define __CVD_CL_PRE_FAST_STEP_HH__
 
-#include <cvd-cl/steps/PreFastStep.hh>
+#include <cvd-cl/worker/WorkerStep.hh>
+#include <cvd-cl/states/ImageState.hh>
+#include <cvd-cl/states/ListState.hh>
 
 namespace CVD {
 namespace CL  {
 
-class MaxFastStep : public WorkerStep {
+typedef ListState<cl_int2> PointListState;
+
+class PreFastGrayStep : public WorkerStep {
 public:
 
-    explicit MaxFastStep(GrayImageState & iscores, PointListState & ipoints, PointListState & opoints);
-    virtual ~MaxFastStep();
+    explicit PreFastGrayStep(GrayImageState & image, PointListState & points);
+    virtual ~PreFastGrayStep();
 
     virtual void execute();
 
 protected:
 
     // Inputs.
-    GrayImageState & iscores;
-    PointListState & ipoints;
+    GrayImageState & image;
 
     // Outputs.
-    PointListState & opoints;
+    PointListState & points;
 
     cl::Program      program;
     cl::Kernel       kernel;
@@ -53,4 +56,4 @@ protected:
 } // namespace CL
 } // namespace CVD
 
-#endif /* __CVD_CL_MAX_FAST_STEP_HH__ */
+#endif /* __CVD_CL_PRE_FAST_STEP_HH__ */

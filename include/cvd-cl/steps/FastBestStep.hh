@@ -21,45 +21,36 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#include "cvd-cl/steps/MatchStep.hh"
-#include "kernels/hips-find.hh"
+#ifndef __CVD_CL_MAX_FAST_STEP_HH__
+#define __CVD_CL_MAX_FAST_STEP_HH__
+
+#include <cvd-cl/steps/PreFastGrayStep.hh>
 
 namespace CVD {
 namespace CL  {
 
-MatchStep::MatchStep(HipsListState & ihips1, HipsListState & ihips2, IntListState & obest) :
-    WorkerStep (ihips1.worker),
-    ihips1     (ihips1),
-    ihips2     (ihips2),
-    obest      (obest)
-{
-    worker.compile(&program, &kernel, OCL_HIPS_FIND, "hips_find");
-}
+class FastBestStep : public WorkerStep {
+public:
 
-MatchStep::~MatchStep() {
-    // Do nothing.
-}
+    explicit FastBestStep(GrayImageState & iscores, PointListState & ipoints, PointListState & opoints);
+    virtual ~FastBestStep();
 
-void MatchStep::execute() {
-    // Assign kernel parameters.
-    kernel.setArg(0, ihips1.buffer);
-    kernel.setArg(1, ihips2.buffer);
-    kernel.setArg(2, obest.buffer);
+    virtual void execute();
 
-    // Read number of input points.
-    size_t const np1 = ihips1.getCount();
-    size_t const np2 = ihips2.getCount();
+protected:
 
-    // Round down number of output points.
-    size_t const np1_16 = (np1 / 16) * 16;
+    // Inputs.
+    GrayImageState & iscores;
+    PointListState & ipoints;
 
-    // Reset number of output points.
-    // TODO: Generalise kernel to arbitrary sizes.
-    obest.setCount(np1_16);
+    // Outputs.
+    PointListState & opoints;
 
-    // Queue kernel with global size set to number of input points.
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np1_16, 16), cl::NDRange(16, 16));
-}
+    cl::Program      program;
+    cl::Kernel       kernel;
+};
 
 } // namespace CL
 } // namespace CVD
+
+#endif /* __CVD_CL_MAX_FAST_STEP_HH__ */

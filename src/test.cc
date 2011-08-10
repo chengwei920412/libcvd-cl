@@ -31,12 +31,12 @@
 #include <cvd/image_io.h>
 #include <cvd/videodisplay.h>
 
-#include <cvd-cl/steps/BlurStep.hh>
-#include <cvd-cl/steps/PreFastStep.hh>
-#include <cvd-cl/steps/FastStep.hh>
-#include <cvd-cl/steps/MaxFastStep.hh>
-#include <cvd-cl/steps/HipsStep.hh>
-#include <cvd-cl/steps/MatchStep.hh>
+#include <cvd-cl/steps/BlurGrayStep.hh>
+#include <cvd-cl/steps/PreFastGrayStep.hh>
+#include <cvd-cl/steps/FastGrayStep.hh>
+#include <cvd-cl/steps/FastBestStep.hh>
+#include <cvd-cl/steps/HipsGrayStep.hh>
+#include <cvd-cl/steps/HipsFindStep.hh>
 
 #include <boost/foreach.hpp>
 
@@ -101,12 +101,12 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
     CVD::CL::IntListState    best        (worker, nxy);
 
     // Create steps.
-    CVD::CL::BlurStep        runBlur     (imageNeat, imageBlur);
-    CVD::CL::PreFastStep     runPreFast  (           imageBlur, corners1);
-    CVD::CL::FastStep        runFast     (           imageBlur, corners1, scores, corners2);
-    CVD::CL::MaxFastStep     runMaxFast  (                                scores, corners2, corners3);
-    CVD::CL::HipsStep        runHips     (           imageBlur,                             corners3, hips);
-    CVD::CL::MatchStep       runMatch    (                                                            hips, hips, best);
+    CVD::CL::BlurGrayStep    runBlur     (imageNeat, imageBlur);
+    CVD::CL::PreFastGrayStep runPreFast  (           imageBlur, corners1);
+    CVD::CL::FastGrayStep    runFast     (           imageBlur, corners1, scores, corners2);
+    CVD::CL::FastBestStep    runMaxFast  (                                scores, corners2, corners3);
+    CVD::CL::HipsGrayStep    runHips     (           imageBlur,                             corners3, hips);
+    CVD::CL::HipsFindStep    runMatch    (                                                            hips, hips, best);
 
     // Write image to device.
     boost::system_time const t1 = boost::get_system_time();

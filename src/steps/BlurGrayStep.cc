@@ -21,38 +21,42 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_HIPS_STEP_HH__
-#define __CVD_CL_HIPS_STEP_HH__
-
-#include <cvd-cl/steps/PreFastStep.hh>
+#include "cvd-cl/steps/BlurGrayStep.hh"
+#include "cvd-cl/core/Expect.hh"
+#include "kernels/blur-gray.hh"
 
 namespace CVD {
 namespace CL  {
 
-typedef ListState<cl_ulong4> HipsListState;
+BlurGrayStep::BlurGrayStep(GrayImageState & imagei, GrayImageState & imageo) :
+    WorkerStep (imagei.worker),
+    iimage     (imagei),
+    oimage     (imageo)
+{
+    // Expect identical image dimensions.
+    expect("BlurGrayStep::BlurGrayStep() must have identical image sizes",
+        imagei.size == imageo.size);
 
-class HipsStep : public WorkerStep {
-public:
+    worker.compile(&program, &kernel, OCL_BLUR_GRAY, "blur_gray");
+}
 
-    explicit HipsStep(GrayImageState & iimage, PointListState & ipoints, HipsListState & ohips);
-    virtual ~HipsStep();
+BlurGrayStep::~BlurGrayStep() {
+    // Do nothing.
+}
 
-    virtual void execute();
+void BlurGrayStep::execute() {
+    // Assign kernel parameters.
+    kernel.setArg(0, iimage.image);
+    kernel.setArg(1, oimage.image);
 
-protected:
+    // Read image dimensions.
+    size_t const nx = iimage.size.x;
+    size_t const ny = iimage.size.y;
 
-    // Inputs.
-    GrayImageState & iimage;
-    PointListState & ipoints;
-
-    // Outputs.
-    HipsListState  & ohips;
-
-    cl::Program      program;
-    cl::Kernel       kernel;
-};
+    // Queue kernel with square local size.
+    // 16x16 appears to give good performance on most devices.
+    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(nx, ny), cl::NDRange(16, 16));
+}
 
 } // namespace CL
 } // namespace CVD
-
-#endif /* __CVD_CL_HIPS_STEP_HH__ */
