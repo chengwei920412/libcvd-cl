@@ -43,6 +43,9 @@ CountState::CountState(Worker & worker, cl_int size) :
 
     // Re-interpret memory pointer.
     stage = reinterpret_cast<cl_int *>(data);
+
+    // Reset counter.
+    setCount(0);
 }
 
 CountState::~CountState() {
