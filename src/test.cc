@@ -111,6 +111,9 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
     // Write image to device.
     int64_t const timeWrite = imageNeat.measure(cropImage);
 
+    // Zero FAST scores.
+    scores.zero();
+
     // Run warmups.
     runBlur.measure();
     runPreFast.measure();
