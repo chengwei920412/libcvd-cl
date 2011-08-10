@@ -22,7 +22,7 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 
 #include "cvd-cl/steps/FastStep.hh"
-#include "kernels/fast.hh"
+#include "kernels/fast-gray.hh"
 
 namespace CVD {
 namespace CL  {
@@ -34,7 +34,7 @@ FastStep::FastStep(GrayImageState & iimage, PointListState & ipoints, GrayImageS
     oscores    (oscores),
     opoints    (opoints)
 {
-    worker.compile(&program, &kernel, OCL_FAST, "fast_gray_9");
+    worker.compile(&program, &kernel, OCL_FAST_GRAY, "fast_gray");
 }
 
 FastStep::~FastStep() {

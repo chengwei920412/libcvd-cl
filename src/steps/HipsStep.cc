@@ -22,7 +22,7 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 
 #include "cvd-cl/steps/HipsStep.hh"
-#include "kernels/hips.hh"
+#include "kernels/hips-gray.hh"
 
 namespace CVD {
 namespace CL  {
@@ -33,7 +33,7 @@ HipsStep::HipsStep(GrayImageState & iimage, PointListState & ipoints, HipsListSt
     ipoints    (ipoints),
     ohips      (ohips)
 {
-    worker.compile(&program, &kernel, OCL_HIPS, "hips_gray");
+    worker.compile(&program, &kernel, OCL_HIPS_GRAY, "hips_gray");
 }
 
 HipsStep::~HipsStep() {

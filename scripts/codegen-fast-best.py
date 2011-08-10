@@ -26,7 +26,7 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // Enable OpenCL 32-bit integer atomic functions.
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 
-kernel void fast_filter(
+kernel void fast_best(
     read_only  image2d_t   scores,
     global     int2      * corners,
     global     int2      * filtered,

@@ -10,16 +10,16 @@ SOURCES  = $(shell ls src/*/*.cc)
 all:
 	mkdir -p obj bin
 
-	scripts/codegen-blur.py | tee opencl/blur.cl | scripts/embed.py OCL_BLUR > src/kernels/blur.hh
-	scripts/codegen-cull.py | tee opencl/cull.cl | scripts/embed.py OCL_CULL > src/kernels/cull.hh
-	scripts/codegen-fast.py | tee opencl/fast.cl | scripts/embed.py OCL_FAST > src/kernels/fast.hh
-	scripts/codegen-filt.py | tee opencl/filt.cl | scripts/embed.py OCL_FILT > src/kernels/filt.hh
-	scripts/codegen-hips.py | tee opencl/hips.cl | scripts/embed.py OCL_HIPS > src/kernels/hips.hh
-	scripts/codegen-find.py | tee opencl/find.cl | scripts/embed.py OCL_FIND > src/kernels/find.hh
+	scripts/codegen-blur-gray.py     | tee opencl/blur-gray.cl     | scripts/embed.py OCL_BLUR_GRAY      > src/kernels/blur-gray.hh
+	scripts/codegen-prefast-gray.py  | tee opencl/prefast-gray.cl  | scripts/embed.py OCL_PRE_FAST_GRAY  > src/kernels/prefast-gray.hh
+	scripts/codegen-fast-gray.py     | tee opencl/fast-gray.cl     | scripts/embed.py OCL_FAST_GRAY      > src/kernels/fast-gray.hh
+	scripts/codegen-fast-best.py     | tee opencl/fast-best.cl     | scripts/embed.py OCL_FAST_BEST      > src/kernels/fast-best.hh
+	scripts/codegen-hips-gray.py     | tee opencl/hips-gray.cl     | scripts/embed.py OCL_HIPS_GRAY      > src/kernels/hips-gray.hh
+	scripts/codegen-hips-find.py     | tee opencl/hips-find.cl     | scripts/embed.py OCL_HIPS_FIND      > src/kernels/hips-find.hh
 
-	scripts/codegen-cholesky.py 3 | tee opencl/cholesky3.cl | scripts/embed.py OCL_CHOLESKY_3 > src/kernels/cholesky3.hh
-	scripts/codegen-cholesky.py 4 | tee opencl/cholesky4.cl | scripts/embed.py OCL_CHOLESKY_4 > src/kernels/cholesky4.hh
-	scripts/codegen-cholesky.py 5 | tee opencl/cholesky5.cl | scripts/embed.py OCL_CHOLESKY_5 > src/kernels/cholesky5.hh
+	scripts/codegen-cholesky.py 3    | tee opencl/cholesky3.cl     | scripts/embed.py OCL_CHOLESKY_3     > src/kernels/cholesky3.hh
+	scripts/codegen-cholesky.py 4    | tee opencl/cholesky4.cl     | scripts/embed.py OCL_CHOLESKY_4     > src/kernels/cholesky4.hh
+	scripts/codegen-cholesky.py 5    | tee opencl/cholesky5.cl     | scripts/embed.py OCL_CHOLESKY_5     > src/kernels/cholesky5.hh
 
 	g++ -shared -fPIC -o bin/libcvdcl.so $(CFLAGS) $(LIBS) $(SOURCES)
 
@@ -27,4 +27,4 @@ all:
 	g++ -o bin/test-cholesky $(CFLAGS) $(LIBS) bin/libcvdcl.so src/cholesky.cc
 
 clean:
-	rm -rf obj bin
+	rm -rfv obj bin src/kernels/*.hh src/opencl/*.cl

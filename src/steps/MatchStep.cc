@@ -22,7 +22,7 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 
 #include "cvd-cl/steps/MatchStep.hh"
-#include "kernels/find.hh"
+#include "kernels/hips-find.hh"
 
 namespace CVD {
 namespace CL  {
@@ -33,7 +33,7 @@ MatchStep::MatchStep(HipsListState & ihips1, HipsListState & ihips2, IntListStat
     ihips2     (ihips2),
     obest      (obest)
 {
-    worker.compile(&program, &kernel, OCL_FIND, "hips_find");
+    worker.compile(&program, &kernel, OCL_HIPS_FIND, "hips_find");
 }
 
 MatchStep::~MatchStep() {

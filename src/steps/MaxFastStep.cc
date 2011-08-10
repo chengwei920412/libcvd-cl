@@ -22,7 +22,7 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 
 #include "cvd-cl/steps/MaxFastStep.hh"
-#include "kernels/filt.hh"
+#include "kernels/fast-best.hh"
 
 namespace CVD {
 namespace CL  {
@@ -33,7 +33,7 @@ MaxFastStep::MaxFastStep(GrayImageState & scores, PointListState & ipoints, Poin
     ipoints    (ipoints),
     opoints    (opoints)
 {
-    worker.compile(&program, &kernel, OCL_FILT, "fast_filter");
+    worker.compile(&program, &kernel, OCL_FAST_BEST, "fast_best");
 }
 
 MaxFastStep::~MaxFastStep() {

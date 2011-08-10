@@ -23,7 +23,7 @@
 
 #include "cvd-cl/steps/BlurStep.hh"
 #include "cvd-cl/core/Expect.hh"
-#include "kernels/blur.hh"
+#include "kernels/blur-gray.hh"
 
 namespace CVD {
 namespace CL  {
@@ -37,7 +37,7 @@ BlurStep::BlurStep(GrayImageState & imagei, GrayImageState & imageo) :
     expect("BlurStep::BlurStep() must have identical image sizes",
         imagei.size == imageo.size);
 
-    worker.compile(&program, &kernel, OCL_BLUR, "blur_gray");
+    worker.compile(&program, &kernel, OCL_BLUR_GRAY, "blur_gray");
 }
 
 BlurStep::~BlurStep() {

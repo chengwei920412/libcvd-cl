@@ -24,12 +24,24 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 # 2D offsets from "corner" candidate pixel.
-# Corresponds to SUBSET OF lines 17-32 in fast_9_detect.cxx
+# Corresponds to lines 17-32 in fast_9_detect.cxx
 OFFSETS = [
     ( 0,  3),
+    ( 1,  3),
+    ( 2,  2),
+    ( 3,  1),
     ( 3,  0),
+    ( 3, -1),
+    ( 2, -2),
+    ( 1, -3),
     ( 0, -3),
+    (-1, -3),
+    (-2, -2),
+    (-3, -1),
     (-3,  0),
+    (-3,  1),
+    (-2,  2),
+    (-1,  3),
 ]
 
 print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
@@ -61,19 +73,37 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // Specify a threshold for pixel difference.
 #define THRESH  60
 
-kernel void cull_gray(
+// Generate bitwise mask of n bits.
+int mask(int n) {
+    return ((1 << n) - 1);
+}
+
+// Create a bitwise mask of n bits, rotated by r bits, in a ring of w bits.
+int mask_turn(int n, int w, int r) {
+    int const m = mask(n);
+    return (((m << r) | (m >> (w - r))) & mask(w));
+}
+
+// Test a value x against a bitwise mask of n bits, rotated by r bits, in a ring of w bits.
+int mask_test(int x, int n, int w, int r) {
+    int const m = mask_turn(n, w, r);
+    return ((x & m) == m);
+}
+
+kernel void fast_gray(
     read_only  image2d_t   image,
+    write_only image2d_t   scores,
     global     int2      * corners,
+    global     int2      * filtered,
     global     int       * icorner
 ) {
 
     // Prepare a suitable OpenCL image sampler.
     sampler_t const sampler = CLK_ADDRESS_CLAMP | CLK_FILTER_NEAREST;
 
-    // Use global work item as 2D image coordinates.
-    int  const x   = get_global_id(0);
-    int  const y   = get_global_id(1);
-    int2 const xy  = (int2)(x, y);
+    // Use global work item as corner index.
+    int  const ic  = get_global_id(0);
+    int2 const xy  = corners[ic];
 
     // Read the candidate pixel.
     int  const p00 = read_imageui(image, sampler, xy).x;
@@ -85,22 +115,43 @@ for (shift, (x, y)) in enumerate(OFFSETS):
     print ("    int  const p%02d = read_imageui(image, sampler, xy + (int2)(%2d, %2d)).x;" % (shift + 1, x, y))
 print
 
-print "    // Check the absolute difference of each circle pixel."
+print "    // Calculate the absolute difference of each circle pixel."
 for (shift, _) in enumerate(OFFSETS):
-    print ("    int  const d%02d = (abs(p%02d - p00) > THRESH);" % (shift + 1, shift + 1))
+    print ("    int  const d%02d = abs(p%02d - p00);" % (shift + 1, shift + 1))
 print
 
-print "    // Check if any two adjacent circle pixels have a high absolute difference."
+print "    // Select the maximum difference."
+print "    int        sco = 0;"
+for (shift, _) in enumerate(OFFSETS):
+    print "               sco = max(sco, d%02d);" % (shift + 1)
+print
+
+print "    // Record maximum difference as score."
+print "    write_imageui(scores, xy, (uint4)(sco, 0, 0, 0));"
+print
+
+print "    // Threshold the absolute difference of each circle pixel."
+print "    int  const sum = ("
+print " |\n".join([
+    ("        ((d%02d > THRESH) << %2d)" % (shift + 1, shift))
+    for shift in range(0, 16)
+])
+
+print "    );"
+print
+
+print "    // Check if at least one mask applies entirely."
 print "    int  const yes = ("
 print " ||\n".join([
-    ("        (d%02d && d%02d)" % (shift + 1, ((shift + 1) % len(OFFSETS)) + 1))
-    for (shift, _) in enumerate(OFFSETS)
+    ("        mask_test(sum, 9, 16, %2d)" % (shift))
+    for shift in range(0, 16)
 ])
-print """    );
+print "    );"
 
+print """
     if (yes) {
         // Atomically append to corner buffer.
-        corners[atom_inc(icorner)] = xy;
+        filtered[atom_inc(icorner)] = xy;
     }
 }
 """

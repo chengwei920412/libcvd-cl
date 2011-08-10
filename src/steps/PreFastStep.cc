@@ -22,7 +22,7 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 
 #include "cvd-cl/steps/PreFastStep.hh"
-#include "kernels/cull.hh"
+#include "kernels/prefast-gray.hh"
 
 namespace CVD {
 namespace CL  {
@@ -32,7 +32,7 @@ PreFastStep::PreFastStep(GrayImageState & image, PointListState & points) :
     image      (image),
     points     (points)
 {
-    worker.compile(&program, &kernel, OCL_CULL, "cull_gray");
+    worker.compile(&program, &kernel, OCL_PRE_FAST_GRAY, "prefast_gray");
 }
 
 PreFastStep::~PreFastStep() {
