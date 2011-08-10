@@ -13,7 +13,9 @@ all:
 	scripts/codegen-blur-gray.py     | tee opencl/blur-gray.cl     | scripts/embed.py OCL_BLUR_GRAY      > src/kernels/blur-gray.hh
 	scripts/codegen-blur-rich.py     | tee opencl/blur-rich.cl     | scripts/embed.py OCL_BLUR_RICH      > src/kernels/blur-rich.hh
 	scripts/codegen-prefast-gray.py  | tee opencl/prefast-gray.cl  | scripts/embed.py OCL_PRE_FAST_GRAY  > src/kernels/prefast-gray.hh
+	scripts/codegen-prefast-rich.py  | tee opencl/prefast-rich.cl  | scripts/embed.py OCL_PRE_FAST_RICH  > src/kernels/prefast-rich.hh
 	scripts/codegen-fast-gray.py     | tee opencl/fast-gray.cl     | scripts/embed.py OCL_FAST_GRAY      > src/kernels/fast-gray.hh
+	scripts/codegen-fast-rich.py     | tee opencl/fast-rich.cl     | scripts/embed.py OCL_FAST_RICH      > src/kernels/fast-rich.hh
 	scripts/codegen-fast-best.py     | tee opencl/fast-best.cl     | scripts/embed.py OCL_FAST_BEST      > src/kernels/fast-best.hh
 	scripts/codegen-hips-gray.py     | tee opencl/hips-gray.cl     | scripts/embed.py OCL_HIPS_GRAY      > src/kernels/hips-gray.hh
 	scripts/codegen-hips-find.py     | tee opencl/hips-find.cl     | scripts/embed.py OCL_HIPS_FIND      > src/kernels/hips-find.hh

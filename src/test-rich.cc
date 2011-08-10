@@ -22,6 +22,9 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 
 #include <cvd-cl/steps/BlurRichStep.hh>
+#include <cvd-cl/steps/PreFastRichStep.hh>
+#include <cvd-cl/steps/FastRichStep.hh>
+#include <cvd-cl/steps/FastBestStep.hh>
 
 #include <iomanip>
 #include <iostream>
@@ -49,15 +52,22 @@ static void testRich(Image const & image, cl::Device & device) {
 
     // Create states.
     CVD::CL::RichImageState  imageNeat   (worker, size);
-    CVD::CL::RichImageState  imageBlur1  (worker, size);
-    CVD::CL::RichImageState  imageBlur2  (worker, size);
-    CVD::CL::RichImageState  imageBlur3  (worker, size);
+    CVD::CL::RichImageState  imageBlur   (worker, size);
+    CVD::CL::GrayImageState  scores      (worker, size);
+    CVD::CL::PointListState  corners1    (worker, nxy);
+    CVD::CL::PointListState  corners2    (worker, nxy);
+    CVD::CL::PointListState  corners3    (worker, nxy);
 
     // Create steps.
-    CVD::CL::BlurRichStep    runBlur1    (imageNeat,  imageBlur1);
-    CVD::CL::BlurRichStep    runBlur2    (imageBlur1, imageBlur2);
-    CVD::CL::BlurRichStep    runBlur3    (imageBlur2, imageBlur3);
+    CVD::CL::BlurRichStep    runBlur     (imageNeat, imageBlur);
+    CVD::CL::PreFastRichStep runPreFast  (           imageBlur, corners1);
+    CVD::CL::FastRichStep    runFast     (           imageBlur, corners1, scores, corners2);
+    CVD::CL::FastBestStep    runMaxFast  (                                scores, corners2, corners3);
 
+    // Zero FAST scores.
+    scores.zero();
+
+    // Prepare image for writing to device.
     imageNeat.set(image);
 
     // Write image to device.
@@ -67,25 +77,39 @@ static void testRich(Image const & image, cl::Device & device) {
     int64_t const timeWrite      = (t2 - t1).total_microseconds();
 
     // Run warmups.
-    runBlur1.execute();
-    runBlur2.execute();
-    runBlur3.execute();
+    runBlur.measure();
+    runPreFast.measure();
+    corners1.getCount();
+    runFast.measure();
+    corners2.getCount();
+    runMaxFast.measure();
+    corners3.getCount();
 
     // Run and time steps.
-    int64_t const timeBlur1      = runBlur1.measure();
-    int64_t const timeBlur2      = runBlur2.measure();
-    int64_t const timeBlur3      = runBlur3.measure();
+    int64_t const timeBlur     = runBlur.measure();
+    int64_t const timePreFast  = runPreFast.measure();
+    cl_int  const nculled      = corners1.getCount();
+    int64_t const timeFast     = runFast.measure();
+    cl_int  const nfasted      = corners2.getCount();
+    int64_t const timeMaxFast  = runMaxFast.measure();
+    cl_int  const nfilted      = corners3.getCount();
 
     std::cerr << std::endl;
     std::cerr << std::setw(8) << timeWrite    << " us writing image" << std::endl;
-    std::cerr << std::setw(8) << timeBlur1    << " us blurring image (1)" << std::endl;
-    std::cerr << std::setw(8) << timeBlur2    << " us blurring image (2)" << std::endl;
-    std::cerr << std::setw(8) << timeBlur3    << " us blurring image (3)" << std::endl;
+    std::cerr << std::setw(8) << timeBlur     << " us blurring image" << std::endl;
+    std::cerr << std::setw(8) << timePreFast  << " us culling corners" << std::endl;
+    std::cerr << std::setw(8) << timeFast     << " us running FAST" << std::endl;
+    std::cerr << std::setw(8) << timeMaxFast  << " us filtering corners" << std::endl;
+    std::cerr << std::endl;
+    std::cerr << std::setw(8) << nxy     << " corner candidates in image" << std::endl;
+    std::cerr << std::setw(8) << nculled << " corners after culling" << std::endl;
+    std::cerr << std::setw(8) << nfasted << " corners after FAST" << std::endl;
+    std::cerr << std::setw(8) << nfilted << " corners after filtering" << std::endl;
     std::cerr << std::endl;
 
     // Read blurred image.
     Image image2(size);
-    imageBlur3.get(&image2);
+    imageBlur.get(&image2);
 
     CVD::ImageRef const size2(nx * 2, ny);
     CVD::VideoDisplay window(size2);
