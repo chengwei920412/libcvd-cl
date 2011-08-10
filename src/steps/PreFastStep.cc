@@ -27,7 +27,7 @@
 namespace CVD {
 namespace CL  {
 
-PreFastStep::PreFastStep(ImageState & image, PointListState & points) :
+PreFastStep::PreFastStep(GrayImageState & image, PointListState & points) :
     WorkerStep (image.worker),
     image      (image),
     points     (points)

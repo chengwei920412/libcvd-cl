@@ -32,7 +32,7 @@ namespace CL  {
 class MaxFastStep : public WorkerStep {
 public:
 
-    explicit MaxFastStep(ImageState & iscores, PointListState & ipoints, PointListState & opoints);
+    explicit MaxFastStep(GrayImageState & iscores, PointListState & ipoints, PointListState & opoints);
     virtual ~MaxFastStep();
 
     virtual void execute();
@@ -40,7 +40,7 @@ public:
 protected:
 
     // Inputs.
-    ImageState     & iscores;
+    GrayImageState & iscores;
     PointListState & ipoints;
 
     // Outputs.

@@ -24,47 +24,54 @@
 #ifndef __CVD_CL_IMAGE_STATE_HH__
 #define __CVD_CL_IMAGE_STATE_HH__
 
-#include <cvd-cl/worker/WorkerState.hh>
+#include <cvd-cl/states/BaseImageState.hh>
+#include <cvd-cl/tools/ImageFormats.hh>
 
 #include <boost/date_time.hpp>
 #include <boost/thread/thread_time.hpp>
 
-#include <cvd/byte.h>
-#include <cvd/image.h>
-
 namespace CVD {
 namespace CL  {
 
-typedef CVD::BasicImage<CVD::byte> ByteImage;
-typedef CVD::SubImage<CVD::byte> ByteSubImage;
-
-class ImageState : public WorkerState {
+template<class Pixel>
+class ImageState : public BaseImageState {
 public:
 
-    explicit ImageState(Worker & worker, CVD::ImageRef const & size);
-    virtual ~ImageState();
+    // Convenient type aliases.
+    typedef CVD::BasicImage <Pixel> AsBasic;
+    typedef CVD::SubImage   <Pixel> AsSub;
 
-    void set(ByteSubImage const & image);
-    void get(ByteSubImage       * image);
+    ::cl_channel_order const static clChannelOrder = CVD2CL<Pixel>::order;
+    ::cl_channel_type  const static clChannelType  = CVD2CL<Pixel>::type;
 
-    int64_t measure(ByteSubImage const & image);
+    explicit ImageState(Worker & worker, CVD::ImageRef const & size) :
+        BaseImageState(worker, size, clChannelOrder, clChannelType, sizeof(Pixel))
+    {
+        // Do nothing.
+    }
 
-    ByteImage asImage();
+    virtual ~ImageState() {
+        // Do nothing.
+    }
 
-    void copyToWorker();
-    void copyFromWorker();
-    void zero();
+    AsBasic asImage() {
+        Pixel * const pixels = reinterpret_cast<Pixel *>(mapping);
+        return AsBasic(pixels, size);
+    }
 
-    // Public immutable members.
-    CVD::ImageRef const   size;
-    size_t        const   nbytes;
+    void set(AsSub const & image) {
+        asImage().copy_from(image);
+        copyToWorker();
+    }
 
-    // Members left public for WorkerStep access.
-    CVD::byte           * bytes;
-    cl::Image2D           image;
-    cl::size_t<3>         origin;
-    cl::size_t<3>         region;
+    void get(AsSub       * image) {
+        copyFromWorker();
+        image->copy_from(asImage());
+    }
 };
+
+typedef ImageState<CVD::byte            > GrayImageState;
+typedef ImageState<CVD::Rgba<CVD::byte> > RichImageState;
 
 } // namespace CL
 } // namespace CVD

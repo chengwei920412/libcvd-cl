@@ -33,15 +33,15 @@ namespace CL  {
 class BlurStep : public WorkerStep {
 public:
 
-    explicit BlurStep(ImageState & iimage, ImageState & oimage);
+    explicit BlurStep(GrayImageState & iimage, GrayImageState & oimage);
     virtual ~BlurStep();
 
     virtual void execute();
 
 protected:
 
-    ImageState     & iimage;
-    ImageState     & oimage;
+    GrayImageState & iimage;
+    GrayImageState & oimage;
 
     cl::Program      program;
     cl::Kernel       kernel;

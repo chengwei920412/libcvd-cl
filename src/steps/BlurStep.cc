@@ -28,7 +28,7 @@
 namespace CVD {
 namespace CL  {
 
-BlurStep::BlurStep(ImageState & imagei, ImageState & imageo) :
+BlurStep::BlurStep(GrayImageState & imagei, GrayImageState & imageo) :
     WorkerStep (imagei.worker),
     iimage     (imagei),
     oimage     (imageo)

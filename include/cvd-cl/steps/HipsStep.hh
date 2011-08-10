@@ -34,7 +34,7 @@ typedef ListState<cl_ulong4> HipsListState;
 class HipsStep : public WorkerStep {
 public:
 
-    explicit HipsStep(ImageState & iimage, PointListState & ipoints, HipsListState & ohips);
+    explicit HipsStep(GrayImageState & iimage, PointListState & ipoints, HipsListState & ohips);
     virtual ~HipsStep();
 
     virtual void execute();
@@ -42,7 +42,7 @@ public:
 protected:
 
     // Inputs.
-    ImageState     & iimage;
+    GrayImageState & iimage;
     PointListState & ipoints;
 
     // Outputs.

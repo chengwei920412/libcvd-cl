@@ -91,9 +91,9 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
     CVD::CL::Worker          worker      (device);
 
     // Create states.
-    CVD::CL::ImageState      imageNeat   (worker, ref1024);
-    CVD::CL::ImageState      imageBlur   (worker, ref1024);
-    CVD::CL::ImageState      scores      (worker, ref1024);
+    CVD::CL::GrayImageState  imageNeat   (worker, ref1024);
+    CVD::CL::GrayImageState  imageBlur   (worker, ref1024);
+    CVD::CL::GrayImageState  scores      (worker, ref1024);
     CVD::CL::PointListState  corners1    (worker, nxy);
     CVD::CL::PointListState  corners2    (worker, nxy);
     CVD::CL::PointListState  corners3    (worker, nxy);
@@ -109,7 +109,10 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
     CVD::CL::MatchStep       runMatch    (                                                            hips, hips, best);
 
     // Write image to device.
-    int64_t const timeWrite = imageNeat.measure(cropImage);
+    boost::system_time const t1 = boost::get_system_time();
+    imageNeat.set(cropImage);
+    boost::system_time const t2 = boost::get_system_time();
+    int64_t const timeWrite = (t2 - t1).total_microseconds();
 
     // Zero FAST scores.
     scores.zero();
@@ -137,7 +140,7 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
     int64_t const timeMatch    = runMatch.measure();
 
     // Time a single burst.
-    boost::system_time const t1 = boost::get_system_time();
+    boost::system_time const t3 = boost::get_system_time();
     imageNeat.copyToWorker();
     runBlur.execute();
     runPreFast.execute();
@@ -146,8 +149,8 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
     runHips.execute();
     runMatch.execute();
     worker.finish();
-    boost::system_time const t2 = boost::get_system_time();
-    int64_t const timeBurst     = (t2 - t1).total_microseconds();
+    boost::system_time const t4 = boost::get_system_time();
+    int64_t const timeBurst     = (t4 - t3).total_microseconds();
 
     // Read out final corner list.
     std::vector<cl_int2> corners;

@@ -27,7 +27,7 @@
 namespace CVD {
 namespace CL  {
 
-HipsStep::HipsStep(ImageState & iimage, PointListState & ipoints, HipsListState & ohips) :
+HipsStep::HipsStep(GrayImageState & iimage, PointListState & ipoints, HipsListState & ohips) :
     WorkerStep (iimage.worker),
     iimage     (iimage),
     ipoints    (ipoints),

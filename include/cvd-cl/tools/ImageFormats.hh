@@ -21,37 +21,44 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_FAST_STEP_HH__
-#define __CVD_CL_FAST_STEP_HH__
+#ifndef __CVD_CL_IMAGE_FORMATS_HH__
+#define __CVD_CL_IMAGE_FORMATS_HH__
 
-#include <cvd-cl/steps/PreFastStep.hh>
+#include <cvd-cl/worker/Worker.hh>
+
+#include <cvd/byte.h>
+#include <cvd/image.h>
+#include <cvd/rgba.h>
+#include <cvd/rgb.h>
 
 namespace CVD {
 namespace CL  {
 
-class FastStep : public WorkerStep {
-public:
+template<class Pixel>
+struct CVD2CL {
+    // Invalid by default.
+    // Only overrides will work.
+};
 
-    explicit FastStep(GrayImageState & iimage, PointListState & ipoints, GrayImageState & oscores, PointListState & opoints);
-    virtual ~FastStep();
+template<>
+struct CVD2CL<CVD::byte> {
+    ::cl_channel_order const static order = CL_INTENSITY;
+    ::cl_channel_type  const static type  = CL_UNSIGNED_INT8;
+};
 
-    virtual void execute();
+template<>
+struct CVD2CL<CVD::Rgba<CVD::byte> > {
+    ::cl_channel_order const static order = CL_RGBA;
+    ::cl_channel_type  const static type  = CL_UNSIGNED_INT8;
+};
 
-protected:
-
-    // Inputs.
-    GrayImageState & iimage;
-    PointListState & ipoints;
-
-    // Outputs.
-    GrayImageState & oscores;
-    PointListState & opoints;
-
-    cl::Program      program;
-    cl::Kernel       kernel;
+template<>
+struct CVD2CL<CVD::Rgb<CVD::byte> > {
+    ::cl_channel_order const static order = CL_RGB;
+    ::cl_channel_type  const static type  = CL_UNSIGNED_INT8;
 };
 
 } // namespace CL
 } // namespace CVD
 
-#endif /* __CVD_CL_FAST_STEP_HH__ */
+#endif /* __CVD_CL_IMAGE_FORMATS_HH__ */

@@ -27,7 +27,7 @@
 namespace CVD {
 namespace CL  {
 
-MaxFastStep::MaxFastStep(ImageState & scores, PointListState & ipoints, PointListState & opoints) :
+MaxFastStep::MaxFastStep(GrayImageState & scores, PointListState & ipoints, PointListState & opoints) :
     WorkerStep (scores.worker),
     iscores    (scores),
     ipoints    (ipoints),

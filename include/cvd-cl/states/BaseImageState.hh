@@ -21,37 +21,40 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_FAST_STEP_HH__
-#define __CVD_CL_FAST_STEP_HH__
+#ifndef __CVD_CL_BASE_IMAGE_STATE_HH__
+#define __CVD_CL_BASE_IMAGE_STATE_HH__
 
-#include <cvd-cl/steps/PreFastStep.hh>
+#include <cvd-cl/worker/WorkerState.hh>
+
+#include <cvd/image_ref.h>
 
 namespace CVD {
 namespace CL  {
 
-class FastStep : public WorkerStep {
+class BaseImageState : public WorkerState {
 public:
 
-    explicit FastStep(GrayImageState & iimage, PointListState & ipoints, GrayImageState & oscores, PointListState & opoints);
-    virtual ~FastStep();
+    explicit BaseImageState(Worker & worker, CVD::ImageRef const & size,
+            ::cl_channel_order order, ::cl_channel_type type, size_t pbytes);
+    virtual ~BaseImageState();
 
-    virtual void execute();
+    void copyToWorker();
+    void copyFromWorker();
+    void zero();
 
-protected:
+    // Public immutable members.
+    CVD::ImageRef const   size;
+    size_t        const   pbytes;
+    size_t        const   nbytes;
 
-    // Inputs.
-    GrayImageState & iimage;
-    PointListState & ipoints;
-
-    // Outputs.
-    GrayImageState & oscores;
-    PointListState & opoints;
-
-    cl::Program      program;
-    cl::Kernel       kernel;
+    // Members left public for WorkerStep access.
+    cl::Image2D           image;
+    cl::size_t<3>         origin;
+    cl::size_t<3>         region;
+    void                * mapping;
 };
 
 } // namespace CL
 } // namespace CVD
 
-#endif /* __CVD_CL_FAST_STEP_HH__ */
+#endif /* __CVD_CL_BASE_IMAGE_STATE_HH__ */

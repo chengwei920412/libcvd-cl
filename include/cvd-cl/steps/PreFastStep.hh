@@ -36,7 +36,7 @@ typedef ListState<cl_int2> PointListState;
 class PreFastStep : public WorkerStep {
 public:
 
-    explicit PreFastStep(ImageState & image, PointListState & points);
+    explicit PreFastStep(GrayImageState & image, PointListState & points);
     virtual ~PreFastStep();
 
     virtual void execute();
@@ -44,7 +44,7 @@ public:
 protected:
 
     // Inputs.
-    ImageState     & image;
+    GrayImageState & image;
 
     // Outputs.
     PointListState & points;

@@ -27,7 +27,7 @@
 namespace CVD {
 namespace CL  {
 
-FastStep::FastStep(ImageState & iimage, PointListState & ipoints, ImageState & oscores, PointListState & opoints) :
+FastStep::FastStep(GrayImageState & iimage, PointListState & ipoints, GrayImageState & oscores, PointListState & opoints) :
     WorkerStep (iimage.worker),
     iimage     (iimage),
     ipoints    (ipoints),
