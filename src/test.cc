@@ -63,7 +63,8 @@ static void testCVDFAST(CVD::BasicImage<CVD::byte> const & image) {
 
     glColor3f(1, 0, 0);
     glBegin(GL_POINTS);
-    BOOST_FOREACH(CVD::ImageRef const & xy, corners) {
+    for (size_t i = 0; i < corners.size(); i++) {
+        CVD::ImageRef const & xy = corners.at(i);
         glVertex2i(xy.x, xy.y);
     }
     glEnd();
@@ -179,7 +180,8 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
 
     glColor3f(1, 0, 0);
     glBegin(GL_POINTS);
-    BOOST_FOREACH(cl_int2 const & xy, corners) {
+    for (size_t i = 0; i < corners.size(); i++) {
+        cl_int2 const & xy = corners.at(i);
         glVertex2i(xy.x, xy.y);
     }
     glEnd();
@@ -206,7 +208,9 @@ int main(int argc, char **argv) {
         std::vector<cl::Platform> platforms;
         cl::Platform::get(&platforms);
 
-        BOOST_FOREACH(cl::Platform &pf, platforms) {
+        for (size_t ip = 0; ip < platforms.size(); ip++) {
+            cl::Platform &pf = platforms.at(ip);
+
             std::cerr
                 << pf.getInfo<CL_PLATFORM_NAME   >() << " ("
                 << pf.getInfo<CL_PLATFORM_VENDOR >() << ", "
@@ -216,7 +220,9 @@ int main(int argc, char **argv) {
             std::vector<cl::Device> devices;
             pf.getDevices(CL_DEVICE_TYPE_ALL, &devices);
 
-            BOOST_FOREACH(cl::Device &dev, devices) {
+            for (size_t id = 0; id < devices.size(); id++) {
+                cl::Device &dev = devices.at(id);
+
                 std::cerr << "  " << dev.getInfo<CL_DEVICE_NAME>() << std::endl;
 
                 std::cerr << "    Compute units:  " << std::setw(8) <<
