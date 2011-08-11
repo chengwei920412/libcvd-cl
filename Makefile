@@ -25,11 +25,14 @@ all:
 	scripts/codegen-cholesky.py 4    | tee opencl/cholesky4.cl     | scripts/embed.py OCL_CHOLESKY_4     > src/kernels/cholesky4.hh
 	scripts/codegen-cholesky.py 5    | tee opencl/cholesky5.cl     | scripts/embed.py OCL_CHOLESKY_5     > src/kernels/cholesky5.hh
 
+	scripts/codegen-se3-exp.py       | tee opencl/se3-exp.cl       | scripts/embed.py OCL_SE3_EXP        > src/kernels/se3-exp.hh
+
 	g++ -shared -fPIC -o bin/libcvdcl.so $(CFLAGS) $(LIBS) $(SOURCES)
 
 	g++ -o bin/test-cvd-cl $(CFLAGS) $(LIBS) bin/libcvdcl.so src/test.cc
 	g++ -o bin/test-rich   $(CFLAGS) $(LIBS) bin/libcvdcl.so src/test-rich.cc
 	g++ -o bin/test-cholesky $(CFLAGS) $(LIBS) bin/libcvdcl.so src/cholesky.cc
+	g++ -o bin/test-se3-exp $(CFLAGS) $(LIBS) bin/libcvdcl.so src/test-se3.cc
 
 clean:
 	rm -rfv obj bin src/kernels/*.hh opencl/*.cl
