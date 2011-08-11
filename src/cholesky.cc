@@ -203,7 +203,9 @@ static void testClCholesky(
             error += std::abs(x[j] - v[j]);
         }
 
-        std::cerr << "Index " << i << " has sum1 " << sum1 << ", sum2 " << sum2 << ", absolute error " << error << std::endl;
+        if (error > 1e-6) {
+            std::cerr << "Index " << i << " has sum1 " << sum1 << ", sum2 " << sum2 << ", absolute error " << error << std::endl;
+        }
     }
 
     for (int i = 0; i < SIZE; i++) {
