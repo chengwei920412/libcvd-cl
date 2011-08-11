@@ -47,7 +47,7 @@ public:
         // Do nothing.
     }
 
-    virtual void set(std::vector<Item> const & items) {
+    void set(std::vector<Item> const & items) {
         // Write new count to device.
         setCount(items.size());
 
@@ -56,7 +56,7 @@ public:
         worker.queue.enqueueWriteBuffer(buffer, CL_TRUE, 0, pnbytes, items.data());
     }
 
-    virtual void get(std::vector<Item>       * items) {
+    void get(std::vector<Item>       * items) {
         // Read count from device.
         cl_int const ncount = getCount();
 
@@ -66,6 +66,15 @@ public:
         // Read item data directly from device.
         size_t const pnbytes = ncount * sizeof(Item);
         worker.queue.enqueueReadBuffer(buffer, CL_TRUE, 0, pnbytes, items->data());
+    }
+
+    void zero() {
+        Item zero;
+        ::memset(&zero, 0, sizeof(zero));
+
+        for (size_t i = 0, o = 0; i < size; i++, o += sizeof(zero))
+            worker.queue.enqueueWriteBuffer(buffer, CL_FALSE, o, sizeof(zero), &zero);
+        worker.queue.finish();
     }
 
     // Public immutable member.
