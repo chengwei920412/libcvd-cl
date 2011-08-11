@@ -140,9 +140,9 @@ static void testClCholesky(
     for (int imatrix = 0; imatrix < COUNT; imatrix++) {
         mat_t const & matrix = mats.at(imatrix);
 
-        for (int col = 0, off = 0; col < SIZE; col++) {
-            for (int row = 0; row < SIZE; row++, off += COUNT)
-                mbuf.at(off + imatrix) = matrix(col, row);
+        for (int row = 0, off = 0; row < SIZE; row++)
+            for (int col = 0; col < SIZE; col++, off += COUNT) {
+                mbuf.at(off + imatrix) = matrix(row, col);
         }
     }
 
