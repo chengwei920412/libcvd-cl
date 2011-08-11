@@ -116,6 +116,11 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
 
     // Zero FAST scores.
     scores.zero();
+    corners1.zero();
+    corners2.zero();
+    corners3.zero();
+    hips.zero();
+    best.zero();
 
     // Run warmups.
     runBlur.measure();
@@ -159,6 +164,7 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
     // Read out match table.
     std::vector<cl_int> matches;
     best.get(&matches);
+    matches.resize(128);
 
     CVD::ImageRef size2(nx * 2, ny);
 
@@ -185,15 +191,17 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
 
     glColor3f(0, 0, 1);
     glBegin(GL_LINES);
-    for (size_t icorner1 = 0; icorner1 < matches.size(); icorner1++) {
+    for (size_t icorner1 = 0; (icorner1 < matches.size()) && (icorner1 < corners.size()); icorner1++) {
         int const icorner2 = matches.at(icorner1);
 
-        if (icorner2 >= 0) {
+        try {
             cl_int2 const xy1 = corners.at(icorner1);
             cl_int2 const xy2 = corners.at(icorner2);
 
             glVertex2i(xy1.x, xy1.y);
             glVertex2i(xy2.x + nx, xy2.y);
+        } catch (...) {
+            std::cerr << "Bad corner " << icorner1 << " of " << matches.size() << std::endl;
         }
     }
     glEnd();

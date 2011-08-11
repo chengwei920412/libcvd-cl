@@ -18,6 +18,7 @@ all:
 	scripts/codegen-fast-rich.py     | tee opencl/fast-rich.cl     | scripts/embed.py OCL_FAST_RICH      > src/kernels/fast-rich.hh
 	scripts/codegen-fast-best.py     | tee opencl/fast-best.cl     | scripts/embed.py OCL_FAST_BEST      > src/kernels/fast-best.hh
 	scripts/codegen-hips-gray.py     | tee opencl/hips-gray.cl     | scripts/embed.py OCL_HIPS_GRAY      > src/kernels/hips-gray.hh
+	scripts/codegen-hips-rich.py     | tee opencl/hips-rich.cl     | scripts/embed.py OCL_HIPS_RICH      > src/kernels/hips-rich.hh
 	scripts/codegen-hips-find.py     | tee opencl/hips-find.cl     | scripts/embed.py OCL_HIPS_FIND      > src/kernels/hips-find.hh
 
 	scripts/codegen-cholesky.py 3    | tee opencl/cholesky3.cl     | scripts/embed.py OCL_CHOLESKY_3     > src/kernels/cholesky3.hh
@@ -31,4 +32,4 @@ all:
 	g++ -o bin/test-cholesky $(CFLAGS) $(LIBS) bin/libcvdcl.so src/cholesky.cc
 
 clean:
-	rm -rfv obj bin src/kernels/*.hh src/opencl/*.cl
+	rm -rfv obj bin src/kernels/*.hh opencl/*.cl

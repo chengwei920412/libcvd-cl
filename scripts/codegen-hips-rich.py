@@ -33,6 +33,17 @@ OFFSETS = [
     for x in I_16_2
 ]
 
+COMPARISONS = [
+    "<",
+    ">",
+]
+
+CHOICES = [
+    (c1, c2)
+    for c1 in COMPARISONS
+    for c2 in COMPARISONS
+]
+
 # Expect exactly 64 coordinates.
 assert (len(OFFSETS) == 64)
 
@@ -59,15 +70,15 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-// Square an integer, for standard deviation calculation.
-int sq(int x) {
+// Square an integer vector, for standard deviation calculation.
+uint4 sq(uint4 x) {
     return (x * x);
 }
 
 // Shorthand for ulong cast.
 #define L(x) ((ulong)(x))
 
-kernel void hips_gray(
+kernel void hips_rich(
     read_only image2d_t   image,
     global    int2      * corners,
     global    ulong4    * bins
@@ -77,18 +88,18 @@ kernel void hips_gray(
     sampler_t const sampler = CLK_ADDRESS_CLAMP | CLK_FILTER_NEAREST;
 
     // Use global work item as corner index.
-    int  const ic  = get_global_id(0);
-    int2 const xy  = corners[ic];
+    int    const ic  = get_global_id(0);
+    int2   const xy  = corners[ic];
 
     // Read pixels in a grid around the corner pixel."""
 
 for (shift, (x, y)) in enumerate(OFFSETS):
-    print ("    int  const p%02d = read_imageui(image, sampler, xy + (int2)(%2d, %2d)).x;" % (shift + 1, x, y))
+    print ("    uint4  const p%02d = read_imageui(image, sampler, xy + (int2)(%2d, %2d));" % (shift + 1, x, y))
 
 print
 
 print "    // Calculate the sum of the pixel values."
-print "    int  const sum1 = ("
+print "    uint4  const sum1 = ("
 print " +\n".join([
     ("        p%02d" % (shift + 1))
     for (shift, _) in enumerate(OFFSETS)
@@ -97,10 +108,10 @@ print "    );"
 print
 
 print "    // Calculate the mean of the pixel values."
-print "    int  const mean = (sum1 / %d);" % len(OFFSETS)
+print "    uint4  const mean = (sum1 / %d);" % len(OFFSETS)
 
 print "    // Calculate the sum of squares of differences of the pixel values."
-print "    int  const sum2 = ("
+print "    uint4  const sum2 = ("
 print " +\n".join([
     ("        sq(p%02d - mean)" % (shift + 1))
     for (shift, _) in enumerate(OFFSETS)
@@ -109,51 +120,25 @@ print "    );"
 print
 
 print "    // Calculate the standard deviation of the pixel values."
-print "    int  const dev  = (int) sqrt((float) (sum2 / %d));" % len(OFFSETS)
+print "    uint4  const dev  = convert_uint4(sqrt(convert_float4(sum2 / %d)));" % len(OFFSETS)
 print
 print "    // Calculate thresholds for standard deviation bins."
 print "    // TODO: Size factors."
-print "    int  const dev1 = (mean - dev);"
-print "    int  const dev2 = (mean + dev);"
-print
-print "    // Bin all values lower than a standard deviation from the mean."
-print "    ulong const b1  = ("
-print " |\n".join([
-    ("        (L(p%02d < dev1) << L(%2d))" % (shift + 1, shift))
-    for (shift, _) in enumerate(OFFSETS)
-])
-print "    );"
+print "    uint4  const dev1 = (mean - dev);"
+print "    uint4  const dev2 = (mean + dev);"
 print
 
-print "    // Bin all values higher than a standard deviation from the mean."
-print "    ulong const b4  = ("
-print " |\n".join([
-    ("        (L(p%02d > dev2) << L(%2d))" % (shift + 1, shift))
-    for (shift, _) in enumerate(OFFSETS)
-])
-print "    );"
-print
-
-print "    // Bin all values lower than the mean but not a standard deviation."
-print "    ulong const b2  = ("
-print " |\n".join([
-    ("        (L(p%02d < mean) << L(%2d))" % (shift + 1, shift))
-    for (shift, _) in enumerate(OFFSETS)
-])
-print "    );"
-print
-
-print "    // Bin all values higher than the mean but not a standard deviation."
-print "    ulong const b3  = ("
-print " |\n".join([
-    ("        (L(p%02d > mean) << L(%2d))" % (shift + 1, shift))
-    for (shift, _) in enumerate(OFFSETS)
-])
-print "    );"
+for (bin, (c1, c2)) in enumerate(CHOICES):
+    print "    ulong const b%d  = (" % (bin + 1)
+    print " |\n".join([
+        ("        (L((p%02d.x %s dev1.x) && (p%02d.y %s dev1.y)) << L(%2d))" % (shift + 1, c1, shift + 1, c2, shift))
+        for (shift, _) in enumerate(OFFSETS)
+    ])
+    print "    );"
+    print
 
 print """
     // Record in output buffer.
-    // Use and-not to exclude known overlaps.
-    bins[ic] = (ulong4)(b1, b2 & ~b1, b3 & ~b4, b4);
+    bins[ic] = (ulong4)(b1, b2, b3, b4);
 }
 """

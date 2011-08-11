@@ -25,6 +25,8 @@
 #include <cvd-cl/steps/PreFastRichStep.hh>
 #include <cvd-cl/steps/FastRichStep.hh>
 #include <cvd-cl/steps/FastBestStep.hh>
+#include <cvd-cl/steps/HipsRichStep.hh>
+#include <cvd-cl/steps/HipsFindStep.hh>
 
 #include <iomanip>
 #include <iostream>
@@ -57,12 +59,16 @@ static void testRich(Image const & image, cl::Device & device) {
     CVD::CL::PointListState  corners1    (worker, nxy);
     CVD::CL::PointListState  corners2    (worker, nxy);
     CVD::CL::PointListState  corners3    (worker, nxy);
+    CVD::CL::HipsListState   hips        (worker, nxy);
+    CVD::CL::IntListState    best        (worker, nxy);
 
     // Create steps.
     CVD::CL::BlurRichStep    runBlur     (imageNeat, imageBlur);
     CVD::CL::PreFastRichStep runPreFast  (           imageBlur, corners1);
     CVD::CL::FastRichStep    runFast     (           imageBlur, corners1, scores, corners2);
     CVD::CL::FastBestStep    runMaxFast  (                                scores, corners2, corners3);
+    CVD::CL::HipsRichStep    runHips     (           imageBlur,                             corners3, hips);
+    CVD::CL::HipsFindStep    runMatch    (                                                            hips, hips, best);
 
     // Zero FAST scores.
     scores.zero();
@@ -84,6 +90,8 @@ static void testRich(Image const & image, cl::Device & device) {
     corners2.getCount();
     runMaxFast.measure();
     corners3.getCount();
+    runHips.measure();
+    runMatch.measure();
 
     // Run and time steps.
     int64_t const timeBlur     = runBlur.measure();
@@ -93,6 +101,8 @@ static void testRich(Image const & image, cl::Device & device) {
     cl_int  const nfasted      = corners2.getCount();
     int64_t const timeMaxFast  = runMaxFast.measure();
     cl_int  const nfilted      = corners3.getCount();
+    int64_t const timeHips     = runHips.measure();
+    int64_t const timeMatch    = runMatch.measure();
 
     std::cerr << std::endl;
     std::cerr << std::setw(8) << timeWrite    << " us writing image" << std::endl;
@@ -100,6 +110,8 @@ static void testRich(Image const & image, cl::Device & device) {
     std::cerr << std::setw(8) << timePreFast  << " us culling corners" << std::endl;
     std::cerr << std::setw(8) << timeFast     << " us running FAST" << std::endl;
     std::cerr << std::setw(8) << timeMaxFast  << " us filtering corners" << std::endl;
+    std::cerr << std::setw(8) << timeHips     << " us making HIPS descriptors" << std::endl;
+    std::cerr << std::setw(8) << timeMatch    << " us matching HIPS descriptors" << std::endl;
     std::cerr << std::endl;
     std::cerr << std::setw(8) << nxy     << " corner candidates in image" << std::endl;
     std::cerr << std::setw(8) << nculled << " corners after culling" << std::endl;
@@ -111,11 +123,45 @@ static void testRich(Image const & image, cl::Device & device) {
     Image image2(size);
     imageBlur.get(&image2);
 
+    // Read out final corner list.
+    std::vector<cl_int2> corners;
+    corners3.get(&corners);
+
+    // Read out match table.
+    std::vector<cl_int> matches;
+    best.get(&matches);
+
     CVD::ImageRef const size2(nx * 2, ny);
     CVD::VideoDisplay window(size2);
     CVD::glDrawPixels(image);
     CVD::glRasterPos(CVD::ImageRef(nx, 0));
     CVD::glDrawPixels(image2);
+
+    glColor3f(0, 0, 1);
+    glBegin(GL_LINES);
+    for (size_t icorner1 = 0; icorner1 < std::min(matches.size(), corners.size()); icorner1++) {
+        int const icorner2 = matches.at(icorner1);
+
+        try {
+            cl_int2 const xy1 = corners.at(icorner1);
+            cl_int2 const xy2 = corners.at(icorner2);
+
+            glVertex2i(xy1.x, xy1.y);
+            glVertex2i(xy2.x + nx, xy2.y);
+        } catch (...) {
+            std::cerr << "Bad corner " << icorner1 << " of " << matches.size() << std::endl;
+        }
+    }
+    glEnd();
+
+    glColor3f(1, 0, 0);
+    glBegin(GL_POINTS);
+    for (size_t i = 0; i < corners.size(); i++) {
+        cl_int2 const & xy = corners.at(i);
+        glVertex2i(xy.x, xy.y);
+    }
+    glEnd();
+    glFlush();
 
     sleep(5);
 }
