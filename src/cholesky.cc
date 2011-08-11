@@ -21,6 +21,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
+#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <string>
@@ -192,17 +193,17 @@ static void testClCholesky(
         chol.compute(mats.at(i));
         vec_t x = chol.backsub(vecs.at(i));
 
-        float sum1 = 0;
-        float sum2 = 0;
+        double sum1  = 0;
+        double sum2  = 0;
+        double error = 0;
 
         for (int j = 0; j < SIZE; j++) {
             sum1 += x[j];
             sum2 += v[j];
+            error += std::abs(x[j] - v[j]);
         }
 
-        if (std::abs(sum1 - sum2) >= 0.00001f) {
-            std::cerr << std::setw(4) << " has sums " << sum1 << "   " << sum2 << std::endl;
-        }
+        std::cerr << "Index " << i << " has sum1 " << sum1 << ", sum2 " << sum2 << ", absolute error " << error << std::endl;
     }
 
     for (int i = 0; i < SIZE; i++) {
