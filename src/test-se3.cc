@@ -78,6 +78,7 @@ static void testToonExp(mats_t & mats, tras_t & tras, vecs_t const & vecs) {
     for (int repeat = 0; repeat < REPEAT; repeat++) {
         for (int i = 0; i < COUNT; i++) {
             TooN::SE3<cl_float> se3 = TooN::SE3<cl_float>::exp(vecs.at(i));
+            se3.get_rotation().coerce();
             mats.at(i) = se3.get_rotation().get_matrix();
             tras.at(i) = se3.get_translation();
         }

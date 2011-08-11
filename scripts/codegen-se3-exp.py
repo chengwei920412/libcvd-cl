@@ -50,6 +50,10 @@ float sq(float x) {
     return (x * x);
 }
 
+float len(float x, float y, float z) {
+    return sqrt(sq(x) + sq(y) + sq(z));
+}
+
 #define ONE_6th  (1.0f /  6.0f)
 #define ONE_20th (1.0f / 20.0f)
 #define SMALL_8  (1.0e-8f)
@@ -162,6 +166,44 @@ kernel void se3_exp(
         r1c2 = (b - a);
         r2c1 = (b + a);
     }
+
+    // Coerce matrix.
+
+    // my_matrix[0] = unit(my_matrix[0]);
+    float const l0 = len(r0c0, r0c1, r0c2);
+    r0c0 /= l0;
+    r0c1 /= l0;
+    r0c2 /= l0;
+
+    // my_matrix[1] -= my_matrix[0] * (my_matrix[0]*my_matrix[1]);
+    float const r0 = ((r0c0 * r1c0) + (r0c1 * r1c1) + (r0c2 * r1c2));
+    r1c0 -= (r0c0 * r0);
+    r1c1 -= (r0c1 * r0);
+    r1c2 -= (r0c2 * r0);
+
+    // my_matrix[1] = unit(my_matrix[1]);
+    float const l1 = len(r1c0, r1c1, r1c2);
+    r1c0 /= l1;
+    r1c1 /= l1;
+    r1c2 /= l1;
+
+    // my_matrix[2] -= my_matrix[0] * (my_matrix[0]*my_matrix[2]);
+    float const r1 = ((r0c0 * r2c0) + (r0c1 * r2c1) + (r0c2 * r2c2));
+    r2c0 -= (r0c0 * r1);
+    r2c1 -= (r0c1 * r1);
+    r2c2 -= (r0c2 * r1);
+
+    // my_matrix[2] -= my_matrix[1] * (my_matrix[1]*my_matrix[2]);
+    float const r2 = ((r1c0 * r2c0) + (r1c1 * r2c1) + (r1c2 * r2c2));
+    r2c0 -= (r1c0 * r2);
+    r2c1 -= (r1c1 * r2);
+    r2c2 -= (r1c2 * r2);
+
+    // my_matrix[2] = unit(my_matrix[2]);
+    float const l2 = len(r2c0, r2c1, r2c2);
+    r2c0 /= l2;
+    r2c1 /= l2;
+    r2c2 /= l2;
 
     // Write matrix elements.
     mats[mad24( 0, nvectors, ivector)] = r0c0;
