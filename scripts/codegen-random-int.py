@@ -54,12 +54,12 @@ uint rotl32(uint x, uint r) {
 }
 
 kernel void random_int(
-    global int * pmod,
-    global int * out
+    global uint const * pmod,
+    global uint       * out
 ) {
 
     // Read modulo.
-    uint const mod = *pmod;
+    uint const mod = (pmod[0] & 0xffffff);
 
     // Use global work item as integer index.
     uint const i   = get_global_id(0);
@@ -71,7 +71,7 @@ kernel void random_int(
     k1 *= 0x1b873593;
 
     // Mix the modulo.
-    uint k2 = i;
+    uint k2 = mod;
     k2 *= 0xcc9e2d51;
     k2  = rotl32(k2, 15);
     k2 *= 0x1b873593;
@@ -97,6 +97,6 @@ kernel void random_int(
     h ^= h >> 16;
 
     // Write hash after modulo.
-    out[0] = ((h & 0xffffff) % mod);
+    out[i] = ((h & 0xffffff) % mod);
 }
 """
