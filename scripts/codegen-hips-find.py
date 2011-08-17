@@ -79,9 +79,10 @@ int bitcount4(ulong4 v) {
 }
 
 kernel void hips_find(
-    global    ulong4   * hashes1,  // T
-    global    ulong4   * hashes2,  // R
-    global    int      * ihashes2  // For each hash1, index of best hash2.
+    global ulong4 const * hashes1,  // T
+    global ulong4 const * hashes2,  // R
+    global int2   const * ixy2,     // For each hash2, its coordinate.
+    global int2         * oxy2      // For each hash1, coordinate of its best hash2.
 ) {
 
     // Prepare local memory for hash caching.
@@ -158,7 +159,7 @@ kernel void hips_find(
     barrier(CLK_LOCAL_MEM_FENCE);
 
     if (ithr2 == 0) {
-        ihashes2[ihash1] = ibest[ithr1];
+        oxy2[ihash1] = ixy2[ibest[ithr1]];
     }
 }
 """

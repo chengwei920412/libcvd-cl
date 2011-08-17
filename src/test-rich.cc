@@ -60,7 +60,7 @@ static void testRich(Image const & image, cl::Device & device) {
     CVD::CL::PointListState  corners2    (worker, nxy);
     CVD::CL::PointListState  corners3    (worker, nxy);
     CVD::CL::HipsListState   hips        (worker, nxy);
-    CVD::CL::IntListState    best        (worker, nxy);
+    CVD::CL::PointListState  cornersM    (worker, nxy);
 
     // Create steps.
     CVD::CL::BlurRichStep    runBlur     (imageNeat, imageBlur);
@@ -68,7 +68,7 @@ static void testRich(Image const & image, cl::Device & device) {
     CVD::CL::FastRichStep    runFast     (           imageBlur, corners1, scores, corners2);
     CVD::CL::FastBestStep    runMaxFast  (                                scores, corners2, corners3);
     CVD::CL::HipsRichStep    runHips     (           imageBlur,                             corners3, hips);
-    CVD::CL::HipsFindStep    runMatch    (                                                            hips, hips, best);
+    CVD::CL::HipsFindStep    runMatch    (                                                            hips, hips, corners3, cornersM);
 
     // Zero FAST scores.
     scores.zero();
@@ -127,9 +127,10 @@ static void testRich(Image const & image, cl::Device & device) {
     std::vector<cl_int2> corners;
     corners3.get(&corners);
 
-    // Read out match table.
-    std::vector<cl_int> matches;
-    best.get(&matches);
+    // Read out matching corner table.
+    std::vector<cl_int2> matches;
+    cornersM.get(&matches);
+    matches.resize(128);
 
     CVD::ImageRef const size2(nx * 2, ny);
     CVD::VideoDisplay window(size2);
@@ -139,12 +140,10 @@ static void testRich(Image const & image, cl::Device & device) {
 
     glColor3f(0, 0, 1);
     glBegin(GL_LINES);
-    for (size_t icorner1 = 0; icorner1 < std::min(matches.size(), corners.size()); icorner1++) {
-        int const icorner2 = matches.at(icorner1);
-
+    for (size_t icorner1 = 0; (icorner1 < matches.size()) && (icorner1 < corners.size()); icorner1++) {
         try {
             cl_int2 const xy1 = corners.at(icorner1);
-            cl_int2 const xy2 = corners.at(icorner2);
+            cl_int2 const xy2 = matches.at(icorner1);
 
             glVertex2i(xy1.x, xy1.y);
             glVertex2i(xy2.x + nx, xy2.y);

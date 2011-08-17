@@ -33,7 +33,7 @@ namespace CL  {
 class HipsFindStep : public WorkerStep {
 public:
 
-    explicit HipsFindStep(HipsListState & ihips1, HipsListState & ihips2, IntListState & obest);
+    explicit HipsFindStep(HipsListState & i_hips1, HipsListState & i_hips2, PointListState & i_xy2, PointListState & o_xy2);
     virtual ~HipsFindStep();
 
     virtual void execute();
@@ -41,11 +41,12 @@ public:
 protected:
 
     // Inputs.
-    HipsListState  & ihips1;
-    HipsListState  & ihips2;
+    HipsListState  & i_hips1;
+    HipsListState  & i_hips2;
+    PointListState & i_xy2;   // In same order as i_hips2.
 
     // Outputs.
-    IntListState   & obest;
+    PointListState & o_xy2;   // In same order as i_hips1.
 
     cl::Program      program;
     cl::Kernel       kernel;
