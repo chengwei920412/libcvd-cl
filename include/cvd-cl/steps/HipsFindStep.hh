@@ -21,15 +21,14 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_MATCH_STEP_HH__
-#define __CVD_CL_MATCH_STEP_HH__
+#ifndef __CVD_CL_HIPS_FIND_STEP_HH__
+#define __CVD_CL_HIPS_FIND_STEP_HH__
 
-#include <cvd-cl/steps/HipsGrayStep.hh>
+#include <cvd-cl/states/ListState.hh>
+#include <cvd-cl/worker/WorkerStep.hh>
 
 namespace CVD {
 namespace CL  {
-
-typedef ListState<cl_int> IntListState;
 
 class HipsFindStep : public WorkerStep {
 public:
@@ -55,4 +54,4 @@ protected:
 } // namespace CL
 } // namespace CVD
 
-#endif /* __CVD_CL_FIND_STEP_HH__ */
+#endif /* __CVD_CL_HIPS_FIND_STEP_HH__ */

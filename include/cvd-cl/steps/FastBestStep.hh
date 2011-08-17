@@ -21,10 +21,12 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_MAX_FAST_STEP_HH__
-#define __CVD_CL_MAX_FAST_STEP_HH__
+#ifndef __CVD_CL_FAST_BEST_STEP_HH__
+#define __CVD_CL_FAST_BEST_STEP_HH__
 
-#include <cvd-cl/steps/PreFastGrayStep.hh>
+#include <cvd-cl/states/ImageState.hh>
+#include <cvd-cl/states/ListState.hh>
+#include <cvd-cl/worker/WorkerStep.hh>
 
 namespace CVD {
 namespace CL  {
@@ -53,4 +55,4 @@ protected:
 } // namespace CL
 } // namespace CVD
 
-#endif /* __CVD_CL_MAX_FAST_STEP_HH__ */
+#endif /* __CVD_CL_FAST_BEST_STEP_HH__ */

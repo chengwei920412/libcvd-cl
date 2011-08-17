@@ -24,7 +24,9 @@
 #ifndef __CVD_CL_HIPS_RICH_STEP_HH__
 #define __CVD_CL_HIPS_RICH_STEP_HH__
 
-#include <cvd-cl/steps/HipsGrayStep.hh>
+#include <cvd-cl/states/ImageState.hh>
+#include <cvd-cl/states/ListState.hh>
+#include <cvd-cl/worker/WorkerStep.hh>
 
 namespace CVD {
 namespace CL  {

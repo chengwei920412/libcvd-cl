@@ -21,8 +21,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_MATCH_STEP_HH__
-#define __CVD_CL_MATCH_STEP_HH__
+#ifndef __CVD_CL_POSE_UVQ_WLS_STEP_HH__
+#define __CVD_CL_POSE_UVQ_WLS_STEP_HH__
 
 #include <cvd-cl/states/UvqState.hh>
 #include <cvd-cl/worker/WorkerStep.hh>
@@ -55,4 +55,4 @@ protected:
 } // namespace CL
 } // namespace CVD
 
-#endif /* __CVD_CL_FIND_STEP_HH__ */
+#endif /* __CVD_CL_POSE_UVQ_WLS_STEP_HH__ */

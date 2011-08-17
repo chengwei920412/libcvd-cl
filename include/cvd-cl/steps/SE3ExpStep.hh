@@ -21,8 +21,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_CHOLESKY_STEP_HH__
-#define __CVD_CL_CHOLESKY_STEP_HH__
+#ifndef __CVD_CL_SE3_EXP_STEP_HH__
+#define __CVD_CL_SE3_EXP_STEP_HH__
 
 #include <cvd-cl/states/MatrixState.hh>
 #include <cvd-cl/worker/WorkerStep.hh>
@@ -53,4 +53,4 @@ protected:
 } // namespace CL
 } // namespace CVD
 
-#endif /* __CVD_CL_FIND_STEP_HH__ */
+#endif /* __CVD_CL_SE3_EXP_STEP_HH__ */

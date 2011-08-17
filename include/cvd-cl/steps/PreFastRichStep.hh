@@ -24,7 +24,9 @@
 #ifndef __CVD_CL_PRE_FAST_RICH_STEP_HH__
 #define __CVD_CL_PRE_FAST_RICH_STEP_HH__
 
-#include <cvd-cl/steps/PreFastGrayStep.hh>
+#include <cvd-cl/states/ImageState.hh>
+#include <cvd-cl/states/ListState.hh>
+#include <cvd-cl/worker/WorkerStep.hh>
 
 namespace CVD {
 namespace CL  {
