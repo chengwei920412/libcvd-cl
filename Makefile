@@ -1,7 +1,7 @@
-CFLAGS   = -std=gnu++98 -fopenmp -pthread -O3 -march=native -ffast-math
+CFLAGS   = -std=gnu++98 -fopenmp -pthread -O0 -march=native
 CFLAGS  += -I/usr/local/include -Iinclude -Isrc
 CFLAGS  += -Wall -Wextra -Wno-unused -Wno-ignored-qualifiers -fmessage-length=0
-#CFLAGS += -g3
+CFLAGS  += -g3
 
 LIBS     = -lOpenCL -lcvd -lm -lboost_program_options-mt
 
