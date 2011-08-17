@@ -38,6 +38,7 @@ public:
     // Public immutable members.
     size_t       const maxCount;
     size_t       const setSize;
+    size_t       const maxRecords; // = maxCount * setSize
 
     // Public mutable member.
     size_t             setCount;

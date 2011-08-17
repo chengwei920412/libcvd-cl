@@ -48,7 +48,7 @@ void ToUvqUvStep::execute() {
     // Read number of input points.
     size_t const count1 = i_xy1.getCount();
     size_t const count2 = i_xy2.getCount();
-    size_t const count  = std::min(count1, count2);
+    size_t const count  = std::min(std::min(count1, count2), o_uvquv.maxCount);
     cl::NDRange const global(count);
 
     // Reset number of output points.

@@ -27,7 +27,7 @@
 namespace CVD {
 namespace CL  {
 
-MatrixState::MatrixState(Worker & worker, size_t matrices, size_t rows, size_t cols) :
+MatrixState::MatrixState(Worker & worker, size_t count, size_t rows, size_t cols) :
     WorkerState (worker),
     count       (count),
     rows        (rows),

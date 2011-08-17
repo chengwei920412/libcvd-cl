@@ -37,12 +37,12 @@ PoseUvqWlsStep::PoseUvqWlsStep(UvqState & i_uvq, UvState & i_uv, MatrixState & o
     o_b        (o_b)
 {
     // Individual state sanity checks.
-    assert(i_uvq.setSize  == 6);
-    assert(i_uv.setSize   == 6);
+    assert(i_uvq.setSize  == 3);
+    assert(i_uv.setSize   == 3);
     assert(o_a.rows       == 6);
     assert(o_b.rows       == 6);
     assert(o_a.cols       == 6);
-    assert(o_b.cols       == 6);
+    assert(o_b.cols       == 1);
 
     // State consistency checks.
     assert(i_uvq.setCount >= 1);

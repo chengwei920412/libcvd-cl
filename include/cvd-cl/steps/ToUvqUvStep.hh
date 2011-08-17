@@ -21,8 +21,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_FXY_STEP_HH__
-#define __CVD_CL_FXY_STEP_HH__
+#ifndef __CVD_CL_TO_UVQ_UV_STEP_HH__
+#define __CVD_CL_TO_UVQ_UV_STEP_HH__
 
 #include <cvd-cl/states/CameraState.hh>
 #include <cvd-cl/states/ListState.hh>
@@ -57,4 +57,4 @@ protected:
 } // namespace CL
 } // namespace CVD
 
-#endif /* __CVD_CL_FXY_STEP_HH__ */
+#endif /* __CVD_CL_TO_UVQ_UV_STEP_HH__ */
