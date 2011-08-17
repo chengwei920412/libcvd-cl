@@ -49,7 +49,7 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 kernel void fxy(
     read_only  image2d_t   map,
     global     int2      * xys,
-    global     float     * fs,
+    global     float     * fs
 ) {
 
     // Prepare a suitable OpenCL image sampler.

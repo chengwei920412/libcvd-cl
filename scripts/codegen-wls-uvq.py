@@ -46,6 +46,10 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
+float sq(float x) {
+    return (x * x);
+}
+
 kernel void wls_uvq(
     global float const * u1s,
     global float const * v1s,
@@ -53,7 +57,7 @@ kernel void wls_uvq(
     global float const * u2s,
     global float const * v2s,
     global float       * As,
-    global float       * bs,
+    global float       * bs
 ) {
 
     // Use global work item as correspondence set index.
@@ -63,7 +67,7 @@ kernel void wls_uvq(
     // Prepare 6 vector elements."""
 
 for row in range(6):
-    print "    float v%d   = 0;" % row
+    print "    float b%d   = 0;" % row
 
 print """
     // Prepare 6x6 matrix elements, top-right only."""
@@ -98,7 +102,7 @@ print """
             // Update vector."""
 
 for row in range(6):
-    print "            v%d   += (J%d * du);" % (row, row)
+    print "            b%d   += (J%d * du);" % (row, row)
 
 print
 print "            // Update matrix."
@@ -108,6 +112,8 @@ for row in range(6):
         print "            r%dc%d += (J%d * J%d);" % (row, col, row, col)
 
 print """
+        }
+
         /* add_mJ for v error */ {
             // Calculate Jv.
             float const J0 = (0              );
@@ -123,7 +129,7 @@ print """
             // Update vector."""
 
 for row in range(6):
-    print "            v%d   += (J%d * dv);" % (row, row)
+    print "            b%d   += (J%d * dv);" % (row, row)
 
 print
 print "            // Update matrix."
@@ -154,7 +160,7 @@ print """
     // Write vector elements."""
 
 for row in range(6):
-    print "    bs[mad24(%2d, nsets, iset)] = v%d;" % (row, row)
+    print "    bs[mad24(%2d, nsets, iset)] = b%d;" % (row, row)
 
 print "}"
 
