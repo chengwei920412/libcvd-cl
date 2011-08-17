@@ -61,6 +61,8 @@ BaseImageState::BaseImageState(Worker & worker, CVD::ImageRef const & size,
 
     // Map image memory.
     mapping = worker.queue.enqueueMapImage(image, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, origin, region, &rpitch, NULL);
+
+    expect("Image memory must be mapped", mapping != NULL);
 }
 
 BaseImageState::~BaseImageState() {
