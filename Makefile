@@ -24,6 +24,7 @@ all:
 	scripts/codegen-cholesky.py 3    | tee opencl/cholesky3.cl     | scripts/embed.py OCL_CHOLESKY_3     > src/kernels/cholesky3.hh
 	scripts/codegen-cholesky.py 4    | tee opencl/cholesky4.cl     | scripts/embed.py OCL_CHOLESKY_4     > src/kernels/cholesky4.hh
 	scripts/codegen-cholesky.py 5    | tee opencl/cholesky5.cl     | scripts/embed.py OCL_CHOLESKY_5     > src/kernels/cholesky5.hh
+	scripts/codegen-cholesky.py 6    | tee opencl/cholesky6.cl     | scripts/embed.py OCL_CHOLESKY_6     > src/kernels/cholesky6.hh
 
 	scripts/codegen-wls-uvq.py       | tee opencl/wls-uvq.cl       | scripts/embed.py OCL_WLS_UVQ        > src/kernels/wls-uvq.hh
 	scripts/codegen-se3-exp.py       | tee opencl/se3-exp.cl       | scripts/embed.py OCL_SE3_EXP        > src/kernels/se3-exp.hh

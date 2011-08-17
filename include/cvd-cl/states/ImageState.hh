@@ -70,8 +70,9 @@ public:
     }
 };
 
-typedef ImageState<CVD::byte            > GrayImageState;
-typedef ImageState<CVD::Rgba<CVD::byte> > RichImageState;
+typedef ImageState<CVD::byte            >  GrayImageState;
+typedef ImageState<CVD::Rgba<CVD::byte> >  RichImageState;
+typedef ImageState<cl_float             > FloatImageState;
 
 } // namespace CL
 } // namespace CVD
