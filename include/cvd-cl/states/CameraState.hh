@@ -35,6 +35,9 @@ public:
     explicit CameraState(Worker & worker, CVD::ImageRef const & size);
     virtual ~CameraState();
 
+    void copyFromWorker();
+    void copyToWorker();
+
     // Public immutable member.
     CVD::ImageRef const size;
 

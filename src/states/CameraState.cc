@@ -40,5 +40,17 @@ CameraState::~CameraState() {
     // Do nothing.
 }
 
+void CameraState::copyFromWorker() {
+    umap.copyFromWorker();
+    vmap.copyFromWorker();
+    qmap.copyFromWorker();
+}
+
+void CameraState::copyToWorker() {
+    umap.copyToWorker();
+    vmap.copyToWorker();
+    qmap.copyToWorker();
+}
+
 } // namespace CL
 } // namespace CVD
