@@ -44,7 +44,7 @@ BaseImageState::BaseImageState(Worker & worker, CVD::ImageRef const & size,
 
     // Allocate image (may throw a CL exception).
     // Most exceptions here are from an unsupported format or a lack of memory.
-    image = cl::Image2D(worker.context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, format, size.x, size.y, 0);
+    image = cl::Image2D(worker.context, CL_MEM_READ_WRITE, format, size.x, size.y, 0);
 
     // Create origin at 0, 0, 0.
     origin[0] = 0;
@@ -60,7 +60,7 @@ BaseImageState::BaseImageState(Worker & worker, CVD::ImageRef const & size,
     size_t rpitch = size.x * pbytes;
 
     // Map image memory.
-    mapping = worker.queue.enqueueMapImage(image, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, origin, region, &rpitch, NULL);
+    mapping = ::calloc(size.x * size.y, pbytes);
 
     expect("Image memory must be mapped", mapping != NULL);
 }
@@ -68,8 +68,7 @@ BaseImageState::BaseImageState(Worker & worker, CVD::ImageRef const & size,
 BaseImageState::~BaseImageState() {
     if (mapping != NULL) {
         try {
-            worker.queue.enqueueUnmapMemObject(image, mapping);
-            worker.finish();
+            ::free(mapping);
         } catch (...) {
             // Ignore any unmapping error.
         }
