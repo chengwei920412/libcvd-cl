@@ -69,11 +69,16 @@ public:
     }
 
     void zero() {
+        // Create zero-filled sample item.
         Item zero;
         ::memset(&zero, 0, sizeof(zero));
 
-        for (size_t i = 0, o = 0; i < size; i++, o += sizeof(zero))
-            worker.queue.enqueueWriteBuffer(buffer, CL_FALSE, o, sizeof(zero), &zero);
+        // Extend item to full-sized vector.
+        std::vector<Item> const items(size, zero);
+
+        // Write vector memory.
+        worker.queue.finish();
+        worker.queue.enqueueWriteBuffer(buffer, CL_TRUE, 0, nbytes, items.data());
         worker.queue.finish();
     }
 
