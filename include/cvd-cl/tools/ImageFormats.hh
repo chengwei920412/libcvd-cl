@@ -47,6 +47,12 @@ struct CVD2CL<CVD::byte> {
 };
 
 template<>
+struct CVD2CL<cl_float> {
+    ::cl_channel_order const static order = CL_INTENSITY;
+    ::cl_channel_type  const static type  = CL_FLOAT;
+};
+
+template<>
 struct CVD2CL<CVD::Rgba<CVD::byte> > {
     ::cl_channel_order const static order = CL_RGBA;
     ::cl_channel_type  const static type  = CL_UNSIGNED_INT8;
