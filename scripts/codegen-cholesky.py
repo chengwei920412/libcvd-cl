@@ -125,7 +125,7 @@ for col in reversed(range(size - 1)):
 print """
     // Write vector elements."""
 
-for col in range(size):
-    print "    xs[mad24(%3d, nmatrices, imatrix)] = v%d;" % (col, col)
+for row in range(size):
+    print "    xs[mad24(%3d, nmatrices, imatrix)] = v%d;" % (row, row)
 
 print "}"
