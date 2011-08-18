@@ -367,7 +367,7 @@ static void testPose(
     glEnd();
     glFlush();
 
-    sleep(5);
+    sleep(30);
 }
 
 int main(int argc, char **argv) {
