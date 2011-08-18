@@ -83,8 +83,10 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
     CVD::Image<CVD::byte> cropImage(ref1024);
 
     for (int x = 0; x < nx; x++) {
-        for (int y = 0; y < ny; y++)
-            cropImage[x][y]/*.red*/ = image[x][y];
+        for (int y = 0; y < ny; y++) {
+            CVD::ImageRef const ref(x, y);
+            cropImage[ref]/*.red*/ = image[ref];
+        }
     }
 
     // Create OpenCL worker.
