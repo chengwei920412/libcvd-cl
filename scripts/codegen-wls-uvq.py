@@ -92,7 +92,7 @@ print """
             float const J0 = (q1             );
             float const J1 = (0              );
             float const J2 = (-u1 * q1       );
-            float const J3 = (-u1 * -v1      );
+            float const J3 = (-u1 * v1       );
             float const J4 = (1.0f + sq(u1)  );
             float const J5 = (-v1            );
 
@@ -121,7 +121,7 @@ print """
             float const J2 = (-v1 * q1       );
             float const J3 = (-1.0f - sq(v1) );
             float const J4 = (u1 * v1        );
-            float const J5 = (v1             );
+            float const J5 = (u1             );
 
             // Calculate error in v.
             float const dv = (v2 - v1);
