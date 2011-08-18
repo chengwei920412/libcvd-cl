@@ -294,8 +294,11 @@ static void testPose(
             }
         }
 
+        cl_float avg = (total / hyposcores.size());
+
         std::cerr << std::setw(8) << non0  << " non-zero scores" << std::endl;
         std::cerr << std::setw(8) << total << " total score" << std::endl;
+        std::cerr << std::setw(8) << avg   << " average score" << std::endl;
         std::cerr << std::setw(8) << best  << " best score" << std::endl;
         std::cerr << std::setw(8) << ibest << " best matrix index" << std::endl;
 
