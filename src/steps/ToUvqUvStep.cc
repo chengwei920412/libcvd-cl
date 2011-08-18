@@ -73,7 +73,7 @@ void ToUvqUvStep::execute() {
     worker.finish();
 
     // Set kernel for v-mapping.
-    kernel.setArg(0, i_camera.umap.image);
+    kernel.setArg(0, i_camera.vmap.image);
 
     // Translate v in uvq.
     kernel.setArg(1, i_xy1.buffer);
@@ -88,7 +88,7 @@ void ToUvqUvStep::execute() {
     worker.finish();
 
     // Set kernel for q-mapping.
-    kernel.setArg(0, i_camera.umap.image);
+    kernel.setArg(0, i_camera.qmap.image);
 
     // Translate q in uvq.
     kernel.setArg(1, i_xy1.buffer);
