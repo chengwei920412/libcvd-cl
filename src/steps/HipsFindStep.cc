@@ -55,15 +55,16 @@ void HipsFindStep::execute() {
     // Check consistency.
     assert(i_hips2.size == i_xy2.size);
 
-    // Round down number of output points.
+    // Round down number of points.
     size_t const np1_16 = (np1 / 16) * 16;
+    size_t const np2_16 = (np2 / 16) * 16;
 
     // Reset number of output points.
     // TODO: Generalise kernel to arbitrary sizes.
     o_xy2.setCount(np1_16);
 
     // Queue kernel with global size set to number of input points.
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np1_16, 16), cl::NDRange(16, 16));
+    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np1_16, np2_16), cl::NDRange(16, 16));
 }
 
 } // namespace CL

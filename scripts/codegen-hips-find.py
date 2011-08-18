@@ -97,6 +97,9 @@ kernel void hips_find(
     // Global work item for dimension 2 is *unused*.
     int    const ihash1  = get_global_id(0);
 
+    // Use global work size for dimension 2 as hash2 limit.
+    int    const nhash2  = get_global_size(1);
+
     // Use local work items for indexing into errors and hashes.
     int    const ithr1   = get_local_id(0);
     int    const ithr2   = get_local_id(1);
@@ -109,7 +112,7 @@ kernel void hips_find(
     }
 
     // Loop while consuming hash2.
-    for (int offset = 0; offset < 256; offset += 16) {
+    for (int offset = 0; offset < nhash2; offset += 16) {
         // Cache from hash2.
         if (ithr2 == 0) {
             cache2[ithr1]  = hashes2[offset + ithr1];
