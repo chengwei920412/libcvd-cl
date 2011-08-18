@@ -43,6 +43,7 @@
 #include <cvd-cl/steps/PoseUvqWlsStep.hh>
 #include <cvd-cl/steps/CholeskyStep.hh>
 #include <cvd-cl/steps/SE3ExpStep.hh>
+#include <cvd-cl/steps/SE3ScoreStep.hh>
 
 
 // Typedefs for image format.
@@ -178,6 +179,7 @@ static void testPose(
     CVD::CL::MatrixState     hypo_b      (worker, nhypos, 6, 1);
     CVD::CL::MatrixState     hypo_x      (worker, nhypos, 6, 1);
     CVD::CL::MatrixState     hypo_cam    (worker, nhypos, 4, 4);
+    CVD::CL::FloatListState  hypo_scores (worker, nhypos);
 
     // Create reusable steps.
     CVD::CL::PreFastGrayStep runPreFast  (imageNeat, corners1);
@@ -198,6 +200,7 @@ static void testPose(
     CVD::CL::PoseUvqWlsStep  runWls      (uvquv_mix.uvq, uvquv_mix.uv, hypo_a, hypo_b);
     CVD::CL::CholeskyStep    runCholesky (hypo_a, hypo_b, hypo_x);
     CVD::CL::SE3ExpStep      runSe3Exp   (hypo_x, hypo_cam);
+    CVD::CL::SE3ScoreStep    runSe3Score (uvquv, hypo_cam, hypo_scores);
 
 
 
@@ -244,6 +247,7 @@ static void testPose(
     int64_t const timeWls      = runWls.measure();
     int64_t const timeCholesky = runCholesky.measure();
     int64_t const timeSe3Exp   = runSe3Exp.measure();
+    int64_t const timeSe3Score = runSe3Score.measure();
 
     std::cerr << std::endl;
     std::cerr << std::setw(8) << timeMatch       << " us finding HIPS matches" << std::endl;
@@ -252,6 +256,7 @@ static void testPose(
     std::cerr << std::setw(8) << timeWls         << " us differentiating matrix" << std::endl;
     std::cerr << std::setw(8) << timeCholesky    << " us decomposing matrix and back-substituting vector" << std::endl;
     std::cerr << std::setw(8) << timeSe3Exp      << " us exponentiating matrix" << std::endl;
+    std::cerr << std::setw(8) << timeSe3Exp      << " us scoring matrix" << std::endl;
     std::cerr << std::endl;
 
     // Read out final corner list.
@@ -261,6 +266,28 @@ static void testPose(
     // Read out matching corner table.
     std::vector<cl_int2> points2;
     im1im2.get(&points2);
+
+    // Read out score list.
+    std::vector<cl_float> hyposcores;
+    hypo_scores.get(&hyposcores);
+
+    /* Calculate score statistics. */ {
+        cl_float total = 0;
+        cl_float best  = 0;
+        cl_int   non0  = 0;
+
+        for (size_t i = 0; i < hyposcores.size(); i++) {
+            cl_float const score = hyposcores.at(i);
+
+            total += score;
+            non0  += (score > 0);
+            best   = std::max(score, best);
+        }
+
+        std::cerr << std::setw(8) << non0  << " non-zero scores" << std::endl;
+        std::cerr << std::setw(8) << total << " total score" << std::endl;
+        std::cerr << std::setw(8) << best  << " best score" << std::endl;
+    }
 
     CVD::ImageRef const size2(nx * 2, ny);
     CVD::VideoDisplay window(size2);
