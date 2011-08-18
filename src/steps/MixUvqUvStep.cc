@@ -55,38 +55,40 @@ void MixUvqUvStep::execute() {
     // Prepare global work size.
     cl::NDRange const global(o_uvquv.maxRecords);
 
-    // Assign integer offset buffer.
-    kernel.setArg(0, m_ints.buffer);
-
     // Finish any outstanding work.
     worker.finish();
+
+    // Assign integer offset buffer.
+    kernel.setArg(0, m_ints.buffer);
 
     // Translate u in uvq.
     kernel.setArg(1, i_uvquv.uvq.us.memory);
     kernel.setArg(2, o_uvquv.uvq.us.memory);
     worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, cl::NullRange);
+    worker.finish();
 
     // Translate v in uvq.
     kernel.setArg(1, i_uvquv.uvq.vs.memory);
     kernel.setArg(2, o_uvquv.uvq.vs.memory);
     worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, cl::NullRange);
+    worker.finish();
 
     // Translate q in uvq.
     kernel.setArg(1, i_uvquv.uvq.qs.memory);
     kernel.setArg(2, o_uvquv.uvq.qs.memory);
     worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, cl::NullRange);
+    worker.finish();
 
     // Translate u in uv.
     kernel.setArg(1, i_uvquv.uv.us.memory);
     kernel.setArg(2, o_uvquv.uv.us.memory);
     worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, cl::NullRange);
+    worker.finish();
 
     // Translate v in uv.
     kernel.setArg(1, i_uvquv.uv.vs.memory);
     kernel.setArg(2, o_uvquv.uv.vs.memory);
     worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, cl::NullRange);
-
-    // Finish any outstanding work.
     worker.finish();
 }
 
