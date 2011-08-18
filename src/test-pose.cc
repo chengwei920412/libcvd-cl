@@ -33,10 +33,10 @@
 #include <cvd/image_io.h>
 #include <cvd/videodisplay.h>
 
-#include <cvd-cl/steps/PreFastRichStep.hh>
-#include <cvd-cl/steps/FastRichStep.hh>
+#include <cvd-cl/steps/PreFastGrayStep.hh>
+#include <cvd-cl/steps/FastGrayStep.hh>
 #include <cvd-cl/steps/FastBestStep.hh>
-#include <cvd-cl/steps/HipsRichStep.hh>
+#include <cvd-cl/steps/HipsGrayStep.hh>
 #include <cvd-cl/steps/HipsFindStep.hh>
 #include <cvd-cl/steps/ToUvqUvStep.hh>
 #include <cvd-cl/steps/MixUvqUvStep.hh>
@@ -46,9 +46,9 @@
 
 
 // Typedefs for image format.
-typedef CVD::Rgba<CVD::byte>    ColourPixel;
+typedef CVD::byte                 GrayPixel;
 typedef uint16_t                 DepthPixel;
-typedef CVD::Image<ColourPixel> ColourImage;
+typedef CVD::Image<GrayPixel >    GrayImage;
 typedef CVD::Image<DepthPixel>   DepthImage;
 
 // Size constants.
@@ -138,13 +138,13 @@ static void translateDepth(
 
 static void testPose(
     cl::Device        & device,
-    ColourImage const & c1image,
-    ColourImage const & c2image,
+    GrayImage   const & g1image,
+    GrayImage   const & g2image,
     DepthImage  const & d1image
 ) {
 
     // Extract image dimensions.
-    CVD::ImageRef const size = c1image.size();
+    CVD::ImageRef const size = g1image.size();
     int           const nx   = size.x;
     int           const ny   = size.y;
     int           const nxy  = nx * ny;
@@ -153,7 +153,7 @@ static void testPose(
     CVD::CL::Worker          worker      (device);
 
     // Create FAST and HIPS states.
-    CVD::CL::RichImageState  imageNeat   (worker, size);
+    CVD::CL::GrayImageState  imageNeat   (worker, size);
     CVD::CL::GrayImageState  scores      (worker, size);
     CVD::CL::PointListState  corners1    (worker, nxy);
     CVD::CL::PointListState  corners2    (worker, nxy);
@@ -180,16 +180,16 @@ static void testPose(
     CVD::CL::MatrixState     hypo_cam    (worker, nhypos, 4, 4);
 
     // Create reusable steps.
-    CVD::CL::PreFastRichStep runPreFast  (imageNeat, corners1);
-    CVD::CL::FastRichStep    runFast     (imageNeat, corners1, scores, corners2);
+    CVD::CL::PreFastGrayStep runPreFast  (imageNeat, corners1);
+    CVD::CL::FastGrayStep    runFast     (imageNeat, corners1, scores, corners2);
 
     // Create steps specific to image1.
     CVD::CL::FastBestStep    runMaxFast1 (                     scores, corners2, im1corners);
-    CVD::CL::HipsRichStep    runHips1    (imageNeat,                             im1corners, im1hips);
+    CVD::CL::HipsGrayStep    runHips1    (imageNeat,                             im1corners, im1hips);
 
     // Create steps specific to image2.
     CVD::CL::FastBestStep    runMaxFast2 (                     scores, corners2,                      im2corners);
-    CVD::CL::HipsRichStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
+    CVD::CL::HipsGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
 
     // Create steps for RANSAC.
     CVD::CL::HipsFindStep    runMatch    (im1hips, im2hips, im2corners, im1im2);
@@ -207,7 +207,7 @@ static void testPose(
     camera.copyToWorker();
 
     // Write image 1 to device.
-    imageNeat.set(c1image);
+    imageNeat.set(g1image);
 
     // Zero FAST scores.
     scores.zero();
@@ -221,7 +221,7 @@ static void testPose(
     runHips1.execute();
 
     // Write image 2 to device.
-    imageNeat.set(c2image);
+    imageNeat.set(g2image);
 
     // Zero FAST scores.
     scores.zero();
@@ -264,9 +264,9 @@ static void testPose(
 
     CVD::ImageRef const size2(nx * 2, ny);
     CVD::VideoDisplay window(size2);
-    CVD::glDrawPixels(c1image);
+    CVD::glDrawPixels(g1image);
     CVD::glRasterPos(CVD::ImageRef(nx, 0));
-    CVD::glDrawPixels(c2image);
+    CVD::glDrawPixels(g2image);
 
     glColor3f(0, 0, 1);
     glBegin(GL_LINES);
@@ -301,15 +301,15 @@ static void testPose(
 }
 
 int main(int argc, char **argv) {
-    ColourImage c1image_full = CVD::img_load("images/colour1.bmp");
-    ColourImage c2image_full = CVD::img_load("images/colour2.bmp");
-    DepthImage  d1image_full = CVD::img_load("images/depth1.png" );
+    GrayImage   g1image_full = CVD::img_load("images/gray1.png" );
+    GrayImage   g2image_full = CVD::img_load("images/gray2.png" );
+    DepthImage  d1image_full = CVD::img_load("images/depth1.png");
 
-    ColourImage c1image(ref512);
-    c1image.copy_from(c1image_full.sub_image(ref0, ref512));
+    GrayImage g1image(ref512);
+    g1image.copy_from(g1image_full.sub_image(ref0, ref512));
 
-    ColourImage c2image(ref512);
-    c2image.copy_from(c2image_full.sub_image(ref0, ref512));
+    GrayImage g2image(ref512);
+    g2image.copy_from(g2image_full.sub_image(ref0, ref512));
 
     DepthImage  d1image(ref512);
     d1image.copy_from(d1image_full.sub_image(ref0, ref512));
@@ -348,7 +348,7 @@ int main(int argc, char **argv) {
                         " MiB" << std::endl;
 
                 try {
-                    testPose(dev, c1image, c2image, d1image);
+                    testPose(dev, g1image, g2image, d1image);
                 } catch (cl::Error & err) {
                     std::cerr << err.what() << " (code " << err.err() << ")" << std::endl;
                 }
