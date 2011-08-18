@@ -20,6 +20,7 @@ all:
 	scripts/codegen-hips-gray.py     | tee opencl/hips-gray.cl     | scripts/embed.py OCL_HIPS_GRAY      > src/kernels/hips-gray.hh
 	scripts/codegen-hips-rich.py     | tee opencl/hips-rich.cl     | scripts/embed.py OCL_HIPS_RICH      > src/kernels/hips-rich.hh
 	scripts/codegen-hips-find.py     | tee opencl/hips-find.cl     | scripts/embed.py OCL_HIPS_FIND      > src/kernels/hips-find.hh
+	scripts/codegen-clip-depth.py    | tee opencl/clip-depth.cl    | scripts/embed.py OCL_CLIP_DEPTH     > src/kernels/clip-depth.hh
 
 	scripts/codegen-cholesky.py 3    | tee opencl/cholesky3.cl     | scripts/embed.py OCL_CHOLESKY_3     > src/kernels/cholesky3.hh
 	scripts/codegen-cholesky.py 4    | tee opencl/cholesky4.cl     | scripts/embed.py OCL_CHOLESKY_4     > src/kernels/cholesky4.hh

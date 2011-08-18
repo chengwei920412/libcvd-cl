@@ -34,6 +34,7 @@
 #include <cvd/videodisplay.h>
 
 #include <cvd-cl/steps/PreFastGrayStep.hh>
+#include <cvd-cl/steps/ClipDepthStep.hh>
 #include <cvd-cl/steps/FastGrayStep.hh>
 #include <cvd-cl/steps/FastBestStep.hh>
 #include <cvd-cl/steps/HipsGrayStep.hh>
@@ -159,6 +160,7 @@ static void testPose(
     CVD::CL::GrayImageState  scores      (worker, size);
     CVD::CL::PointListState  corners1    (worker, nxy);
     CVD::CL::PointListState  corners2    (worker, nxy);
+    CVD::CL::PointListState  corners3    (worker, nxy);
 
     // Create states specific to image1 (colour + depth).
     CVD::CL::PointListState  im1corners  (worker, nxy);
@@ -184,15 +186,16 @@ static void testPose(
     CVD::CL::CountState      hypo_best   (worker, nhypos);
     CVD::CL::Float2ListState test_uvs    (worker, ncorners);
 
-    // Create reusable steps.
-    CVD::CL::PreFastGrayStep runPreFast  (imageNeat, corners1);
-    CVD::CL::FastGrayStep    runFast     (imageNeat, corners1, scores, corners2);
-
     // Create steps specific to image1.
-    CVD::CL::FastBestStep    runMaxFast1 (                     scores, corners2, im1corners);
+    CVD::CL::PreFastGrayStep runPreFast1 (imageNeat, corners1);
+    CVD::CL::ClipDepthStep   runClip1    (camera.qmap,  corners1, corners2);
+    CVD::CL::FastGrayStep    runFast1    (imageNeat, corners2, scores, corners3);
+    CVD::CL::FastBestStep    runMaxFast1 (                     scores, corners3, im1corners);
     CVD::CL::HipsGrayStep    runHips1    (imageNeat,                             im1corners, im1hips);
 
     // Create steps specific to image2.
+    CVD::CL::PreFastGrayStep runPreFast2 (imageNeat, corners1);
+    CVD::CL::FastGrayStep    runFast2    (imageNeat, corners1, scores, corners2);
     CVD::CL::FastBestStep    runMaxFast2 (                     scores, corners2,                      im2corners);
     CVD::CL::HipsGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
 
@@ -221,10 +224,12 @@ static void testPose(
     scores.zero();
     corners1.zero();
     corners2.zero();
+    corners3.zero();
 
     // Run image 1 pipeline.
-    runPreFast.execute();
-    runFast.execute();
+    runPreFast1.execute();
+    runClip1.execute();
+    runFast1.execute();
     runMaxFast1.execute();
     runHips1.execute();
 
@@ -236,9 +241,9 @@ static void testPose(
     corners1.zero();
     corners2.zero();
 
-    // Run image 1 pipeline.
-    runPreFast.execute();
-    runFast.execute();
+    // Run image 2 pipeline.
+    runPreFast2.execute();
+    runFast2.execute();
     runMaxFast2.execute();
     runHips2.execute();
 
