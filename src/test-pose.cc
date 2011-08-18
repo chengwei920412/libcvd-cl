@@ -63,7 +63,7 @@ CVD::ImageRef const static   ref0(  0,   0);
 CVD::ImageRef const static ref512(512, 256);
 
 // Maximum corners processed.
-size_t const static ncorners = 256;
+size_t const static ncorners = 2048;
 
 // Number of hypotheses to generate.
 size_t const static nhypos   = 8192;
