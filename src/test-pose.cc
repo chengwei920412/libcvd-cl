@@ -245,9 +245,6 @@ static void testPose(
     int64_t const timeCholesky = runCholesky.measure();
     int64_t const timeSe3Exp   = runSe3Exp.measure();
 
-
-    CVD::ImageRef size2(nx * 2, ny);
-
     std::cerr << std::endl;
     std::cerr << std::setw(8) << timeMatch       << " us matching HIPS" << std::endl;
     std::cerr << std::setw(8) << timeToUvqUv     << " us converting to ((u,v,q),(u,v))" << std::endl;
@@ -257,38 +254,50 @@ static void testPose(
     std::cerr << std::setw(8) << timeSe3Exp      << " us exponentiating matrix" << std::endl;
     std::cerr << std::endl;
 
-//    CVD::VideoDisplay window(size2);
-//    CVD::glDrawPixels(image);
-//    CVD::glRasterPos(CVD::ImageRef(nx, 0));
-//    CVD::glDrawPixels(image);
-//
-//    glColor3f(0, 0, 1);
-//    glBegin(GL_LINES);
-//    for (size_t icorner1 = 0; (icorner1 < matches.size()) && (icorner1 < corners.size()); icorner1++) {
-//        int const icorner2 = matches.at(icorner1);
-//
-//        try {
-//            cl_int2 const xy1 = corners.at(icorner1);
-//            cl_int2 const xy2 = corners.at(icorner2);
-//
-//            glVertex2i(xy1.x, xy1.y);
-//            glVertex2i(xy2.x + nx, xy2.y);
-//        } catch (...) {
-//            std::cerr << "Bad corner " << icorner1 << " of " << matches.size() << std::endl;
-//        }
-//    }
-//    glEnd();
-//
-//    glColor3f(1, 0, 0);
-//    glBegin(GL_POINTS);
-//    for (size_t i = 0; i < corners.size(); i++) {
-//        cl_int2 const & xy = corners.at(i);
-//        glVertex2i(xy.x, xy.y);
-//    }
-//    glEnd();
-//    glFlush();
-//
-//    sleep(5);
+    // Read out final corner list.
+    std::vector<cl_int2> points1;
+    im1corners.get(&points1);
+
+    // Read out matching corner table.
+    std::vector<cl_int2> points2;
+    im1im2.get(&points2);
+
+    CVD::ImageRef const size2(nx * 2, ny);
+    CVD::VideoDisplay window(size2);
+    CVD::glDrawPixels(c1image);
+    CVD::glRasterPos(CVD::ImageRef(nx, 0));
+    CVD::glDrawPixels(c2image);
+
+    glColor3f(0, 0, 1);
+    glBegin(GL_LINES);
+    for (size_t ic = 0; (ic < points1.size()) && (ic < points2.size()); ic++) {
+        try {
+            cl_int2 const xy1 = points1.at(ic);
+            cl_int2 const xy2 = points2.at(ic);
+
+            glVertex2i(xy1.x, xy1.y);
+            glVertex2i(xy2.x + nx, xy2.y);
+        } catch (...) {
+            std::cerr << "Bad corner " << ic << " of " << points1.size() << " / " << points2.size() << std::endl;
+        }
+    }
+    glEnd();
+    glFlush();
+
+    glColor3f(1, 0, 0);
+    glBegin(GL_POINTS);
+    for (size_t i = 0; i < points1.size(); i++) {
+        cl_int2 const & xy = points1.at(i);
+        glVertex2i(xy.x, xy.y);
+    }
+    for (size_t i = 0; i < points2.size(); i++) {
+        cl_int2 const & xy = points2.at(i);
+        glVertex2i(xy.x + nx, xy.y);
+    }
+    glEnd();
+    glFlush();
+
+    sleep(5);
 }
 
 int main(int argc, char **argv) {
