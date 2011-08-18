@@ -46,7 +46,7 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#define THRESHOLD  (0.1)
+#define THRESHOLD  (0.01)
 #define THRESHOLD2 (THRESHOLD * THRESHOLD)
 
 float sq(float x) {
