@@ -65,7 +65,7 @@ CVD::ImageRef const static ref512(512, 256);
 size_t const static ncorners = 256;
 
 // Number of hypotheses to generate.
-size_t const static nhypos   = 2048;
+size_t const static nhypos   = 8192;
 
 static void readCamera(Camera::Linear * camera, char const * path) {
     // Open parameter file.
