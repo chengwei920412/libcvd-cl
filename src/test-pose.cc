@@ -246,11 +246,11 @@ static void testPose(
     int64_t const timeSe3Exp   = runSe3Exp.measure();
 
     std::cerr << std::endl;
-    std::cerr << std::setw(8) << timeMatch       << " us matching HIPS" << std::endl;
-    std::cerr << std::setw(8) << timeToUvqUv     << " us converting to ((u,v,q),(u,v))" << std::endl;
-    std::cerr << std::setw(8) << timeMix         << " us mixing matches" << std::endl;
+    std::cerr << std::setw(8) << timeMatch       << " us finding HIPS matches" << std::endl;
+    std::cerr << std::setw(8) << timeToUvqUv     << " us converting matches to ((u,v,q),(u,v))" << std::endl;
+    std::cerr << std::setw(8) << timeMix         << " us selecting matches for 3-point attempts" << std::endl;
     std::cerr << std::setw(8) << timeWls         << " us differentiating matrix" << std::endl;
-    std::cerr << std::setw(8) << timeCholesky    << " us running Cholesky" << std::endl;
+    std::cerr << std::setw(8) << timeCholesky    << " us decomposing matrix and back-substituting vector" << std::endl;
     std::cerr << std::setw(8) << timeSe3Exp      << " us exponentiating matrix" << std::endl;
     std::cerr << std::endl;
 
