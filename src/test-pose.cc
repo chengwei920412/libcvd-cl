@@ -228,9 +228,13 @@ static void testPose(
 
     // Run image 1 pipeline.
     runPreFast1.execute();
+    size_t const ncull1 = corners1.getCount();
     runClip1.execute();
+    size_t const nclip1 = corners2.getCount();
     runFast1.execute();
+    size_t const nfast1 = corners3.getCount();
     runMaxFast1.execute();
+    size_t const nbest1 = im1corners.getCount();
     runHips1.execute();
 
     // Write image 2 to device.
@@ -243,8 +247,11 @@ static void testPose(
 
     // Run image 2 pipeline.
     runPreFast2.execute();
+    size_t const ncull2 = corners1.getCount();
     runFast2.execute();
+    size_t const nfast2 = corners2.getCount();
     runMaxFast2.execute();
+    size_t const nbest2 = im2corners.getCount();
     runHips2.execute();
 
     // Finish any outstanding work.
@@ -267,6 +274,12 @@ static void testPose(
     std::cerr << std::setw(8) << timeCholesky    << " us decomposing matrix and back-substituting vector" << std::endl;
     std::cerr << std::setw(8) << timeSe3Exp      << " us exponentiating matrix" << std::endl;
     std::cerr << std::setw(8) << timeSe3Exp      << " us scoring matrix" << std::endl;
+    std::cerr << std::endl;
+    std::cerr << std::setw(8) << nxy    << std::setw(8) << nxy    << " corner candidates in image" << std::endl;
+    std::cerr << std::setw(8) << ncull1 << std::setw(8) << ncull2 << " corners after culling" << std::endl;
+    std::cerr << std::setw(8) << nclip1 << std::setw(8) << ncull2 << " corners after depth clipping" << std::endl;
+    std::cerr << std::setw(8) << nfast1 << std::setw(8) << nfast2 << " corners after FAST" << std::endl;
+    std::cerr << std::setw(8) << nbest1 << std::setw(8) << nbest2 << " corners after filtering" << std::endl;
     std::cerr << std::endl;
 
     // Read out final corner list.
