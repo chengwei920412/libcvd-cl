@@ -52,7 +52,7 @@ BaseImageState::BaseImageState(Worker & worker, CVD::ImageRef const & size,
     origin[2] = 0;
 
     // Create 3D region for full 2D plane.
-    region[0] = size.y;
+    region[0] = size.x;
     region[1] = size.y;
     region[2] = 1;
 
