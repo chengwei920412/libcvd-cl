@@ -44,6 +44,7 @@
 #include <cvd-cl/steps/CholeskyStep.hh>
 #include <cvd-cl/steps/SE3ExpStep.hh>
 #include <cvd-cl/steps/SE3ScoreStep.hh>
+#include <cvd-cl/steps/SE3Run1Step.hh>
 
 
 // Typedefs for image format.
@@ -66,24 +67,20 @@ size_t const static ncorners = 256;
 // Number of hypotheses to generate.
 size_t const static nhypos   = 2048;
 
-static void learnCamera(
-    char const                * path,
-    CVD::BasicImage<cl_float>   uimage,
-    CVD::BasicImage<cl_float>   vimage
-) {
-
-    // Create camera.
-    Camera::Linear camera;
-
+static void readCamera(Camera::Linear * camera, char const * path) {
     // Open parameter file.
     std::ifstream file(path);
     file.exceptions(~std::ios::goodbit);
 
     // Consume parameters.
-    camera.load(file);
+    camera->load(file);
+}
 
-    // Close parameter file.
-    file.close();
+static void learnCamera(
+    Camera::Linear const      & camera,
+    CVD::BasicImage<cl_float>   uimage,
+    CVD::BasicImage<cl_float>   vimage
+) {
 
     // Extract image dimensions.
     CVD::ImageRef const size = uimage.size();
@@ -103,6 +100,10 @@ static void learnCamera(
 
             // Translate from (x, y) to (u, v).
             TooN::Vector<2> const uv = camera.unproject(xy);
+
+//            TooN::Vector<2> const xy2 = camera.project(uv);
+//            std::cerr << "x = " << xy[0] << " -> " << uv[0] << " -> " << xy2[0] << std::endl;
+//            std::cerr << "y = " << xy[1] << " -> " << uv[1] << " -> " << xy2[1] << std::endl;
 
             // Record (u, v) pair.
             uimage[ref] = uv[0];
@@ -180,6 +181,8 @@ static void testPose(
     CVD::CL::MatrixState     hypo_x      (worker, nhypos, 6, 1);
     CVD::CL::MatrixState     hypo_cam    (worker, nhypos, 4, 4);
     CVD::CL::FloatListState  hypo_scores (worker, nhypos);
+    CVD::CL::CountState      hypo_best   (worker, nhypos);
+    CVD::CL::Float2ListState test_uvs    (worker, ncorners);
 
     // Create reusable steps.
     CVD::CL::PreFastGrayStep runPreFast  (imageNeat, corners1);
@@ -201,11 +204,13 @@ static void testPose(
     CVD::CL::CholeskyStep    runCholesky (hypo_a, hypo_b, hypo_x);
     CVD::CL::SE3ExpStep      runSe3Exp   (hypo_x, hypo_cam);
     CVD::CL::SE3ScoreStep    runSe3Score (uvquv, hypo_cam, hypo_scores);
-
+    CVD::CL::SE3Run1Step     runSe3One   (uvquv, hypo_cam, hypo_best, test_uvs);
 
 
     // Populate camera states.
-    learnCamera("./images/kinectparameters.txt", camera.umap.asImage(), camera.vmap.asImage());
+    Camera::Linear cvdcamera;
+    readCamera(&cvdcamera, "./images/kinectparameters.txt");
+    learnCamera(cvdcamera, camera.umap.asImage(), camera.vmap.asImage());
     translateDepth(d1image, camera.qmap.asImage());
     camera.copyToWorker();
 
@@ -275,19 +280,34 @@ static void testPose(
         cl_float total = 0;
         cl_float best  = 0;
         cl_int   non0  = 0;
+        cl_int   ibest = 0;
 
         for (size_t i = 0; i < hyposcores.size(); i++) {
             cl_float const score = hyposcores.at(i);
 
             total += score;
             non0  += (score > 0);
-            best   = std::max(score, best);
+
+            if (score > best) {
+                best  = score;
+                ibest = i;
+            }
         }
 
         std::cerr << std::setw(8) << non0  << " non-zero scores" << std::endl;
         std::cerr << std::setw(8) << total << " total score" << std::endl;
         std::cerr << std::setw(8) << best  << " best score" << std::endl;
+        std::cerr << std::setw(8) << ibest << " best matrix index" << std::endl;
+
+        // Assign and run best matrix.
+        worker.finish();
+        hypo_best.setCount(ibest);
+        runSe3One.measure();
     }
+
+    // Read out transformed coordinate list.
+    std::vector<cl_float2> uv2s;
+    test_uvs.get(&uv2s);
 
     CVD::ImageRef const size2(nx * 2, ny);
     CVD::VideoDisplay window(size2);
@@ -299,27 +319,18 @@ static void testPose(
     glBegin(GL_LINES);
     for (size_t ic = 0; (ic < points1.size()) && (ic < points2.size()); ic++) {
         try {
-            cl_int2 const xy1 = points1.at(ic);
-            cl_int2 const xy2 = points2.at(ic);
+            cl_int2         const xy1  = points1.at(ic);
 
-            glVertex2i(xy1.x, xy1.y);
+            cl_float2       const uv2  = uv2s.at(ic);
+            TooN::Vector<2> const uv2t = TooN::makeVector(uv2.x, uv2.y);
+            TooN::Vector<2> const xy2t = cvdcamera.project(uv2t);
+            cl_int2         const xy2  = {{cl_int(xy2t[0]), cl_int(xy2t[1])}};
+
+            glVertex2i(xy1.x,      xy1.y);
             glVertex2i(xy2.x + nx, xy2.y);
         } catch (...) {
             std::cerr << "Bad corner " << ic << " of " << points1.size() << " / " << points2.size() << std::endl;
         }
-    }
-    glEnd();
-    glFlush();
-
-    glColor3f(1, 0, 0);
-    glBegin(GL_POINTS);
-    for (size_t i = 0; i < points1.size(); i++) {
-        cl_int2 const & xy = points1.at(i);
-        glVertex2i(xy.x, xy.y);
-    }
-    for (size_t i = 0; i < points2.size(); i++) {
-        cl_int2 const & xy = points2.at(i);
-        glVertex2i(xy.x + nx, xy.y);
     }
     glEnd();
     glFlush();

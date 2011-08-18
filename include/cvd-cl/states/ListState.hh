@@ -92,6 +92,7 @@ public:
 
 typedef ListState<cl_int2  > PointListState;
 typedef ListState<cl_float > FloatListState;
+typedef ListState<cl_float2> Float2ListState;
 typedef ListState<cl_ulong4> HipsListState;
 typedef ListState<cl_int   > IntListState;
 

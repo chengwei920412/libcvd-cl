@@ -29,6 +29,7 @@ all:
 	scripts/codegen-wls-uvq.py       | tee opencl/wls-uvq.cl       | scripts/embed.py OCL_WLS_UVQ        > src/kernels/wls-uvq.hh
 	scripts/codegen-se3-exp.py       | tee opencl/se3-exp.cl       | scripts/embed.py OCL_SE3_EXP        > src/kernels/se3-exp.hh
 	scripts/codegen-se3-score.py     | tee opencl/se3-score.cl     | scripts/embed.py OCL_SE3_SCORE      > src/kernels/se3-score.hh
+	scripts/codegen-se3-run1.py      | tee opencl/se3-run1.cl      | scripts/embed.py OCL_SE3_RUN1       > src/kernels/se3-run1.hh
 
 	scripts/codegen-fxy.py           | tee opencl/fxy.cl           | scripts/embed.py OCL_FXY            > src/kernels/fxy.hh
 	scripts/codegen-fmix.py          | tee opencl/fmix.cl          | scripts/embed.py OCL_FMIX           > src/kernels/fmix.hh
