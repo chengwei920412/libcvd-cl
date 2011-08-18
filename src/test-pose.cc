@@ -189,13 +189,13 @@ static void testPose(
     // Create steps specific to image1.
     CVD::CL::PreFastGrayStep runPreFast1 (imageNeat, corners1);
     CVD::CL::ClipDepthStep   runClip1    (camera.qmap,  corners1, corners2);
-    CVD::CL::FastGrayStep    runFast1    (imageNeat, corners2, scores, corners3);
+    CVD::CL::FastGrayStep    runFast1    (imageNeat, corners2, scores, im1corners);
     CVD::CL::FastBestStep    runMaxFast1 (                     scores, corners3, im1corners);
     CVD::CL::HipsGrayStep    runHips1    (imageNeat,                             im1corners, im1hips);
 
     // Create steps specific to image2.
     CVD::CL::PreFastGrayStep runPreFast2 (imageNeat, corners1);
-    CVD::CL::FastGrayStep    runFast2    (imageNeat, corners1, scores, corners2);
+    CVD::CL::FastGrayStep    runFast2    (imageNeat, corners1, scores, im2corners);
     CVD::CL::FastBestStep    runMaxFast2 (                     scores, corners2,                      im2corners);
     CVD::CL::HipsGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
 
@@ -233,7 +233,7 @@ static void testPose(
     size_t const nclip1 = corners2.getCount();
     runFast1.execute();
     size_t const nfast1 = corners3.getCount();
-    runMaxFast1.execute();
+    // runMaxFast1.execute();
     size_t const nbest1 = im1corners.getCount();
     runHips1.execute();
 
@@ -250,7 +250,7 @@ static void testPose(
     size_t const ncull2 = corners1.getCount();
     runFast2.execute();
     size_t const nfast2 = corners2.getCount();
-    runMaxFast2.execute();
+    // runMaxFast2.execute();
     size_t const nbest2 = im2corners.getCount();
     runHips2.execute();
 
