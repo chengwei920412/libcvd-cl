@@ -79,16 +79,6 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
     const int           ny   = size.y;
     const int           nxy  = nx * ny;
 
-    // For cropped and RGBA-extended image.
-    CVD::Image<CVD::byte> cropImage(ref1024);
-
-    for (int x = 0; x < nx; x++) {
-        for (int y = 0; y < ny; y++) {
-            CVD::ImageRef const ref(x, y);
-            cropImage[ref]/*.red*/ = image[ref];
-        }
-    }
-
     // Create OpenCL worker.
     CVD::CL::Worker          worker      (device);
 
@@ -112,7 +102,7 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
 
     // Write image to device.
     boost::system_time const t1 = boost::get_system_time();
-    imageNeat.set(cropImage);
+    imageNeat.set(image);
     boost::system_time const t2 = boost::get_system_time();
     int64_t const timeWrite = (t2 - t1).total_microseconds();
 
