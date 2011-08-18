@@ -330,25 +330,36 @@ static void testPose(
     std::vector<cl_float2> uv2s;
     test_uvs.get(&uv2s);
 
-    CVD::ImageRef const size2(nx * 2, ny);
+    CVD::ImageRef const size2(nx * 2, ny * 2);
     CVD::VideoDisplay window(size2);
     CVD::glDrawPixels(g1image);
-    CVD::glRasterPos(CVD::ImageRef(nx, 0));
+    CVD::glRasterPos(CVD::ImageRef(nx,  0));
+    CVD::glDrawPixels(g2image);
+    CVD::glRasterPos(CVD::ImageRef( 0, ny));
+    CVD::glDrawPixels(g1image);
+    CVD::glRasterPos(CVD::ImageRef(nx, ny));
     CVD::glDrawPixels(g2image);
 
-    glColor3f(0, 0, 1);
     glBegin(GL_LINES);
     for (size_t ic = 0; (ic < points1.size()) && (ic < points2.size()); ic++) {
         try {
             cl_int2         const xy1  = points1.at(ic);
+            cl_int2         const xy2  = points2.at(ic);
 
-            cl_float2       const uv2  = uv2s.at(ic);
-            TooN::Vector<2> const uv2t = TooN::makeVector(uv2.x, uv2.y);
-            TooN::Vector<2> const xy2t = cvdcamera.project(uv2t);
-            cl_int2         const xy2  = {{cl_int(xy2t[0]), cl_int(xy2t[1])}};
+            cl_float2       const uv3  = uv2s.at(ic);
+            TooN::Vector<2> const uv3t = TooN::makeVector(uv3.x, uv3.y);
+            TooN::Vector<2> const xy3t = cvdcamera.project(uv3t);
+            cl_int2         const xy3  = {{cl_int(xy3t[0]), cl_int(xy3t[1])}};
 
+            // Blue: HIPS match.
+            glColor3f(0, 0, 1);
             glVertex2i(xy1.x,      xy1.y);
             glVertex2i(xy2.x + nx, xy2.y);
+
+            // Red: RANSAC match.
+            glColor3f(1, 0, 0);
+            glVertex2i(xy1.x,      xy1.y + ny);
+            glVertex2i(xy3.x + nx, xy3.y + ny);
         } catch (...) {
             std::cerr << "Bad corner " << ic << " of " << points1.size() << " / " << points2.size() << std::endl;
         }
