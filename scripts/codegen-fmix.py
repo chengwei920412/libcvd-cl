@@ -47,13 +47,13 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // OTHER DEALINGS IN THE SOFTWARE.
 
 kernel void fmix(
+    global uint  const * is,
     global float const * fs,
-    global int   const * is,
     global float       * os
 ) {
 
     // Use global work item as coordinate index.
-    int const i   = get_global_id(0);
+    uint const i = get_global_id(0);
 
     // Transplant input to output.
     // Access pattern in fs may be random, and therefore slow.
