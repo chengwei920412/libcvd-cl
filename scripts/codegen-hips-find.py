@@ -82,7 +82,8 @@ kernel void hips_find(
     global ulong4 const * hashes1,  // T
     global ulong4 const * hashes2,  // R
     global int2   const * ixy2,     // For each hash2, its coordinate.
-    global int2         * oxy2      // For each hash1, coordinate of its best hash2.
+    global int2         * oxy2,     // For each hash1, coordinate of its best hash2.
+           int    const   nhash2    // Number of hash2 entries.
 ) {
 
     // Prepare local memory for hash caching.
@@ -96,9 +97,6 @@ kernel void hips_find(
     // Use global work item for dimension 1 as hash1 index.
     // Global work item for dimension 2 is *unused*.
     int    const ihash1  = get_global_id(0);
-
-    // Use global work size for dimension 2 as hash2 limit.
-    int    const nhash2  = get_global_size(1);
 
     // Use local work items for indexing into errors and hashes.
     int    const ithr1   = get_local_id(0);
