@@ -47,26 +47,12 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // OTHER DEALINGS IN THE SOFTWARE.
 
 int bitcount(ulong x) {
-    // http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetTable
-    uchar const bits[256] = {
-#   define B2(n)     n,     n+1,     n+1,     n+2
-#   define B4(n)  B2(n), B2(n+1), B2(n+1), B2(n+2)
-#   define B6(n)  B4(n), B4(n+1), B4(n+1), B4(n+2)
-    B6(0), B6(1), B6(1), B6(2)
-    };
-
-    uchar8 const uc = as_uchar8(x);
-
-    return (
-        bits[uc.s0] +
-        bits[uc.s1] +
-        bits[uc.s2] +
-        bits[uc.s3] +
-        bits[uc.s4] +
-        bits[uc.s5] +
-        bits[uc.s6] +
-        bits[uc.s7]
-    );
+    int count = 0;
+    while (x) {
+        count++;
+        x &= (x - 1);
+    }
+    return count;
 }
 
 int bitcount4(ulong4 v) {
