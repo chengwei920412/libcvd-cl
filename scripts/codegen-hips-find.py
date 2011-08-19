@@ -47,36 +47,27 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // OTHER DEALINGS IN THE SOFTWARE.
 
 // Parallel bit counting magic adapted from
-// http://gurmeet.net/puzzles/fast-bit-counting-routines/
+// http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
 
-#define   ONE      ((ulong)( 1))
-#define M_ONE      ((ulong)(-1))
-
-#define TWO(c)     (ONE << (c))
-#define MASK(c)    (M_ONE / (TWO(TWO(c)) + ONE))
-#define COUNT(x,c) (((x) & MASK(c)) + (((x) >> (TWO(c))) & MASK(c)))
-
-uint bitcount4(ulong4 x) {
-    x = COUNT(x, 0);
-    x = COUNT(x, 1);
-    x = COUNT(x, 2);
-    x = COUNT(x, 3);
-    x = COUNT(x, 4);
-    x = COUNT(x, 5);
-    return (uint)(x.x + x.y + x.z + x.w);
+uint bitcount8(uint8 v) {
+    v = (v - ((v >> 1) & 0x55555555));
+    v = ((v & 0x33333333) + ((v >> 2) & 0x33333333));
+    v = (((v + (v >> 4) & 0xF0F0F0F) * 0x1010101) >> 24);
+    return (v.s0 + v.s1 + v.s2 + v.s3 + v.s4 + v.s5 + v.s6 + v.s7);
 }
 
 kernel void hips_find(
-    global ulong4 const * hashes1,  // T
-    global ulong4 const * hashes2,  // R
+    // N.B.: These uint8 are actually ulong4.
+    global uint8  const * hashes1,  // T
+    global uint8  const * hashes2,  // R
     global int2   const * ixy2,     // For each hash2, its coordinate.
     global int2         * oxy2,     // For each hash1, coordinate of its best hash2.
            int    const   nhash2    // Number of hash2 entries.
 ) {
 
     // Prepare local memory for hash caching.
-    local ulong4 cache1  [16];
-    local ulong4 cache2  [16];
+    local uint8  cache1  [16];
+    local uint8  cache2  [16];
     local int    errors [256];
     local int    idxs   [256];
     local int    ebest   [16];
@@ -108,10 +99,10 @@ kernel void hips_find(
         barrier(CLK_LOCAL_MEM_FENCE);
 
         // Calculate pairwise error.
-        ulong4 const hash1 = cache1[ithr1];
-        ulong4 const hash2 = cache2[ithr2];
+        uint8  const hash1 = cache1[ithr1];
+        uint8  const hash2 = cache2[ithr2];
         int    const cell  = mad24(ithr1, 16, ithr2);
-        errors [cell]      = bitcount4(hash1 & ~hash2);
+        errors [cell]      = bitcount8(hash1 & ~hash2);
         idxs   [cell]      = offset + ithr2;
 
         // Synchronise work group.
