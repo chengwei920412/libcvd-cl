@@ -46,22 +46,24 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-int bitcount(ulong x) {
-    int count = 0;
-    while (x) {
-        count++;
-        x &= (x - 1);
-    }
-    return count;
-}
+// Parallel bit counting magic adapted from
+// http://gurmeet.net/puzzles/fast-bit-counting-routines/
 
-int bitcount4(ulong4 v) {
-    return (
-        bitcount(v.x) +
-        bitcount(v.y) +
-        bitcount(v.z) +
-        bitcount(v.w)
-    );
+#define   ONE      ((ulong)( 1))
+#define M_ONE      ((ulong)(-1))
+
+#define TWO(c)     (ONE << (c))
+#define MASK(c)    (M_ONE / (TWO(TWO(c)) + ONE))
+#define COUNT(x,c) (((x) & MASK(c)) + (((x) >> (TWO(c))) & MASK(c)))
+
+uint bitcount4(ulong4 x) {
+    x = COUNT(x, 0);
+    x = COUNT(x, 1);
+    x = COUNT(x, 2);
+    x = COUNT(x, 3);
+    x = COUNT(x, 4);
+    x = COUNT(x, 5);
+    return (uint)(x.x + x.y + x.z + x.w);
 }
 
 kernel void hips_find(
