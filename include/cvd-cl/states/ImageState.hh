@@ -60,13 +60,13 @@ public:
     }
 
     void set(AsSub const & image) {
-        asImage().copy_from(image);
+        ::memcpy(mapping, image.data(), nbytes);
         copyToWorker();
     }
 
     void get(AsSub       * image) {
         copyFromWorker();
-        image->copy_from(asImage());
+        ::memcpy(image->data(), mapping, nbytes);
     }
 
     int64_t measure(AsSub const & image, int repeat=10) {
