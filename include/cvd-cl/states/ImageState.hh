@@ -68,6 +68,21 @@ public:
         copyFromWorker();
         image->copy_from(asImage());
     }
+
+    int64_t measure(AsSub const & image, int repeat=10) {
+        // Finish worker queue before starting timing.
+        worker.finish();
+
+        boost::system_time const t1 = boost::get_system_time();
+
+        for (int i = 0; i < repeat; i++)
+            set(image);
+
+        // Finish worker queue before stopping timing.
+        worker.finish();
+        boost::system_time const t2 = boost::get_system_time();
+        return ((t2 - t1).total_microseconds() / repeat);
+    }
 };
 
 typedef ImageState<CVD::byte            >  GrayImageState;
