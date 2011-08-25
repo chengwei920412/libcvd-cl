@@ -101,10 +101,7 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
     CVD::CL::HipsFindStep    runMatch    (                                                            hips, hips, corners3, cornersM);
 
     // Write image to device.
-    boost::system_time const t1 = boost::get_system_time();
-    imageNeat.set(image);
-    boost::system_time const t2 = boost::get_system_time();
-    int64_t const timeWrite = (t2 - t1).total_microseconds();
+    int64_t const timeWrite = imageNeat.measure(image);
 
     // Zero FAST scores.
     scores.zero();
@@ -138,7 +135,7 @@ static void testFAST(CVD::Image<CVD::byte> const & image, cl::Device & device) {
 
     // Time a single burst.
     boost::system_time const t3 = boost::get_system_time();
-    imageNeat.copyToWorker();
+    imageNeat.set(image);
     runBlur.execute();
     runPreFast.execute();
     runFast.execute();
