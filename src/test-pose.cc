@@ -163,14 +163,14 @@ static void testPose(
     CVD::CL::PointListState  corners3    (worker, nxy);
 
     // Create states specific to image1 (colour + depth).
-    CVD::CL::PointListState  im1corners  (worker, nxy);
-    CVD::CL::HipsListState   im1hips     (worker, nxy);
-    CVD::CL::PointListState  im1im2      (worker, nxy);
+    CVD::CL::PointListState  im1corners  (worker, ncorners);
+    CVD::CL::HipsListState   im1hips     (worker, ncorners);
+    CVD::CL::PointListState  im1im2      (worker, ncorners);
     CVD::CL::GrayImageState  im1depth    (worker, size);
 
     // Create states specific to image2 (colour only).
-    CVD::CL::PointListState  im2corners  (worker, nxy);
-    CVD::CL::HipsListState   im2hips     (worker, nxy);
+    CVD::CL::PointListState  im2corners  (worker, ncorners);
+    CVD::CL::HipsListState   im2hips     (worker, ncorners);
 
     // Create camera translation states.
     CVD::CL::CameraState     camera      (worker, size);
@@ -217,8 +217,10 @@ static void testPose(
     translateDepth(d1image, camera.qmap.asImage());
     camera.copyToWorker();
 
+    boost::system_time const t1 = boost::get_system_time();
+
     // Write image 1 to device.
-    imageNeat.set(g1image);
+    int64_t const timeCopy1 = imageNeat.measure(g1image);
 
     // Zero FAST scores.
     scores.zero();
@@ -227,18 +229,18 @@ static void testPose(
     corners3.zero();
 
     // Run image 1 pipeline.
-    runPreFast1.execute();
+    int64_t const timePreFast1 = runPreFast1.measure();
     size_t const ncull1 = corners1.getCount();
-    runClip1.execute();
+    int64_t const timeClip1 = runClip1.measure();
     size_t const nclip1 = corners2.getCount();
-    runFast1.execute();
-    size_t const nfast1 = corners3.getCount();
-    // runMaxFast1.execute();
+    int64_t const timeFast1 = runFast1.measure();
+    size_t const nfast1 = im1corners.getCount();
+    // runMaxFast1.measure();
     size_t const nbest1 = im1corners.getCount();
-    runHips1.execute();
+    int64_t const timeHips1 = runHips1.measure();
 
     // Write image 2 to device.
-    imageNeat.set(g2image);
+    int64_t const timeCopy2 = imageNeat.measure(g2image);
 
     // Zero FAST scores.
     scores.zero();
@@ -246,13 +248,13 @@ static void testPose(
     corners2.zero();
 
     // Run image 2 pipeline.
-    runPreFast2.execute();
+    int64_t const timePreFast2 = runPreFast2.measure();
     size_t const ncull2 = corners1.getCount();
-    runFast2.execute();
+    int64_t const timeFast2 = runFast2.measure();
     size_t const nfast2 = corners2.getCount();
-    // runMaxFast2.execute();
+    // runMaxFast2.measure();
     size_t const nbest2 = im2corners.getCount();
-    runHips2.execute();
+    int64_t const timeHips2 = runHips2.measure();
 
     // Finish any outstanding work.
     worker.finish();
@@ -267,6 +269,18 @@ static void testPose(
     int64_t const timeSe3Score = runSe3Score.measure();
 
     std::cerr << std::endl;
+    std::cerr << std::setw(8) << nxy    << std::setw(8) << nxy    << " corner candidates in image" << std::endl;
+    std::cerr << std::setw(8) << ncull1 << std::setw(8) << ncull2 << " corners after culling" << std::endl;
+    std::cerr << std::setw(8) << nclip1 << std::setw(8) << ncull2 << " corners after depth" << std::endl;
+    std::cerr << std::setw(8) << nfast1 << std::setw(8) << nfast2 << " corners after FAST" << std::endl;
+    // std::cerr << std::setw(8) << nbest1 << std::setw(8) << nbest2 << " corners after filtering" << std::endl;
+    std::cerr << std::endl;
+    std::cerr << std::setw(8) << timeCopy1       << std::setw(8) << timeCopy2      << " us writing image" << std::endl;
+    std::cerr << std::setw(8) << timePreFast1    << std::setw(8) << timePreFast2   << " us culling corners" << std::endl;
+    std::cerr << std::setw(8) << timeClip1       << std::setw(8) << 0              << " us filtering by depth" << std::endl;
+    std::cerr << std::setw(8) << timeFast1       << std::setw(8) << timeFast2      << " us running FAST" << std::endl;
+    std::cerr << std::setw(8) << timeHips1       << std::setw(8) << timeHips2      << " us making HIPS" << std::endl;
+    std::cerr << std::endl;
     std::cerr << std::setw(8) << timeMatch       << " us finding HIPS matches" << std::endl;
     std::cerr << std::setw(8) << timeToUvqUv     << " us converting matches to ((u,v,q),(u,v))" << std::endl;
     std::cerr << std::setw(8) << timeMix         << " us selecting matches for 3-point attempts" << std::endl;
@@ -275,12 +289,12 @@ static void testPose(
     std::cerr << std::setw(8) << timeSe3Exp      << " us exponentiating matrix" << std::endl;
     std::cerr << std::setw(8) << timeSe3Exp      << " us scoring matrix" << std::endl;
     std::cerr << std::endl;
-    std::cerr << std::setw(8) << nxy    << std::setw(8) << nxy    << " corner candidates in image" << std::endl;
-    std::cerr << std::setw(8) << ncull1 << std::setw(8) << ncull2 << " corners after culling" << std::endl;
-    std::cerr << std::setw(8) << nclip1 << std::setw(8) << ncull2 << " corners after depth clipping" << std::endl;
-    std::cerr << std::setw(8) << nfast1 << std::setw(8) << nfast2 << " corners after FAST" << std::endl;
-    std::cerr << std::setw(8) << nbest1 << std::setw(8) << nbest2 << " corners after filtering" << std::endl;
-    std::cerr << std::endl;
+
+    boost::system_time const t2 = boost::get_system_time();
+
+    int64_t const approxTime = ((t2 - t1).total_microseconds() / 10);
+
+    std::cerr << std::setw(8) << approxTime      << " us approximate total" << std::endl;
 
     // Read out final corner list.
     std::vector<cl_int2> points1;
