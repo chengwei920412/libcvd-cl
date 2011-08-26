@@ -61,7 +61,7 @@ size_t const static KiB = 1024;
 size_t const static MiB = KiB * KiB;
 
 // Cropped image size.
-CVD::ImageRef const static   ref0(  0,   0);
+CVD::ImageRef const static   ref0(  0, 80);
 CVD::ImageRef const static ref512(512, 256);
 
 // Maximum corners processed.
@@ -292,7 +292,7 @@ static void testPose(
     std::cerr << std::setw(8) << timeIdent       << " us assigning identity matrix" << std::endl;
     std::cerr << std::endl;
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 10; i++) {
         int64_t const timeWls      = runWls.measure();
         int64_t const timeCholesky = runCholesky.measure();
         int64_t const timeSe3Exp   = runSe3Exp.measure();
@@ -406,24 +406,24 @@ static void testPose(
             glVertex2i(xy1.x,      xy1.y + ny);
             glVertex2i(xy3.x + nx, xy3.y + ny);
         } catch (...) {
-            std::cerr << "Bad corner " << ic << " of " << points1.size() << " / " << points2.size() << std::endl;
+            std::cerr << "Bad pair " << ip << " of " << pairs.size() << std::endl;
         }
     }
     glEnd();
     glFlush();
 
-    sleep(30);
+    sleep(10);
 }
 
 int main(int argc, char **argv) {
-    GrayImage   g1image_full = CVD::img_load("images/gray1.png" );
-    GrayImage   g2image_full = CVD::img_load("images/gray2.png" );
-    DepthImage  d1image_full = CVD::img_load("images/depth1.png");
+    GrayImage   g1image_full = CVD::img_load("images/c27.png");
+    DepthImage  d1image_full = CVD::img_load("images/d27.png");
+    GrayImage   g2image_full = CVD::img_load("images/c28.png");
 
-    GrayImage g1image(ref512);
+    GrayImage   g1image(ref512);
     g1image.copy_from(g1image_full.sub_image(ref0, ref512));
 
-    GrayImage g2image(ref512);
+    GrayImage   g2image(ref512);
     g2image.copy_from(g2image_full.sub_image(ref0, ref512));
 
     DepthImage  d1image(ref512);
