@@ -27,6 +27,11 @@ all:
 	scripts/codegen-cholesky.py 5    | tee opencl/cholesky5.cl     | scripts/embed.py OCL_CHOLESKY_5     > src/kernels/cholesky5.hh
 	scripts/codegen-cholesky.py 6    | tee opencl/cholesky6.cl     | scripts/embed.py OCL_CHOLESKY_6     > src/kernels/cholesky6.hh
 
+	scripts/codegen-mat-mul.py 3     | tee opencl/mat-mul-3.cl     | scripts/embed.py OCL_MAT_MUL_3      > src/kernels/mat-mul-3.hh
+	scripts/codegen-mat-mul.py 4     | tee opencl/mat-mul-4.cl     | scripts/embed.py OCL_MAT_MUL_4      > src/kernels/mat-mul-4.hh
+	scripts/codegen-mat-mul.py 5     | tee opencl/mat-mul-5.cl     | scripts/embed.py OCL_MAT_MUL_5      > src/kernels/mat-mul-5.hh
+	scripts/codegen-mat-mul.py 6     | tee opencl/mat-mul-6.cl     | scripts/embed.py OCL_MAT_MUL_6      > src/kernels/mat-mul-6.hh
+
 	scripts/codegen-wls-uvq.py       | tee opencl/wls-uvq.cl       | scripts/embed.py OCL_WLS_UVQ        > src/kernels/wls-uvq.hh
 	scripts/codegen-se3-exp.py       | tee opencl/se3-exp.cl       | scripts/embed.py OCL_SE3_EXP        > src/kernels/se3-exp.hh
 	scripts/codegen-se3-score.py     | tee opencl/se3-score.cl     | scripts/embed.py OCL_SE3_SCORE      > src/kernels/se3-score.hh
