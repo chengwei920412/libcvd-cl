@@ -43,6 +43,8 @@
 #include <cvd-cl/steps/MixUvqUvStep.hh>
 #include <cvd-cl/steps/PoseUvqWlsStep.hh>
 #include <cvd-cl/steps/CholeskyStep.hh>
+#include <cvd-cl/steps/MatIdentStep.hh>
+#include <cvd-cl/steps/MatMulStep.hh>
 #include <cvd-cl/steps/SE3ExpStep.hh>
 #include <cvd-cl/steps/SE3ScoreStep.hh>
 #include <cvd-cl/steps/SE3Run1Step.hh>
@@ -178,6 +180,7 @@ static void testPose(
     // Create states for RANSAC.
     CVD::CL::UvqUvState      uvquv       (worker, ncorners, 1);
     CVD::CL::UvqUvState      uvquv_mix   (worker, nhypos, 3);
+    CVD::CL::MatrixState     hypo_m      (worker, nhypos, 4, 4);
     CVD::CL::MatrixState     hypo_a      (worker, nhypos, 6, 6);
     CVD::CL::MatrixState     hypo_b      (worker, nhypos, 6, 1);
     CVD::CL::MatrixState     hypo_x      (worker, nhypos, 6, 1);
@@ -203,9 +206,11 @@ static void testPose(
     CVD::CL::HipsFindStep    runMatch    (im1hips, im2hips, im2corners, im1im2);
     CVD::CL::ToUvqUvStep     runToUvqUv  (camera, im1corners, im1im2, uvquv);
     CVD::CL::MixUvqUvStep    runMix      (uvquv, uvquv_mix);
-    CVD::CL::PoseUvqWlsStep  runWls      (uvquv_mix.uvq, uvquv_mix.uv, hypo_a, hypo_b);
+    CVD::CL::MatIdentStep    runIdent    (hypo_m);
+    CVD::CL::PoseUvqWlsStep  runWls      (uvquv_mix.uvq, uvquv_mix.uv, hypo_m, hypo_a, hypo_b);
     CVD::CL::CholeskyStep    runCholesky (hypo_a, hypo_b, hypo_x);
     CVD::CL::SE3ExpStep      runSe3Exp   (hypo_x, hypo_cam);
+    CVD::CL::MatMulStep      runMul      (hypo_cam, hypo_m);
     CVD::CL::SE3ScoreStep    runSe3Score (uvquv, hypo_cam, hypo_scores);
     CVD::CL::SE3Run1Step     runSe3One   (uvquv, hypo_cam, hypo_best, test_uvs);
 
@@ -263,10 +268,7 @@ static void testPose(
     int64_t const timeMatch    = runMatch.measure();
     int64_t const timeToUvqUv  = runToUvqUv.measure();
     int64_t const timeMix      = runMix.measure();
-    int64_t const timeWls      = runWls.measure();
-    int64_t const timeCholesky = runCholesky.measure();
-    int64_t const timeSe3Exp   = runSe3Exp.measure();
-    int64_t const timeSe3Score = runSe3Score.measure();
+    int64_t const timeIdent    = runIdent.measure();
 
     std::cerr << std::endl;
     std::cerr << std::setw(8) << nxy    << std::setw(8) << nxy    << " corner candidates in image" << std::endl;
@@ -284,10 +286,24 @@ static void testPose(
     std::cerr << std::setw(8) << timeMatch       << " us finding HIPS matches" << std::endl;
     std::cerr << std::setw(8) << timeToUvqUv     << " us converting matches to ((u,v,q),(u,v))" << std::endl;
     std::cerr << std::setw(8) << timeMix         << " us selecting matches for 3-point attempts" << std::endl;
-    std::cerr << std::setw(8) << timeWls         << " us differentiating matrix" << std::endl;
-    std::cerr << std::setw(8) << timeCholesky    << " us decomposing matrix and back-substituting vector" << std::endl;
-    std::cerr << std::setw(8) << timeSe3Exp      << " us exponentiating matrix" << std::endl;
-    std::cerr << std::setw(8) << timeSe3Exp      << " us scoring matrix" << std::endl;
+    std::cerr << std::setw(8) << timeIdent       << " us assigning identity matrix" << std::endl;
+    std::cerr << std::endl;
+
+    for (int i = 0; i < 100; i++) {
+        int64_t const timeWls      = runWls.measure();
+        int64_t const timeCholesky = runCholesky.measure();
+        int64_t const timeSe3Exp   = runSe3Exp.measure();
+        int64_t const timeMul      = runMul.measure(1); // Do not repeat!
+
+        std::cerr << std::setw(8) << timeWls         << " us differentiating matrix" << std::endl;
+        std::cerr << std::setw(8) << timeCholesky    << " us decomposing matrix and back-substituting vector" << std::endl;
+        std::cerr << std::setw(8) << timeSe3Exp      << " us exponentiating matrix" << std::endl;
+        std::cerr << std::setw(8) << timeMul         << " us multiplying matrix" << std::endl;
+        std::cerr << std::endl;
+    }
+
+    int64_t const timeSe3Score = runSe3Score.measure();
+    std::cerr << std::setw(8) << timeSe3Score    << " us scoring matrix" << std::endl;
     std::cerr << std::endl;
 
     boost::system_time const t2 = boost::get_system_time();

@@ -33,7 +33,7 @@ namespace CL  {
 class PoseUvqWlsStep : public WorkerStep {
 public:
 
-    explicit PoseUvqWlsStep(UvqState & i_uvq, UvState & i_uv, MatrixState & o_a, MatrixState & o_b);
+    explicit PoseUvqWlsStep(UvqState & i_uvq, UvState & i_uv, MatrixState & i_m, MatrixState & o_a, MatrixState & o_b);
     virtual ~PoseUvqWlsStep();
 
     virtual void execute();
@@ -43,6 +43,7 @@ protected:
     // Inputs.
     UvqState       & i_uvq;
     UvState        & i_uv;
+    MatrixState    & i_m;
 
     // Outputs.
     MatrixState    & o_a;

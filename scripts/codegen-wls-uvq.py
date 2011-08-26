@@ -56,6 +56,7 @@ kernel void wls_uvq(
     global float const * q1s,
     global float const * u2s,
     global float const * v2s,
+    global float const * Ms,
     global float       * As,
     global float       * bs
 ) {
@@ -64,6 +65,15 @@ kernel void wls_uvq(
     int const iset   = get_global_id(0);
     int const nsets  = get_global_size(0);
 
+    // Read initial transformation matrix."""
+
+for row in range(4):
+    for col in range(4):
+        factor = ((row * 4) + col)
+        core   = ("r%dc%d" % (row, col))
+        print "    float const %sm = Ms[(%2d * nsets) + iset];" % (core, factor)
+
+print """
     // Prepare 6 vector elements."""
 
 for row in range(6):
@@ -81,11 +91,27 @@ print """
     for (int ipair = 0; ipair < 3; ipair++) {
         // Read coordinate pair elements.
         int   const of = mad24(ipair, nsets, iset);
-        float const u1 = u1s[of];
-        float const v1 = v1s[of];
+
+        // Vector for (uv1q).
+        float const a0 = u1s[of];
+        float const a1 = v1s[of];
+        float const a2 =  1;
+        float const a3 = q1s[of];
+
+        // Vector for (uv).
         float const u2 = u2s[of];
         float const v2 = v2s[of];
-        float const q1 = q1s[of];
+
+        // Vector for transformed (uv1q).
+        float const x0 = ((a0 * r0c0m) + (a1 * r0c1m) + (a2 * r0c2m) + (a3 * r0c3m));
+        float const x1 = ((a0 * r1c0m) + (a1 * r1c1m) + (a2 * r1c2m) + (a3 * r1c3m));
+        float const x2 = ((a0 * r2c0m) + (a1 * r2c1m) + (a2 * r2c2m) + (a3 * r2c3m));
+        float const x3 = ((a0 * r3c0m) + (a1 * r3c1m) + (a2 * r3c2m) + (a3 * r3c3m));
+
+        // Vector for normalised transformed (uvq).
+        float const u1 = (x0 / x2);
+        float const v1 = (x1 / x2);
+        float const q1 = (x3 / x2);
 
         /* add_mJ for u error */ {
             // Calculate Ju.

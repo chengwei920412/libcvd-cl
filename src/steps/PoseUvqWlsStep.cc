@@ -29,16 +29,19 @@
 namespace CVD {
 namespace CL  {
 
-PoseUvqWlsStep::PoseUvqWlsStep(UvqState & i_uvq, UvState & i_uv, MatrixState & o_a, MatrixState & o_b) :
+PoseUvqWlsStep::PoseUvqWlsStep(UvqState & i_uvq, UvState & i_uv, MatrixState & i_m, MatrixState & o_a, MatrixState & o_b) :
     WorkerStep (i_uvq.worker),
     i_uvq      (i_uvq),
     i_uv       (i_uv),
+    i_m        (i_m),
     o_a        (o_a),
     o_b        (o_b)
 {
     // Individual state sanity checks.
     assert(i_uvq.setSize  == 3);
     assert(i_uv.setSize   == 3);
+    assert(i_m.rows       == 4);
+    assert(i_m.cols       == 4);
     assert(o_a.rows       == 6);
     assert(o_b.rows       == 6);
     assert(o_a.cols       == 6);
@@ -47,6 +50,8 @@ PoseUvqWlsStep::PoseUvqWlsStep(UvqState & i_uvq, UvState & i_uv, MatrixState & o
     // State consistency checks.
     assert(i_uvq.setCount >= 1);
     assert(i_uvq.setCount == i_uv.setCount);
+    assert(i_m.count      == o_a.count);
+    assert(o_a.count      == o_b.count);
     assert(i_uvq.setCount == o_a.count);
     assert(i_uvq.setCount == o_b.count);
 
@@ -64,8 +69,9 @@ void PoseUvqWlsStep::execute() {
     kernel.setArg(2, i_uvq.qs.memory);
     kernel.setArg(3, i_uv.us.memory);
     kernel.setArg(4, i_uv.vs.memory);
-    kernel.setArg(5, o_a.memory);
-    kernel.setArg(6, o_b.memory);
+    kernel.setArg(5, i_m.memory);
+    kernel.setArg(6, o_a.memory);
+    kernel.setArg(7, o_b.memory);
 
     // Number of matrices to calculate in parallel.
     size_t const count = i_uvq.setCount;
