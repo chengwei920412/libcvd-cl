@@ -32,6 +32,11 @@ all:
 	scripts/codegen-mat-mul.py 5     | tee opencl/mat-mul-5.cl     | scripts/embed.py OCL_MAT_MUL_5      > src/kernels/mat-mul-5.hh
 	scripts/codegen-mat-mul.py 6     | tee opencl/mat-mul-6.cl     | scripts/embed.py OCL_MAT_MUL_6      > src/kernels/mat-mul-6.hh
 
+	scripts/codegen-mat-mki.py 3     | tee opencl/mat-mki-3.cl     | scripts/embed.py OCL_MAT_MKI_3      > src/kernels/mat-mki-3.hh
+	scripts/codegen-mat-mki.py 4     | tee opencl/mat-mki-4.cl     | scripts/embed.py OCL_MAT_MKI_4      > src/kernels/mat-mki-4.hh
+	scripts/codegen-mat-mki.py 5     | tee opencl/mat-mki-5.cl     | scripts/embed.py OCL_MAT_MKI_5      > src/kernels/mat-mki-5.hh
+	scripts/codegen-mat-mki.py 6     | tee opencl/mat-mki-6.cl     | scripts/embed.py OCL_MAT_MKI_6      > src/kernels/mat-mki-6.hh
+
 	scripts/codegen-wls-uvq.py       | tee opencl/wls-uvq.cl       | scripts/embed.py OCL_WLS_UVQ        > src/kernels/wls-uvq.hh
 	scripts/codegen-se3-exp.py       | tee opencl/se3-exp.cl       | scripts/embed.py OCL_SE3_EXP        > src/kernels/se3-exp.hh
 	scripts/codegen-se3-score.py     | tee opencl/se3-score.cl     | scripts/embed.py OCL_SE3_SCORE      > src/kernels/se3-score.hh
