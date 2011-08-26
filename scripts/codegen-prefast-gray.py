@@ -59,7 +59,7 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 
 // Specify a threshold for pixel difference.
-#define THRESH  60
+#define THRESH  40
 
 kernel void prefast_gray(
     read_only  image2d_t   image,

@@ -59,7 +59,7 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 
 // Specify a threshold for pixel difference.
-#define THRESH  60
+#define THRESH  40
 
 // Calculate vector distance as a float.
 float dist4(uint4 a, uint4 b) {

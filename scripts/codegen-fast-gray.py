@@ -71,7 +71,7 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 
 // Specify a threshold for pixel difference.
-#define THRESH  60
+#define THRESH  40
 
 // Generate bitwise mask of n bits.
 int mask(int n) {
