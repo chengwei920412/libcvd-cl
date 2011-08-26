@@ -67,6 +67,8 @@ int sq(int x) {
 // Shorthand for ulong cast.
 #define L(x) ((ulong)(x))
 
+#define FACTOR (0.675)
+
 kernel void hips_gray(
     read_only image2d_t   image,
     global    int2      * corners,
@@ -83,12 +85,12 @@ kernel void hips_gray(
     // Read pixels in a grid around the corner pixel."""
 
 for (shift, (x, y)) in enumerate(OFFSETS):
-    print ("    int  const p%02d = read_imageui(image, sampler, xy + (int2)(%2d, %2d)).x;" % (shift + 1, x, y))
+    print ("    int   const p%02d = read_imageui(image, sampler, xy + (int2)(%2d, %2d)).x;" % (shift + 1, x, y))
 
 print
 
 print "    // Calculate the sum of the pixel values."
-print "    int  const sum1 = ("
+print "    float const sum1 = ("
 print " +\n".join([
     ("        p%02d" % (shift + 1))
     for (shift, _) in enumerate(OFFSETS)
@@ -97,27 +99,27 @@ print "    );"
 print
 
 print "    // Calculate the mean of the pixel values."
-print "    int  const mean = (sum1 / %d);" % len(OFFSETS)
+print "    float const mean = (sum1 / %d);" % len(OFFSETS)
+print
 
 print "    // Calculate the sum of squares of differences of the pixel values."
-print "    int  const sum2 = ("
+print "    float const sum2 = ("
 print " +\n".join([
-    ("        sq(p%02d - mean)" % (shift + 1))
+    ("        sq(p%02d)" % (shift + 1))
     for (shift, _) in enumerate(OFFSETS)
 ])
 print "    );"
 print
 
 print "    // Calculate the standard deviation of the pixel values."
-print "    int  const dev  = (int) sqrt((float) (sum2 / %d));" % len(OFFSETS)
+print "    float const dev  = (FACTOR * sqrt((sum2 / %d) - (sum1 / %d)));" % (len(OFFSETS), len(OFFSETS) * len(OFFSETS))
 print
 print "    // Calculate thresholds for standard deviation bins."
-print "    // TODO: Size factors."
-print "    int  const dev1 = (mean - dev);"
-print "    int  const dev2 = (mean + dev);"
+print "    int   const dev1 = (int)(mean - dev);"
+print "    int   const dev2 = (int)(mean + dev);"
 print
 print "    // Bin all values lower than a standard deviation from the mean."
-print "    ulong const b1  = ("
+print "    ulong const  b1  = ("
 print " |\n".join([
     ("        (L(p%02d < dev1) << L(%2d))" % (shift + 1, shift))
     for (shift, _) in enumerate(OFFSETS)
@@ -126,7 +128,7 @@ print "    );"
 print
 
 print "    // Bin all values higher than a standard deviation from the mean."
-print "    ulong const b4  = ("
+print "    ulong const  b4  = ("
 print " |\n".join([
     ("        (L(p%02d > dev2) << L(%2d))" % (shift + 1, shift))
     for (shift, _) in enumerate(OFFSETS)
@@ -135,7 +137,7 @@ print "    );"
 print
 
 print "    // Bin all values lower than the mean but not a standard deviation."
-print "    ulong const b2  = ("
+print "    ulong const  b2  = ("
 print " |\n".join([
     ("        (L(p%02d < mean) << L(%2d))" % (shift + 1, shift))
     for (shift, _) in enumerate(OFFSETS)
@@ -144,7 +146,7 @@ print "    );"
 print
 
 print "    // Bin all values higher than the mean but not a standard deviation."
-print "    ulong const b3  = ("
+print "    ulong const  b3  = ("
 print " |\n".join([
     ("        (L(p%02d > mean) << L(%2d))" % (shift + 1, shift))
     for (shift, _) in enumerate(OFFSETS)
