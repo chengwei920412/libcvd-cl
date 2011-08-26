@@ -35,7 +35,7 @@ namespace CL  {
 class ToUvqUvStep : public WorkerStep {
 public:
 
-    explicit ToUvqUvStep(CameraState & i_camera, PointListState & i_xy1, PointListState & i_xy2, UvqUvState & o_uvquv);
+    explicit ToUvqUvStep(CameraState & i_camera, PointListState & i_xy1, PointListState & i_xy2, PointListState & i_matches, UvqUvState & o_uvquv);
     virtual ~ToUvqUvStep();
 
     virtual void execute();
@@ -46,6 +46,7 @@ protected:
     CameraState     & i_camera;
     PointListState  & i_xy1;
     PointListState  & i_xy2;
+    PointListState  & i_matches;
 
     // Outputs.
     UvqUvState      & o_uvquv;

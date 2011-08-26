@@ -178,6 +178,7 @@ static void testPose(
     CVD::CL::CameraState     camera      (worker, size);
 
     // Create states for RANSAC.
+    CVD::CL::PointListState  matches     (worker, ncorners);
     CVD::CL::UvqUvState      uvquv       (worker, ncorners, 1);
     CVD::CL::UvqUvState      uvquv_mix   (worker, nhypos, 3);
     CVD::CL::MatrixState     hypo_m      (worker, nhypos, 4, 4);
@@ -203,8 +204,8 @@ static void testPose(
     CVD::CL::HipsGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
 
     // Create steps for RANSAC.
-    CVD::CL::HipsFindStep    runMatch    (im1hips, im2hips, im2corners, im1im2);
-    CVD::CL::ToUvqUvStep     runToUvqUv  (camera, im1corners, im1im2, uvquv);
+    CVD::CL::HipsFindStep    runMatch    (im1hips, im2hips, matches);
+    CVD::CL::ToUvqUvStep     runToUvqUv  (camera, im1corners, im2corners, matches, uvquv);
     CVD::CL::MixUvqUvStep    runMix      (uvquv, uvquv_mix);
     CVD::CL::MatIdentStep    runIdent    (hypo_m);
     CVD::CL::PoseUvqWlsStep  runWls      (uvquv_mix.uvq, uvquv_mix.uv, hypo_m, hypo_a, hypo_b);
@@ -266,6 +267,7 @@ static void testPose(
 
     // Run RANSAC steps.
     int64_t const timeMatch    = runMatch.measure();
+    size_t  const nmatch       = matches.getCount();
     int64_t const timeToUvqUv  = runToUvqUv.measure();
     int64_t const timeMix      = runMix.measure();
     int64_t const timeIdent    = runIdent.measure();
@@ -276,6 +278,7 @@ static void testPose(
     std::cerr << std::setw(8) << nclip1 << std::setw(8) << ncull2 << " corners after depth" << std::endl;
     std::cerr << std::setw(8) << nfast1 << std::setw(8) << nfast2 << " corners after FAST" << std::endl;
     // std::cerr << std::setw(8) << nbest1 << std::setw(8) << nbest2 << " corners after filtering" << std::endl;
+    std::cerr << std::setw(8) << nmatch << std::setw(8) << nmatch << " corners after HIPS" << std::endl;
     std::cerr << std::endl;
     std::cerr << std::setw(8) << timeCopy1       << std::setw(8) << timeCopy2      << " us writing image" << std::endl;
     std::cerr << std::setw(8) << timePreFast1    << std::setw(8) << timePreFast2   << " us culling corners" << std::endl;
@@ -306,20 +309,6 @@ static void testPose(
     std::cerr << std::setw(8) << timeSe3Score    << " us scoring matrix" << std::endl;
     std::cerr << std::endl;
 
-    boost::system_time const t2 = boost::get_system_time();
-
-    int64_t const approxTime = ((t2 - t1).total_microseconds() / 10);
-
-    std::cerr << std::setw(8) << approxTime      << " us approximate total" << std::endl;
-
-    // Read out final corner list.
-    std::vector<cl_int2> points1;
-    im1corners.get(&points1);
-
-    // Read out matching corner table.
-    std::vector<cl_int2> points2;
-    im1im2.get(&points2);
-
     // Read out score list.
     std::vector<cl_float> hyposcores;
     hypo_scores.get(&hyposcores);
@@ -329,6 +318,8 @@ static void testPose(
         cl_float best  = 0;
         cl_int   non0  = 0;
         cl_int   ibest = 0;
+
+        boost::system_time const t1 = boost::get_system_time();
 
         for (size_t i = 0; i < hyposcores.size(); i++) {
             cl_float const score = hyposcores.at(i);
@@ -344,11 +335,17 @@ static void testPose(
 
         cl_float avg = (total / hyposcores.size());
 
+        boost::system_time const t2 = boost::get_system_time();
+
         std::cerr << std::setw(8) << non0  << " non-zero scores" << std::endl;
         std::cerr << std::setw(8) << total << " total score" << std::endl;
         std::cerr << std::setw(8) << avg   << " average score" << std::endl;
         std::cerr << std::setw(8) << best  << " best score" << std::endl;
         std::cerr << std::setw(8) << ibest << " best matrix index" << std::endl;
+
+        int64_t const bestTime = ((t2 - t1).total_microseconds() / 1);
+
+        std::cerr << std::setw(8) << bestTime         << " us finding best matrix" << std::endl;
 
         // Assign and run best matrix.
         worker.finish();
@@ -356,9 +353,25 @@ static void testPose(
         runSe3One.measure();
     }
 
+    // Read out final corner lists.
+    std::vector<cl_int2> points1;
+    std::vector<cl_int2> points2;
+    im1corners.get(&points1);
+    im2corners.get(&points2);
+
+    // Read out pair lists.
+    std::vector<cl_int2> pairs;
+    matches.get(&pairs);
+
     // Read out transformed coordinate list.
     std::vector<cl_float2> uv2s;
     test_uvs.get(&uv2s);
+
+    boost::system_time const t2 = boost::get_system_time();
+
+    int64_t const approxTime = ((t2 - t1).total_microseconds() / 10);
+
+    std::cerr << std::setw(8) << approxTime      << " us approximate total" << std::endl;
 
     CVD::ImageRef const size2(nx * 2, ny * 2);
     CVD::VideoDisplay window(size2);
@@ -371,12 +384,14 @@ static void testPose(
     CVD::glDrawPixels(g2image);
 
     glBegin(GL_LINES);
-    for (size_t ic = 0; (ic < points1.size()) && (ic < points2.size()); ic++) {
+    for (size_t ip = 0; ip < pairs.size(); ip++) {
         try {
-            cl_int2         const xy1  = points1.at(ic);
-            cl_int2         const xy2  = points2.at(ic);
+            cl_int2         const pair = pairs.at(ip);
 
-            cl_float2       const uv3  = uv2s.at(ic);
+            cl_int2         const xy1  = points1.at(pair.x);
+            cl_int2         const xy2  = points2.at(pair.y);
+
+            cl_float2       const uv3  = uv2s.at(ip);
             TooN::Vector<2> const uv3t = TooN::makeVector(uv3.x, uv3.y);
             TooN::Vector<2> const xy3t = cvdcamera.project(uv3t);
             cl_int2         const xy3  = {{cl_int(xy3t[0]), cl_int(xy3t[1])}};

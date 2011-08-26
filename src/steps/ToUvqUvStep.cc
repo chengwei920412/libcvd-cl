@@ -23,21 +23,20 @@
 
 #include "cvd-cl/steps/ToUvqUvStep.hh"
 
-#include "kernels/fxy.hh"
-
-#include <algorithm>
+#include "kernels/to-uvquv.hh"
 
 namespace CVD {
 namespace CL  {
 
-ToUvqUvStep::ToUvqUvStep(CameraState & i_camera, PointListState & i_xy1, PointListState & i_xy2, UvqUvState & o_uvquv) :
+ToUvqUvStep::ToUvqUvStep(CameraState & i_camera, PointListState & i_xy1, PointListState & i_xy2, PointListState & i_matches, UvqUvState & o_uvquv) :
     WorkerStep (i_camera.worker),
     i_camera   (i_camera),
     i_xy1      (i_xy1),
     i_xy2      (i_xy2),
+    i_matches  (i_matches),
     o_uvquv    (o_uvquv)
 {
-    worker.compile(&program, &kernel, OCL_FXY, "fxy");
+    worker.compile(&program, &kernel, OCL_TO_UVQUV, "to_uvquv");
 }
 
 ToUvqUvStep::~ToUvqUvStep() {
@@ -45,56 +44,27 @@ ToUvqUvStep::~ToUvqUvStep() {
 }
 
 void ToUvqUvStep::execute() {
-    // Read number of input points.
-    size_t const count1 = i_xy1.getCount();
-    size_t const count2 = i_xy2.getCount();
-    size_t const count  = std::min(std::min(count1, count2), o_uvquv.maxCount);
-    cl::NDRange const global(count);
+    // Set kernel arguments.
+    kernel.setArg( 0, i_camera.umap.image);
+    kernel.setArg( 1, i_camera.vmap.image);
+    kernel.setArg( 2, i_camera.qmap.image);
+    kernel.setArg( 3, i_xy1.buffer);
+    kernel.setArg( 4, i_xy2.buffer);
+    kernel.setArg( 5, i_matches.buffer);
+    kernel.setArg( 6, o_uvquv.uvq.us.memory);
+    kernel.setArg( 7, o_uvquv.uvq.vs.memory);
+    kernel.setArg( 8, o_uvquv.uvq.qs.memory);
+    kernel.setArg( 9, o_uvquv.uv.us.memory);
+    kernel.setArg(10, o_uvquv.uv.vs.memory);
+
+    // Read number of input pairs.
+    size_t const count = i_matches.getCount();
 
     // Reset number of output points.
     o_uvquv.setCount = count;
 
-    // Finish any outstanding work.
-    worker.finish();
-
-    // Set kernel for u-mapping.
-    kernel.setArg(0, i_camera.umap.image);
-
-    // Translate u in uvq.
-    kernel.setArg(1, i_xy1.buffer);
-    kernel.setArg(2, o_uvquv.uvq.us.memory);
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, cl::NullRange);
-    worker.finish();
-
-    // Translate u in uv.
-    kernel.setArg(1, i_xy2.buffer);
-    kernel.setArg(2, o_uvquv.uv.us.memory);
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, cl::NullRange);
-    worker.finish();
-
-    // Set kernel for v-mapping.
-    kernel.setArg(0, i_camera.vmap.image);
-
-    // Translate v in uvq.
-    kernel.setArg(1, i_xy1.buffer);
-    kernel.setArg(2, o_uvquv.uvq.vs.memory);
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, cl::NullRange);
-    worker.finish();
-
-    // Translate v in uv.
-    kernel.setArg(1, i_xy2.buffer);
-    kernel.setArg(2, o_uvquv.uv.vs.memory);
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, cl::NullRange);
-    worker.finish();
-
-    // Set kernel for q-mapping.
-    kernel.setArg(0, i_camera.qmap.image);
-
-    // Translate q in uvq.
-    kernel.setArg(1, i_xy1.buffer);
-    kernel.setArg(2, o_uvquv.uvq.qs.memory);
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, cl::NullRange);
-    worker.finish();
+    // Enqueue kernel with one thread per input pair.
+    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(count), cl::NullRange);
 }
 
 } // namespace CL

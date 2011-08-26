@@ -43,6 +43,7 @@ all:
 	scripts/codegen-se3-run1.py      | tee opencl/se3-run1.cl      | scripts/embed.py OCL_SE3_RUN1       > src/kernels/se3-run1.hh
 
 	scripts/codegen-fxy.py           | tee opencl/fxy.cl           | scripts/embed.py OCL_FXY            > src/kernels/fxy.hh
+	scripts/codegen-to-uvquv.py      | tee opencl/to-uvquv.cl      | scripts/embed.py OCL_TO_UVQUV       > src/kernels/to-uvquv.hh
 	scripts/codegen-fmix.py          | tee opencl/fmix.cl          | scripts/embed.py OCL_FMIX           > src/kernels/fmix.hh
 	scripts/codegen-random-int.py    | tee opencl/random-int.cl    | scripts/embed.py OCL_RANDOM_INT     > src/kernels/random-int.hh
 

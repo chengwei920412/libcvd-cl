@@ -27,12 +27,11 @@
 namespace CVD {
 namespace CL  {
 
-HipsFindStep::HipsFindStep(HipsListState & i_hips1, HipsListState & i_hips2, PointListState & i_xy2, PointListState & o_xy2) :
+HipsFindStep::HipsFindStep(HipsListState & i_hips1, HipsListState & i_hips2, PointListState & o_matches) :
     WorkerStep (i_hips1.worker),
     i_hips1    (i_hips1),
     i_hips2    (i_hips2),
-    i_xy2      (i_xy2),
-    o_xy2      (o_xy2)
+    o_matches  (o_matches)
 {
     worker.compile(&program, &kernel, OCL_HIPS_FIND, "hips_find");
 }
@@ -42,27 +41,23 @@ HipsFindStep::~HipsFindStep() {
 }
 
 void HipsFindStep::execute() {
-    // Read number of input points.
+    // Read number of descriptors.
     size_t const np1 = i_hips1.getCount();
     size_t const np2 = i_hips2.getCount();
 
-    // Check consistency.
-    assert(i_hips2.size == i_xy2.size);
-
-    // Round down number of points.
+    // Round down number of descriptors.
     cl_int const np1_16 = (np1 / 16) * 16;
     cl_int const np2_16 = (np2 / 16) * 16;
 
     // Assign kernel parameters.
     kernel.setArg(0, i_hips1.buffer);
     kernel.setArg(1, i_hips2.buffer);
-    kernel.setArg(2, i_xy2.buffer);
-    kernel.setArg(3, o_xy2.buffer);
+    kernel.setArg(2, o_matches.buffer);
+    kernel.setArg(3, o_matches.count);
     kernel.setArg(4, np2_16);
 
-    // Reset number of output points.
-    // TODO: Generalise kernel to arbitrary sizes.
-    o_xy2.setCount(np1_16);
+    // Reset number of output pairs.
+    o_matches.setCount(0);
 
     // Queue kernel with global size set to number of input points.
     worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np1_16, 16), cl::NDRange(16, 16));

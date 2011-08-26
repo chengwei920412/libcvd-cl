@@ -46,9 +46,13 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
+// Enable OpenCL 32-bit integer atomic functions.
+#pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
+
+#define THRESHOLD 10
+
 // Parallel bit counting magic adapted from
 // http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
-
 uint bitcount8(uint8 v) {
     v = (v - ((v >> 1) & 0x55555555));
     v = ((v & 0x33333333) + ((v >> 2) & 0x33333333));
@@ -60,9 +64,9 @@ kernel void hips_find(
     // N.B.: These uint8 are actually ulong4.
     global uint8  const * hashes1,  // T
     global uint8  const * hashes2,  // R
-    global int2   const * ixy2,     // For each hash2, its coordinate.
-    global int2         * oxy2,     // For each hash1, coordinate of its best hash2.
-           int    const   nhash2    // Number of hash2 entries.
+    global int2         * matches,  // Pairs of indices into hashes1 and hashes2.
+    global int          * imatch,   // Output number of hash1 matches.
+           int    const   nhash2    // Number of hashes2.
 ) {
 
     // Prepare local memory for hash caching.
@@ -139,7 +143,8 @@ kernel void hips_find(
     barrier(CLK_LOCAL_MEM_FENCE);
 
     if (ithr2 == 0) {
-        oxy2[ihash1] = ixy2[ibest[ithr1]];
+        if (ebest[ithr1] < THRESHOLD) {
+            matches[atom_inc(imatch)] = (int2)(ihash1, ibest[ithr1]);
+        }
     }
-}
-"""
+}"""
