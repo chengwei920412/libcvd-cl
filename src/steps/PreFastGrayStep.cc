@@ -40,21 +40,26 @@ PreFastGrayStep::~PreFastGrayStep() {
 }
 
 void PreFastGrayStep::execute() {
+    // Reset number of output points.
+    points.setCount(0);
+
     // Assign kernel parameters.
     kernel.setArg(0, image.image);
     kernel.setArg(1, points.buffer);
     kernel.setArg(2, points.count);
 
     // Read image dimensions.
-    size_t const nx = image.size.x;
-    size_t const ny = image.size.y;
+    size_t const nx = image.size.x - 16;
+    size_t const ny = image.size.y - 16;
 
-    // Reset number of output points.
-    points.setCount(0);
-
-    // Queue kernel with square local size.
+    // Construct global, local and offset with a safety boundary.
     // 16x16 appears to give good performance on most devices.
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(nx, ny), cl::NDRange(16, 16));
+    cl::NDRange const global (nx - 16, ny - 16);
+    cl::NDRange const local  (     16,      16);
+    cl::NDRange const offset (      8,       8);
+
+    // Queue kernel.
+    worker.queue.enqueueNDRangeKernel(kernel, offset, global, local);
 }
 
 } // namespace CL
