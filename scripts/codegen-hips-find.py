@@ -65,7 +65,8 @@ kernel void hips_find(
     global uint8  const * hashes1,  // T
     global uint8  const * hashes2,  // R
     global uint2        * matches,  // Pairs of indices into hashes1 and hashes2.
-    global uint         * imatch    // Output number of hash1 matches.
+    global uint         * imatch,   // Output number of hash1 matches.
+           uint           nmatch    // Maximum number of matches.
 ) {
 
     // Use global work items for hash1, hash2 indices.
@@ -81,6 +82,9 @@ kernel void hips_find(
 
     // Record match if within error threshold.
     if (error <= THRESHOLD) {
-        matches[atom_inc(imatch)] = (uint2)(ihash1, ihash2);
+        uint const i = atom_inc(imatch);
+        if (i < nmatch) {
+            matches[i] = (uint2)(ihash1, ihash2);
+        }
     }
 }"""

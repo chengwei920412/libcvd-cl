@@ -54,6 +54,7 @@ void HipsFindStep::execute() {
     kernel.setArg(1, i_hips2.buffer);
     kernel.setArg(2, o_matches.buffer);
     kernel.setArg(3, o_matches.count);
+    kernel.setArg(4, o_matches.size);
 
     // Reset number of output pairs.
     o_matches.setCount(0);
