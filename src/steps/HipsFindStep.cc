@@ -54,13 +54,12 @@ void HipsFindStep::execute() {
     kernel.setArg(1, i_hips2.buffer);
     kernel.setArg(2, o_matches.buffer);
     kernel.setArg(3, o_matches.count);
-    kernel.setArg(4, np2_16);
 
     // Reset number of output pairs.
     o_matches.setCount(0);
 
     // Queue kernel with global size set to number of input points.
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np1_16, 16), cl::NDRange(16, 16));
+    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np1_16, np2_16), cl::NDRange(16, 16));
 }
 
 } // namespace CL

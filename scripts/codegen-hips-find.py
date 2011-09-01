@@ -49,7 +49,7 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // Enable OpenCL 32-bit integer atomic functions.
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 
-#define THRESHOLD 10
+#define THRESHOLD 3
 
 // Parallel bit counting magic adapted from
 // http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
@@ -64,87 +64,23 @@ kernel void hips_find(
     // N.B.: These uint8 are actually ulong4.
     global uint8  const * hashes1,  // T
     global uint8  const * hashes2,  // R
-    global int2         * matches,  // Pairs of indices into hashes1 and hashes2.
-    global int          * imatch,   // Output number of hash1 matches.
-           int    const   nhash2    // Number of hashes2.
+    global uint2        * matches,  // Pairs of indices into hashes1 and hashes2.
+    global uint         * imatch    // Output number of hash1 matches.
 ) {
 
-    // Prepare local memory for hash caching.
-    local uint8  cache1  [16];
-    local uint8  cache2  [16];
-    local int    errors [256];
-    local int    idxs   [256];
-    local int    ebest   [16];
-    local int    ibest   [16];
+    // Use global work items for hash1, hash2 indices.
+    uint   const ihash1  = get_global_id(0);
+    uint   const ihash2  = get_global_id(1);
 
-    // Use global work item for dimension 1 as hash1 index.
-    // Global work item for dimension 2 is *unused*.
-    int    const ihash1  = get_global_id(0);
+    // Read hashes.
+    uint8  const hash1   = hashes1[ihash1];
+    uint8  const hash2   = hashes2[ihash2];
 
-    // Use local work items for indexing into errors and hashes.
-    int    const ithr1   = get_local_id(0);
-    int    const ithr2   = get_local_id(1);
+    // Calculate error.
+    uint   const error   = bitcount8(hash1 & ~hash2);
 
-    // Cache from hash1.
-    if (ithr2 == 0) {
-        cache1 [ithr1]    = hashes1[ihash1];
-        ebest  [ithr1]    = 0xffff;
-        ibest  [ithr1]    = 0;
-    }
-
-    // Loop while consuming hash2.
-    for (int offset = 0; offset < nhash2; offset += 16) {
-        // Cache from hash2.
-        if (ithr2 == 0) {
-            cache2[ithr1]  = hashes2[offset + ithr1];
-        }
-
-        // Synchronise work group.
-        barrier(CLK_LOCAL_MEM_FENCE);
-
-        // Calculate pairwise error.
-        uint8  const hash1 = cache1[ithr1];
-        uint8  const hash2 = cache2[ithr2];
-        int    const cell  = mad24(ithr1, 16, ithr2);
-        errors [cell]      = bitcount8(hash1 & ~hash2);
-        idxs   [cell]      = offset + ithr2;
-
-        // Synchronise work group.
-        barrier(CLK_LOCAL_MEM_FENCE);
-
-        // Prepare state for parallel reduction.
-        int te1            = ebest [ithr1];
-        int ti1            = ibest [ithr1];
-
-        // Perform parallel reduction.
-        for (int width = 8; width > 1; width >>= 1) {
-            if (ithr2 < width) {
-                int const te2  = errors [cell + width];
-                int const ti2  = idxs   [cell + width];
-
-                if (te2 < te1) {
-                    // Update with lower error.
-                    errors [cell] = te1 = te2;
-                    idxs   [cell] = ti1 = ti2;
-                }
-            }
-
-            // Synchronise after this round of reduction.
-            barrier(CLK_LOCAL_MEM_FENCE);
-        }
-
-        if (ithr2 == 0) {
-            ebest [ithr1] = te1;
-            ibest [ithr1] = ti1;
-        }
-    }
-
-    // Synchronise work group.
-    barrier(CLK_LOCAL_MEM_FENCE);
-
-    if (ithr2 == 0) {
-        if (ebest[ithr1] < THRESHOLD) {
-            matches[atom_inc(imatch)] = (int2)(ihash1, ibest[ithr1]);
-        }
+    // Record match if within error threshold.
+    if (error <= THRESHOLD) {
+        matches[atom_inc(imatch)] = (uint2)(ihash1, ihash2);
     }
 }"""
