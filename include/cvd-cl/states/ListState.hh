@@ -34,10 +34,10 @@ template<class Item>
 class ListState : public CountState {
 public:
 
-    explicit ListState(Worker & worker, cl_int size) :
+    explicit ListState(Worker & worker, cl_uint size) :
         CountState (worker, size),
         size       (size),
-        nbytes     (size * sizeof(cl_int2))
+        nbytes     (size * sizeof(Item))
     {
         // Allocate buffers (may throw a CL exception).
         buffer = cl::Buffer(worker.context, CL_MEM_READ_WRITE, nbytes);
@@ -83,8 +83,8 @@ public:
     }
 
     // Public immutable member.
-    size_t const size;
-    size_t const nbytes;
+    cl_uint const size;
+    cl_uint const nbytes;
 
     // Members left public for WorkerStep access.
     cl::Buffer   buffer;
