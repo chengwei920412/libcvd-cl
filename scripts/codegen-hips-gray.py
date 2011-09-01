@@ -105,14 +105,14 @@ print
 print "    // Calculate the sum of squares of differences of the pixel values."
 print "    float const sum2 = ("
 print " +\n".join([
-    ("        sq(p%02d)" % (shift + 1))
+    ("        sq(p%02d - mean)" % (shift + 1))
     for (shift, _) in enumerate(OFFSETS)
 ])
 print "    );"
 print
 
 print "    // Calculate the standard deviation of the pixel values."
-print "    float const dev  = (FACTOR * sqrt((sum2 / %d) - (sum1 / %d)));" % (len(OFFSETS), len(OFFSETS) * len(OFFSETS))
+print "    float const dev  = (FACTOR * sqrt(sum2 / %d));" % len(OFFSETS)
 print
 print "    // Calculate thresholds for standard deviation bins."
 print "    int   const dev1 = (int)(mean - dev);"
