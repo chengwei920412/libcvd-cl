@@ -257,7 +257,7 @@ static void testPose(
     int64_t const timePreFast2 = runPreFast2.measure();
     size_t const ncull2 = corners1.getCount();
     int64_t const timeFast2 = runFast2.measure();
-    size_t const nfast2 = corners2.getCount();
+    size_t const nfast2 = im2corners.getCount();
     // runMaxFast2.measure();
     size_t const nbest2 = im2corners.getCount();
     int64_t const timeHips2 = runHips2.measure();
