@@ -60,16 +60,18 @@ public:
     }
 
     void set(AsSub const & image) {
-        ::memcpy(mapping, image.data(), nbytes);
-        copyToWorker();
+        assert(image.totalsize() == (int) pixels);
+        worker.queue.enqueueWriteImage(this->image, CL_TRUE, origin, region, 0, 0, (void *) image.data());
     }
 
     void get(AsSub       * image) {
-        copyFromWorker();
-        ::memcpy(image->data(), mapping, nbytes);
+        assert(image->totalsize() == (int) pixels);
+        worker.queue.enqueueReadImage(this->image, CL_TRUE, origin, region, 0, 0, image->data());
     }
 
     int64_t measure(AsSub const & image, int repeat=10) {
+        assert(image.totalsize() == (int) pixels);
+
         // Finish worker queue before starting timing.
         worker.finish();
 

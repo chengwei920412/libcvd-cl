@@ -44,6 +44,7 @@ public:
 
     // Public immutable members.
     CVD::ImageRef const   size;
+    size_t        const   pixels;
     size_t        const   pbytes;
     size_t        const   nbytes;
 

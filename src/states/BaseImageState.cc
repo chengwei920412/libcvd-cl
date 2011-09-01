@@ -34,8 +34,9 @@ BaseImageState::BaseImageState(Worker & worker, CVD::ImageRef const & size,
         ::cl_channel_order order, ::cl_channel_type type, size_t pbytes) :
     WorkerState(worker),
     size(size),
+    pixels(size.x * size.y),
     pbytes(pbytes),
-    nbytes(size.x * size.y * pbytes),
+    nbytes(pixels * pbytes),
     mapping(NULL)
 {
 
