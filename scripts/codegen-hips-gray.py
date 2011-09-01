@@ -67,7 +67,7 @@ int sq(int x) {
 // Shorthand for ulong cast.
 #define L(x) ((ulong)(x))
 
-#define FACTOR (0.675)
+#define FACTOR (0.675f)
 
 kernel void hips_gray(
     read_only image2d_t   image,
@@ -90,7 +90,7 @@ for (shift, (x, y)) in enumerate(OFFSETS):
 print
 
 print "    // Calculate the sum of the pixel values."
-print "    float const sum1 = ("
+print "    int   const sum1 = ("
 print " +\n".join([
     ("        p%02d" % (shift + 1))
     for (shift, _) in enumerate(OFFSETS)
@@ -99,7 +99,7 @@ print "    );"
 print
 
 print "    // Calculate the mean of the pixel values."
-print "    float const mean = (sum1 / %d);" % len(OFFSETS)
+print "    int   const mean = (sum1 / %d);" % len(OFFSETS)
 print
 
 print "    // Calculate the sum of squares of differences of the pixel values."
