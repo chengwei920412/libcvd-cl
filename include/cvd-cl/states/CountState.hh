@@ -32,14 +32,14 @@ namespace CL  {
 class CountState : public WorkerState {
 public:
 
-    explicit CountState(Worker & worker, cl_int size);
+    explicit CountState(Worker & worker, cl_uint size);
     virtual ~CountState();
 
-    void setCount(cl_int ncount);
-    cl_int getCount();
+    void setCount(cl_uint ncount);
+    cl_uint getCount();
 
     // Public immutable member.
-    cl_int       const size;
+    cl_uint      const size;
 
     // Public OpenCL buffer for state access.
     cl::Buffer         count;
@@ -47,7 +47,7 @@ public:
 protected:
 
     // Pinned memory for fast IO.
-    cl_int     *       stage;
+    cl_uint     *      stage;
 };
 
 } // namespace CL

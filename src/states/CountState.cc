@@ -27,7 +27,7 @@
 namespace CVD {
 namespace CL  {
 
-CountState::CountState(Worker & worker, cl_int size) :
+CountState::CountState(Worker & worker, cl_uint size) :
     WorkerState (worker),
     size        (size),
     stage       (NULL)
@@ -36,13 +36,13 @@ CountState::CountState(Worker & worker, cl_int size) :
         size > 0);
 
     // Allocate buffer (may throw a CL exception).
-    count = cl::Buffer(worker.context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(cl_int));
+    count = cl::Buffer(worker.context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(cl_uint));
 
     // Map buffer memory.
-    void * data = worker.queue.enqueueMapBuffer(count, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, sizeof(cl_int));
+    void * data = worker.queue.enqueueMapBuffer(count, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, sizeof(cl_uint));
 
     // Re-interpret memory pointer.
-    stage = reinterpret_cast<cl_int *>(data);
+    stage = reinterpret_cast<cl_uint *>(data);
 
     // Reset counter.
     setCount(0);
@@ -61,20 +61,19 @@ CountState::~CountState() {
     }
 }
 
-void CountState::setCount(cl_int const ncount) {
-    expect("CountState::setCount() must fit within size",
-        ((ncount >= 0) && (ncount <= size)));
+void CountState::setCount(cl_uint const ncount) {
+    expect("CountState::setCount() must fit within size", (ncount <= size));
 
     // Write from parameter to pinned memory.
     stage[0] = ncount;
 
     // Write from pinned memory to device buffer.
-    worker.queue.enqueueWriteBuffer(count, CL_TRUE, 0, sizeof(cl_int), stage);
+    worker.queue.enqueueWriteBuffer(count, CL_TRUE, 0, sizeof(cl_uint), stage);
 }
 
-cl_int CountState::getCount() {
+cl_uint CountState::getCount() {
     // Read from device buffer into pinned memory.
-    worker.queue.enqueueReadBuffer(count, CL_TRUE, 0, sizeof(cl_int), stage);
+    worker.queue.enqueueReadBuffer(count, CL_TRUE, 0, sizeof(cl_uint), stage);
 
     // Read from pinned memory into local variable.
     // Crop against maximum size.

@@ -58,7 +58,7 @@ public:
 
     void get(std::vector<Item>       * items) {
         // Read count from device.
-        cl_int const ncount = getCount();
+        size_t const ncount = getCount();
 
         // Allocate memory for item data.
         items->resize(ncount);
