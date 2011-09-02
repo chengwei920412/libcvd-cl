@@ -38,6 +38,7 @@
 #include <cvd-cl/steps/FastGrayStep.hh>
 #include <cvd-cl/steps/FastBestStep.hh>
 #include <cvd-cl/steps/HipsGrayStep.hh>
+#include <cvd-cl/steps/HipsBlendGrayStep.hh>
 #include <cvd-cl/steps/HipsFindStep.hh>
 #include <cvd-cl/steps/ToUvqUvStep.hh>
 #include <cvd-cl/steps/MixUvqUvStep.hh>
@@ -201,7 +202,7 @@ static void testPose(
     CVD::CL::PreFastGrayStep runPreFast2 (imageNeat, corners1);
     CVD::CL::FastGrayStep    runFast2    (imageNeat, corners1, scores, im2corners);
     CVD::CL::FastBestStep    runMaxFast2 (                     scores, corners2,                      im2corners);
-    CVD::CL::HipsGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
+    CVD::CL::HipsBlendGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
 
     // Create steps for RANSAC.
     CVD::CL::HipsFindStep    runMatch    (im1hips, im2hips, matches);
