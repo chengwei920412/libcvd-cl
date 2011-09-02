@@ -29,31 +29,28 @@
 namespace CVD {
 namespace CL  {
 
-PoseUvqWlsStep::PoseUvqWlsStep(UvqState & i_uvq, UvState & i_uv, MatrixState & i_m, MatrixState & o_a, MatrixState & o_b) :
-    WorkerStep (i_uvq.worker),
-    i_uvq      (i_uvq),
-    i_uv       (i_uv),
+PoseUvqWlsStep::PoseUvqWlsStep(UvqUvState & i_uvquv, MatrixState & i_m, MatrixState & o_a, MatrixState & o_b) :
+    WorkerStep (i_uvquv.worker),
+    i_uvquv    (i_uvquv),
     i_m        (i_m),
     o_a        (o_a),
     o_b        (o_b)
 {
     // Individual state sanity checks.
-    assert(i_uvq.setSize  == 3);
-    assert(i_uv.setSize   == 3);
-    assert(i_m.rows       == 4);
-    assert(i_m.cols       == 4);
-    assert(o_a.rows       == 6);
-    assert(o_b.rows       == 6);
-    assert(o_a.cols       == 6);
-    assert(o_b.cols       == 1);
+    assert(i_uvquv.setSize  == 3);
+    assert(i_m.rows         == 4);
+    assert(i_m.cols         == 4);
+    assert(o_a.rows         == 6);
+    assert(o_b.rows         == 6);
+    assert(o_a.cols         == 6);
+    assert(o_b.cols         == 1);
 
     // State consistency checks.
-    assert(i_uvq.setCount >= 1);
-    assert(i_uvq.setCount == i_uv.setCount);
-    assert(i_m.count      == o_a.count);
-    assert(o_a.count      == o_b.count);
-    assert(i_uvq.setCount == o_a.count);
-    assert(i_uvq.setCount == o_b.count);
+    assert(i_uvquv.setCount >= 1);
+    assert(i_m.count        == o_a.count);
+    assert(o_a.count        == o_b.count);
+    assert(i_uvquv.setCount == o_a.count);
+    assert(i_uvquv.setCount == o_b.count);
 
     worker.compile(&program, &kernel, OCL_WLS_UVQ, "wls_uvq");
 }
@@ -64,17 +61,17 @@ PoseUvqWlsStep::~PoseUvqWlsStep() {
 
 void PoseUvqWlsStep::execute() {
     // Assign kernel parameters.
-    kernel.setArg(0, i_uvq.us.memory);
-    kernel.setArg(1, i_uvq.vs.memory);
-    kernel.setArg(2, i_uvq.qs.memory);
-    kernel.setArg(3, i_uv.us.memory);
-    kernel.setArg(4, i_uv.vs.memory);
+    kernel.setArg(0, i_uvquv.uvq.us.memory);
+    kernel.setArg(1, i_uvquv.uvq.vs.memory);
+    kernel.setArg(2, i_uvquv.uvq.qs.memory);
+    kernel.setArg(3, i_uvquv.uv.us.memory);
+    kernel.setArg(4, i_uvquv.uv.vs.memory);
     kernel.setArg(5, i_m.memory);
     kernel.setArg(6, o_a.memory);
     kernel.setArg(7, o_b.memory);
 
     // Number of matrices to calculate in parallel.
-    size_t const count = i_uvq.setCount;
+    size_t const count = i_uvquv.setCount;
 
     // Queue kernel with global size set to number of matrices.
     worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(count), cl::NullRange);

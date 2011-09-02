@@ -24,7 +24,7 @@
 #ifndef __CVD_CL_POSE_UVQ_WLS_STEP_HH__
 #define __CVD_CL_POSE_UVQ_WLS_STEP_HH__
 
-#include <cvd-cl/states/UvqState.hh>
+#include <cvd-cl/states/UvqUvState.hh>
 #include <cvd-cl/worker/WorkerStep.hh>
 
 namespace CVD {
@@ -33,7 +33,7 @@ namespace CL  {
 class PoseUvqWlsStep : public WorkerStep {
 public:
 
-    explicit PoseUvqWlsStep(UvqState & i_uvq, UvState & i_uv, MatrixState & i_m, MatrixState & o_a, MatrixState & o_b);
+    explicit PoseUvqWlsStep(UvqUvState & i_uvquv, MatrixState & i_m, MatrixState & o_a, MatrixState & o_b);
     virtual ~PoseUvqWlsStep();
 
     virtual void execute();
@@ -41,8 +41,7 @@ public:
 protected:
 
     // Inputs.
-    UvqState       & i_uvq;
-    UvState        & i_uv;
+    UvqUvState     & i_uvquv;
     MatrixState    & i_m;
 
     // Outputs.

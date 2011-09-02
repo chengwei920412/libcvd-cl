@@ -209,7 +209,7 @@ static void testPose(
     CVD::CL::ToUvqUvStep     runToUvqUv  (camera, im1corners, im2corners, matches, uvquv);
     CVD::CL::MixUvqUvStep    runMix      (uvquv, uvquv_mix);
     CVD::CL::MatIdentStep    runIdent    (hypo_m);
-    CVD::CL::PoseUvqWlsStep  runWls      (uvquv_mix.uvq, uvquv_mix.uv, hypo_m, hypo_a, hypo_b);
+    CVD::CL::PoseUvqWlsStep  runWls      (uvquv_mix, hypo_m, hypo_a, hypo_b);
     CVD::CL::CholeskyStep    runCholesky (hypo_a, hypo_b, hypo_x);
     CVD::CL::SE3ExpStep      runSe3Exp   (hypo_x, hypo_cam);
     CVD::CL::MatMulStep      runMul      (hypo_cam, hypo_m);
