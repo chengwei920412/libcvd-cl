@@ -219,7 +219,7 @@ static void testPose(
 
     // Populate camera states.
     Camera::Linear cvdcamera;
-    readCamera(&cvdcamera, "./images/kinectparameters.txt");
+    readCamera(&cvdcamera, "./etc/kinect.conf");
     learnCamera(cvdcamera, camera.umap.asImage(), camera.vmap.asImage());
     translateDepth(d1image, camera.qmap.asImage());
     camera.copyToWorker();
