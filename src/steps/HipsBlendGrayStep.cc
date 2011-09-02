@@ -22,18 +22,24 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 
 #include "cvd-cl/steps/HipsBlendGrayStep.hh"
-#include "kernels/hips-blend-gray.hh"
+#include "kernels/hips-gray.hh"
+#include "kernels/hips-blend.hh"
 
 namespace CVD {
 namespace CL  {
 
-HipsBlendGrayStep::HipsBlendGrayStep(GrayImageState & iimage, PointListState & ipoints, HipsListState & ohips) :
-    WorkerStep (iimage.worker),
-    iimage     (iimage),
-    ipoints    (ipoints),
-    ohips      (ohips)
+// Create (0,0) offset.
+cl_int2 static const offset00 = {{0, 0}};
+
+HipsBlendGrayStep::HipsBlendGrayStep(GrayImageState & i_image, PointListState & i_points, HipsListState & o_hips) :
+    WorkerStep (i_image.worker),
+    i_image    (i_image),
+    i_points   (i_points),
+    o_hips     (o_hips),
+    m_hips     (worker, o_hips.size)
 {
-    worker.compile(&program, &kernel, OCL_HIPS_BLEND_GRAY, "hips_blend_gray");
+    worker.compile(&program_hips, &kernel_hips, OCL_HIPS_GRAY, "hips_gray");
+    worker.compile(&program_blend, &kernel_blend, OCL_HIPS_BLEND, "hips_blend");
 }
 
 HipsBlendGrayStep::~HipsBlendGrayStep() {
@@ -41,21 +47,57 @@ HipsBlendGrayStep::~HipsBlendGrayStep() {
 }
 
 void HipsBlendGrayStep::execute() {
-    // Assign kernel parameters.
-    kernel.setArg(0, iimage.image);
-    kernel.setArg(1, ipoints.buffer);
-    kernel.setArg(2, ohips.buffer);
-    kernel.setArg(3, ohips.count);
-    kernel.setArg(4, (cl_int) ohips.size);
-
     // Read number of input points.
-    size_t const np = ipoints.getCount();
+    size_t const np = i_points.getCount();
 
     // Reset number of output points.
-    ohips.setCount(0);
+    o_hips.setCount(np);
+    m_hips.setCount(np);
 
-    // Queue kernel with global size set to number of input points.
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np), cl::NullRange);
+    // Create work dimensions.
+    cl::NDRange const global(np);
+
+    // Assign HIPS kernel parameters.
+    kernel_hips.setArg(0, i_image.image);
+    kernel_hips.setArg(1, i_points.buffer);
+    kernel_hips.setArg(2, o_hips.buffer);
+    kernel_hips.setArg(3, offset00);
+
+    // Build initial descriptors at centre.
+    worker.queue.enqueueNDRangeKernel(kernel_hips, cl::NullRange, global, cl::NullRange);
+    worker.queue.enqueueBarrier();
+
+    // Switch output buffer to internal one.
+    kernel_hips.setArg(2, m_hips.buffer);
+    kernel_hips.setArg(3, m_hips.count);
+
+    // Assign blend kernel parameters.
+    kernel_blend.setArg(0, o_hips.buffer);
+    kernel_blend.setArg(1, m_hips.buffer);
+
+    // Blend from different offsets.
+    for (int xo = -1; xo <= +1; xo++) {
+        for (int yo = -1; yo <= +1; yo++) {
+            // Skip diagonals.
+            if (xo == yo)
+                continue;
+
+            // Assign 2D offset.
+            cl_int2 const offset = {{xo, yo}};
+            kernel_hips.setArg(3, offset);
+
+            // Create new HIPS descriptors.
+            worker.queue.enqueueBarrier();
+            worker.queue.enqueueNDRangeKernel(kernel_hips, cl::NullRange, global, cl::NullRange);
+
+            // Blend into existing descriptors.
+            worker.queue.enqueueBarrier();
+            worker.queue.enqueueNDRangeKernel(kernel_blend, cl::NullRange, global, cl::NullRange);
+        }
+    }
+
+    // Finish any outstanding work.
+    worker.queue.finish();
 }
 
 } // namespace CL
