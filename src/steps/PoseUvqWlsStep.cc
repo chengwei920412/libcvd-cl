@@ -60,6 +60,14 @@ PoseUvqWlsStep::~PoseUvqWlsStep() {
 }
 
 void PoseUvqWlsStep::execute() {
+    // Repeat state consistency checks.
+    // i_uvquv.setCount is actually mutable.
+    assert(i_uvquv.setCount >= 1);
+    assert(i_m.count        == o_a.count);
+    assert(o_a.count        == o_b.count);
+    assert(i_uvquv.setCount == o_a.count);
+    assert(i_uvquv.setCount == o_b.count);
+
     // Assign kernel parameters.
     kernel.setArg(0, i_uvquv.uvq.us.memory);
     kernel.setArg(1, i_uvquv.uvq.vs.memory);

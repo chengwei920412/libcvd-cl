@@ -55,6 +55,9 @@ void MixUvqUvStep::execute() {
     // Prepare global work size.
     cl::NDRange const global(o_uvquv.maxRecords);
 
+    // Assign output count.
+    o_uvquv.setCount = o_uvquv.maxCount;
+
     // Finish any outstanding work.
     worker.finish();
 

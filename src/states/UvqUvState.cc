@@ -31,7 +31,7 @@ UvqUvState::UvqUvState(Worker & worker, size_t maxCount, size_t setSize) :
     maxCount    (maxCount),
     setSize     (setSize),
     maxRecords  (maxCount * setSize),
-    setCount    (0),
+    setCount    (maxCount),
     uvq         (worker, maxCount, setSize),
     uv          (worker, maxCount, setSize)
 {
