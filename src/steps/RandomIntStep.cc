@@ -25,6 +25,8 @@
 
 #include "kernels/random-int.hh"
 
+#include <boost/cstdlib.hpp>
+
 namespace CVD {
 namespace CL  {
 
@@ -41,9 +43,17 @@ RandomIntStep::~RandomIntStep() {
 }
 
 void RandomIntStep::execute() {
+    // Sample system time.
+    cl_uint const seed1 = (cl_uint) ::time(NULL);
+
+    // Sample address of an array.
+    cl_uint const seed2 = (cl_uint) (size_t) (void *) &o_ints;
+
     // Assign kernel parameters.
     kernel.setArg(0, i_max.count);
     kernel.setArg(1, o_ints.buffer);
+    kernel.setArg(2, seed1);
+    kernel.setArg(3, seed2);
 
     // Reset number of output points.
     size_t const count = o_ints.size;
