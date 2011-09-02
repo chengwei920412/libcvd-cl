@@ -143,7 +143,7 @@ print
 print "    // Check if at least one mask applies entirely."
 print "    int  const yes = ("
 print " ||\n".join([
-    ("        mask_test(sum, 11, 16, %2d)" % (shift))
+    ("        mask_test(sum, 9, 16, %2d)" % (shift))
     for shift in range(0, 16)
 ])
 print "    );"
