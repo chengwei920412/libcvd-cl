@@ -168,7 +168,6 @@ static void testPose(
     // Create states specific to image1 (colour + depth).
     CVD::CL::PointListState  im1corners  (worker, ncorners);
     CVD::CL::HipsListState   im1hips     (worker, ncorners);
-    CVD::CL::PointListState  im1im2      (worker, ncorners);
     CVD::CL::GrayImageState  im1depth    (worker, size);
 
     // Create states specific to image2 (colour only).
