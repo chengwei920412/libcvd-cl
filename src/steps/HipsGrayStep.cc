@@ -27,6 +27,9 @@
 namespace CVD {
 namespace CL  {
 
+// Create (0,0) offset.
+cl_int2 static const offset00 = {{0, 0}};
+
 HipsGrayStep::HipsGrayStep(GrayImageState & iimage, PointListState & ipoints, HipsListState & ohips) :
     WorkerStep (iimage.worker),
     iimage     (iimage),
@@ -45,6 +48,7 @@ void HipsGrayStep::execute() {
     kernel.setArg(0, iimage.image);
     kernel.setArg(1, ipoints.buffer);
     kernel.setArg(2, ohips.buffer);
+    kernel.setArg(3, offset00);
 
     // Read number of input points.
     size_t const np = ipoints.getCount();

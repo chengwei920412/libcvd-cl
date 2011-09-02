@@ -72,7 +72,8 @@ int sq(int x) {
 kernel void hips_gray(
     read_only image2d_t   image,
     global    int2      * corners,
-    global    ulong4    * bins
+    global    ulong4    * bins,
+              int2        offset
 ) {
 
     // Prepare a suitable OpenCL image sampler.
@@ -80,7 +81,9 @@ kernel void hips_gray(
 
     // Use global work item as corner index.
     int  const ic  = get_global_id(0);
-    int2 const xy  = corners[ic];
+
+    // Read and offset feature coordinate.
+    int2 const xy  = (corners[ic] + offset);
 
     // Read pixels in a grid around the corner pixel."""
 
