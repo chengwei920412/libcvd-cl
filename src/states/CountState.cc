@@ -77,12 +77,8 @@ cl_int CountState::getCount() {
     worker.queue.enqueueReadBuffer(count, CL_TRUE, 0, sizeof(cl_int), stage);
 
     // Read from pinned memory into local variable.
-    cl_int const ncount = stage[0];
-
-    expect("CountState::getCount() must fit within size",
-        ((ncount >= 0) && (ncount <= size)));
-
-    return ncount;
+    // Crop against maximum size.
+    return std::min(stage[0], size);
 }
 
 } // namespace CL
