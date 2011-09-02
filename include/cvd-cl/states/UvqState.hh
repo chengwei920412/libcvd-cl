@@ -21,8 +21,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_UVD_STATE_HH__
-#define __CVD_CL_UVD_STATE_HH__
+#ifndef __CVD_CL_UVQ_STATE_HH__
+#define __CVD_CL_UVQ_STATE_HH__
 
 #include <cvd-cl/states/UvState.hh>
 
@@ -42,4 +42,4 @@ public:
 } // namespace CL
 } // namespace CVD
 
-#endif /* __CVD_CL_UVD_STATE_HH__ */
+#endif /* __CVD_CL_UVQ_STATE_HH__ */

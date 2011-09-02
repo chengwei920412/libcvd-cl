@@ -54,4 +54,4 @@ protected:
 } // namespace CL
 } // namespace CVD
 
-#endif /* __CVD_CL_FIND_STEP_HH__ */
+#endif /* __CVD_CL_CHOLESKY_STEP_HH__ */
