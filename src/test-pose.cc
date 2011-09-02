@@ -419,10 +419,12 @@ static void testPose(
     for (size_t i = 0; i < points1.size(); i++) {
         cl_int2 const & xy = points1.at(i);
         glVertex2i(xy.x, xy.y);
+        glVertex2i(xy.x, xy.y + ny);
     }
     for (size_t i = 0; i < points2.size(); i++) {
         cl_int2 const & xy = points2.at(i);
         glVertex2i(xy.x + nx, xy.y);
+        glVertex2i(xy.x + nx, xy.y + ny);
     }
     glEnd();
     glFlush();
