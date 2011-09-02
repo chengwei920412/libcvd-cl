@@ -413,7 +413,21 @@ static void testPose(
     glEnd();
     glFlush();
 
-    sleep(10);
+    // Green: corners.
+    glColor3f(0, 1, 0);
+    glBegin(GL_POINTS);
+    for (size_t i = 0; i < points1.size(); i++) {
+        cl_int2 const & xy = points1.at(i);
+        glVertex2i(xy.x, xy.y);
+    }
+    for (size_t i = 0; i < points2.size(); i++) {
+        cl_int2 const & xy = points2.at(i);
+        glVertex2i(xy.x + nx, xy.y);
+    }
+    glEnd();
+    glFlush();
+
+    sleep(30);
 }
 
 int main(int argc, char **argv) {
