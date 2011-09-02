@@ -49,7 +49,8 @@ protected:
     HipsListState  & o_hips;
 
     // Internal.
-    HipsListState    m_hips;
+    HipsListState    m_hips1;
+    HipsListState    m_hips2;
 
     cl::Program      program_hips;
     cl::Kernel       kernel_hips;

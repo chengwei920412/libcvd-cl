@@ -47,14 +47,21 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // OTHER DEALINGS IN THE SOFTWARE.
 
 kernel void hips_blend(
-    global ulong4       * bins1,
-    global ulong4 const * bins2
+    global ulong4       * binsA1, // At least 1 (OR)
+    global ulong4       * binsA2, // At least 2
+    global ulong4 const * binsB
 ) {
 
     // Use global work item as bin index.
     uint const ibin = get_global_id(0);
 
-    // Blend descriptor in-place.
-    bins1[ibin] |= bins2[ibin];
+    // Read previous bins.
+    ulong4 const binA1 = binsA1 [ibin];
+    ulong4 const binA2 = binsA2 [ibin];
+    ulong4 const binB  = binsB  [ibin];
+
+    // Update bins.
+    binsA1[ibin] = (binA1 | binB);            // At least 1.
+    binsA2[ibin] = (binA1 & (binA2 | binB));  // At least 2.
 }
 """

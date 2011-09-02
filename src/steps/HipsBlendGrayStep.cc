@@ -36,7 +36,8 @@ HipsBlendGrayStep::HipsBlendGrayStep(GrayImageState & i_image, PointListState & 
     i_image    (i_image),
     i_points   (i_points),
     o_hips     (o_hips),
-    m_hips     (worker, o_hips.size)
+    m_hips1    (worker, o_hips.size),
+    m_hips2    (worker, o_hips.size)
 {
     worker.compile(&program_hips, &kernel_hips, OCL_HIPS_GRAY, "hips_gray");
     worker.compile(&program_blend, &kernel_blend, OCL_HIPS_BLEND, "hips_blend");
@@ -52,28 +53,35 @@ void HipsBlendGrayStep::execute() {
 
     // Reset number of output points.
     o_hips.setCount(np);
-    m_hips.setCount(np);
+    m_hips1.setCount(np);
+    m_hips2.setCount(np);
 
     // Create work dimensions.
     cl::NDRange const global(np);
 
+    // Zero all descriptor lists.
+    m_hips1.zero();
+    m_hips2.zero();
+    o_hips.zero();
+
     // Assign HIPS kernel parameters.
     kernel_hips.setArg(0, i_image.image);
     kernel_hips.setArg(1, i_points.buffer);
-    kernel_hips.setArg(2, o_hips.buffer);
+    kernel_hips.setArg(2, m_hips1.buffer);
     kernel_hips.setArg(3, offset00);
 
     // Build initial descriptors at centre.
     worker.queue.enqueueNDRangeKernel(kernel_hips, cl::NullRange, global, cl::NullRange);
     worker.queue.enqueueBarrier();
 
-    // Switch output buffer to internal one.
-    kernel_hips.setArg(2, m_hips.buffer);
-    kernel_hips.setArg(3, m_hips.count);
+    // Switch HIPS buffer to internal one.
+    kernel_hips.setArg(2, m_hips2.buffer);
+    kernel_hips.setArg(3, m_hips2.count);
 
     // Assign blend kernel parameters.
-    kernel_blend.setArg(0, o_hips.buffer);
-    kernel_blend.setArg(1, m_hips.buffer);
+    kernel_blend.setArg(0, m_hips1.buffer); // "bits in at least 1 sample" starts with initial descriptor.
+    kernel_blend.setArg(1, o_hips.buffer);  // "bits in at least 2 samples" goes to output and starts with 0.
+    kernel_blend.setArg(2, m_hips2.buffer); // temporary buffer for new descriptor samples.
 
     // Blend from different offsets.
     for (int xo = -1; xo <= +1; xo++) {
