@@ -32,7 +32,9 @@ Worker::Worker(cl::Device & device) :
     device  (device),
     devices (1, device),
     context (devices),
-    queue   (context, device)
+    queue   (context, device),
+    defaultLocalSize (512),
+    defaultLocal     (defaultLocalSize)
 {
     // Do nothing.
 }
@@ -84,6 +86,15 @@ void Worker::barrier() {
 
 void Worker::finish() {
     queue.finish();
+}
+
+size_t Worker::padGlobalSize(size_t items) {
+    // Perform integer arithmetic without assuming power-of-two group size.
+    return (((items + defaultLocalSize - 1) / defaultLocalSize) * defaultLocalSize);
+}
+
+cl::NDRange Worker::padGlobal(size_t items) {
+    return cl::NDRange(padGlobalSize(items));
 }
 
 } // namespace CL

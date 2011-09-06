@@ -52,6 +52,12 @@ public:
     std::vector<cl::Device>  devices;
     cl::Context              context;
     cl::CommandQueue         queue;
+
+    size_t      const        defaultLocalSize;
+    cl::NDRange const        defaultLocal;
+
+    size_t                   padGlobalSize(size_t items);
+    cl::NDRange              padGlobal(size_t items);
 };
 
 } // namespace CL
