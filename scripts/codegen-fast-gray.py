@@ -95,7 +95,8 @@ kernel void fast_gray(
     write_only image2d_t   scores,
     global     int2      * corners,
     global     int2      * filtered,
-    global     int       * icorner
+    global     int       * icorner,
+               uint        ncorners
 ) {
 
     // Prepare a suitable OpenCL image sampler.
@@ -103,6 +104,9 @@ kernel void fast_gray(
 
     // Use global work item as corner index.
     int  const ic  = get_global_id(0);
+    if (ic >= ncorners)
+        return;
+
     int2 const xy  = corners[ic];
 
     // Read the candidate pixel.

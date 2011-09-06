@@ -42,15 +42,16 @@ FastGrayStep::~FastGrayStep() {
 }
 
 void FastGrayStep::execute() {
+    // Read number of input points.
+    size_t const np = ipoints.getCount();
+
     // Assign kernel parameters.
     kernel.setArg(0, iimage.image);
     kernel.setArg(1, oscores.image);
     kernel.setArg(2, ipoints.buffer);
     kernel.setArg(3, opoints.buffer);
     kernel.setArg(4, opoints.count);
-
-    // Read number of input points.
-    size_t const np = ipoints.getCount();
+    kernel.setArg(5, (cl_uint) np);
 
     // Reset number of output points.
     opoints.setCount(0);
@@ -58,8 +59,12 @@ void FastGrayStep::execute() {
     // Zero scores buffer (may be slow).
     oscores.zero();
 
+    // Prepare global and local size.
+    cl::NDRange const global(worker.padGlobal(np));
+    cl::NDRange const local(worker.defaultLocal);
+
     // Queue kernel with global size set to number of input points.
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np), cl::NullRange);
+    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, local);
 }
 
 } // namespace CL
