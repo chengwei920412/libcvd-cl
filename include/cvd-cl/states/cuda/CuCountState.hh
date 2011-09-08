@@ -21,39 +21,31 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_EXPECT_HH__
-#define __CVD_CL_EXPECT_HH__
+#ifndef __CVD_CL_CU_COUNT_STATE_HH__
+#define __CVD_CL_CU_COUNT_STATE_HH__
 
-#include <cassert>
-#include <stdexcept>
-
-#include <cuda.h>
-#include <cuda_runtime.h>
+#include <cvd-cl/worker/CuWorkerState.hh>
 
 namespace CVD {
 namespace CL  {
 
-class ExpectationError : public std::invalid_argument {
+class CuCountState : public CuWorkerState {
 public:
 
-    explicit ExpectationError(const std::string & message) :
-        std::invalid_argument(message) {
-        // Do nothing.
-    }
+    explicit CuCountState(CuWorker & worker, unsigned int size);
+    virtual ~CuCountState();
+
+    void setCount(unsigned int ncount);
+    unsigned int getCount();
+
+    // Public immutable member.
+    unsigned int  const size;
+
+    // Public device pointer for state access.
+    unsigned int *      d_count;
 };
-
-static void expect(char const * message, bool state) {
-    if (state == false)
-        throw ExpectationError(message);
-}
-
-static void cutry(cudaError_t error) {
-    if (error != cudaSuccess) {
-        throw ExpectationError("CUDA call failed");
-    }
-}
 
 } // namespace CL
 } // namespace CVD
 
-#endif /* __CVD_CL_EXPECT_HH__ */
+#endif /* __CVD_CL_CU_COUNT_STATE_HH__ */

@@ -21,39 +21,34 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_EXPECT_HH__
-#define __CVD_CL_EXPECT_HH__
+#ifndef __CVD_CL_CU_HIPS_FIND_STEP_HH__
+#define __CVD_CL_CU_HIPS_FIND_STEP_HH__
 
-#include <cassert>
-#include <stdexcept>
-
-#include <cuda.h>
-#include <cuda_runtime.h>
+#include <cvd-cl/states/cuda/CuListState.hh>
+#include <cvd-cl/worker/CuWorkerStep.hh>
 
 namespace CVD {
 namespace CL  {
 
-class ExpectationError : public std::invalid_argument {
+class CuHipsFindStep : public CuWorkerStep {
 public:
 
-    explicit ExpectationError(const std::string & message) :
-        std::invalid_argument(message) {
-        // Do nothing.
-    }
+    explicit CuHipsFindStep(CuHipsListState & i_hips1, CuHipsListState & i_hips2, CuPointListState & o_matches);
+    virtual ~CuHipsFindStep();
+
+    virtual void execute();
+
+protected:
+
+    // Inputs.
+    CuHipsListState  & i_hips1;
+    CuHipsListState  & i_hips2;
+
+    // Outputs.
+    CuPointListState & o_matches;
 };
-
-static void expect(char const * message, bool state) {
-    if (state == false)
-        throw ExpectationError(message);
-}
-
-static void cutry(cudaError_t error) {
-    if (error != cudaSuccess) {
-        throw ExpectationError("CUDA call failed");
-    }
-}
 
 } // namespace CL
 } // namespace CVD
 
-#endif /* __CVD_CL_EXPECT_HH__ */
+#endif /* __CVD_CL_CU_HIPS_FIND_STEP_HH__ */

@@ -21,39 +21,30 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_EXPECT_HH__
-#define __CVD_CL_EXPECT_HH__
-
-#include <cassert>
-#include <stdexcept>
-
-#include <cuda.h>
-#include <cuda_runtime.h>
+#include "cvd-cl/worker/CuWorkerStep.hh"
 
 namespace CVD {
 namespace CL  {
 
-class ExpectationError : public std::invalid_argument {
-public:
-
-    explicit ExpectationError(const std::string & message) :
-        std::invalid_argument(message) {
-        // Do nothing.
-    }
-};
-
-static void expect(char const * message, bool state) {
-    if (state == false)
-        throw ExpectationError(message);
+CuWorkerStep::CuWorkerStep(CuWorker & worker) :
+    worker(worker)
+{
+    // Do nothing.
 }
 
-static void cutry(cudaError_t error) {
-    if (error != cudaSuccess) {
-        throw ExpectationError("CUDA call failed");
-    }
+CuWorkerStep::~CuWorkerStep() {
+    // Do nothing.
+}
+
+int64_t CuWorkerStep::measure(int repeat) {
+    boost::system_time const t1 = boost::get_system_time();
+
+    for (int i = 0; i < repeat; i++)
+        execute();
+
+    boost::system_time const t2 = boost::get_system_time();
+    return ((t2 - t1).total_microseconds() / repeat);
 }
 
 } // namespace CL
 } // namespace CVD
-
-#endif /* __CVD_CL_EXPECT_HH__ */

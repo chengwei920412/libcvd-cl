@@ -1,11 +1,13 @@
-CFLAGS   = -std=gnu++98 -fopenmp -pthread -O2 -march=native
-CFLAGS  += -I/usr/local/include -Iinclude -Isrc
-CFLAGS  += -Wall -Wextra -Wno-unused -Wno-ignored-qualifiers -fmessage-length=0
+INCLUDES += -I/usr/local/include -I/opt/cuda/include -Iinclude -Isrc
+CFLAGS    = $(INCLUDES) --debug -O0 -march=native -Wall -Wextra -Wno-unused -Wno-ignored-qualifiers -fmessage-length=0
+CUFLAGS   = $(INCLUDES) --compiler-bindir=/usr/bin/g++-4.4 -O2 --gpu-architecture sm_23 --compiler-options -march=native,-Wall,-Wextra,-Wno-unused,-Wno-ignored-qualifiers,-fmessage-length=0
+
 #CFLAGS  += -g3 -DCVD_IMAGE_DEBUG
 
 LIBS     = -lOpenCL -lcvd -lm -lboost_program_options-mt
 
-SOURCES  = $(shell ls src/*/*.cc)
+SOURCES    = $(shell ls src/*/*.cc src/*/*/*.cc)
+CUSOURCES  = $(shell ls src/*/*.cu src/*/*/*.cu)
 
 all:
 	mkdir -p obj bin
@@ -49,11 +51,11 @@ all:
 	scripts/codegen-fmix.py          | tee opencl/fmix.cl          | scripts/embed.py OCL_FMIX           > src/kernels/fmix.hh
 	scripts/codegen-random-int.py    | tee opencl/random-int.cl    | scripts/embed.py OCL_RANDOM_INT     > src/kernels/random-int.hh
 
-	g++ -shared -fPIC -o bin/libcvdcl.so $(CFLAGS) $(LIBS) $(SOURCES)
-
-	g++ -o bin/test-cholesky $(CFLAGS) $(LIBS) bin/libcvdcl.so src/cholesky.cc
-	g++ -o bin/test-se3-exp $(CFLAGS) $(LIBS) bin/libcvdcl.so src/test-se3.cc
-	g++ -o bin/test-pose $(CFLAGS) $(LIBS) bin/libcvdcl.so src/test-pose.cc
+	rm -fv bin/libcvdcl.a
+	nvcc --lib -o bin/libcvdcl.a $(CUFLAGS) $(LIBS) $(SOURCES) $(CUSOURCES)
+	nvcc -o bin/test-cholesky $(CUFLAGS) $(LIBS) src/cholesky.cc bin/libcvdcl.a
+	nvcc -o bin/test-se3-exp $(CUFLAGS) $(LIBS) src/test-se3.cc bin/libcvdcl.a
+	nvcc -o bin/test-pose $(CUFLAGS) $(LIBS) src/test-pose.cc bin/libcvdcl.a
 
 clean:
 	rm -rfv obj bin src/kernels/*.hh opencl/*.cl

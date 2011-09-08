@@ -33,6 +33,7 @@
 #include <cvd/image_io.h>
 #include <cvd/videodisplay.h>
 
+#include <cvd-cl/core/Expect.hh>
 #include <cvd-cl/steps/PreFastGrayStep.hh>
 #include <cvd-cl/steps/ClipDepthStep.hh>
 #include <cvd-cl/steps/FastGrayStep.hh>
@@ -49,6 +50,9 @@
 #include <cvd-cl/steps/SE3ExpStep.hh>
 #include <cvd-cl/steps/SE3ScoreStep.hh>
 #include <cvd-cl/steps/SE3Run1Step.hh>
+
+#include <cvd-cl/worker/CuWorker.hh>
+#include <cvd-cl/steps/cuda/CuHipsFindStep.hh>
 
 
 // Typedefs for image format.
@@ -272,6 +276,29 @@ static void testPose(
     int64_t const timeMix      = runMix.measure();
     int64_t const timeIdent    = runIdent.measure();
 
+    int ndevices = 0;
+    CVD::CL::cutry(cudaGetDeviceCount(&ndevices));
+    std::cerr << "Found " << ndevices << " CUDA devices" << std::endl;
+
+    CVD::CL::cutry(cudaSetDevice(0));
+
+    CVD::CL::CuWorker cuwork(0);
+    CVD::CL::CuHipsListState cuim1hips(cuwork, ncorners);
+    CVD::CL::CuHipsListState cuim2hips(cuwork, ncorners);
+    CVD::CL::CuPointListState cumatches(cuwork, ncorners);
+    CVD::CL::CuHipsFindStep cufind(cuim1hips, cuim2hips, cumatches);
+
+    std::vector<cl_ulong4> buf(ncorners);
+    im1hips.get(&buf);
+    cuim1hips.setCast(buf);
+    im2hips.get(&buf);
+    cuim2hips.setCast(buf);
+
+    cufind.execute();
+    int64_t const timeCuMatch  = cufind.measure(3);
+
+    size_t const ncumatch = cumatches.getCount();
+
     std::cerr << std::endl;
     std::cerr << std::setw(8) << nxy    << std::setw(8) << nxy    << " corner candidates in image" << std::endl;
     std::cerr << std::setw(8) << ncull1 << std::setw(8) << ncull2 << " corners after culling" << std::endl;
@@ -279,6 +306,7 @@ static void testPose(
     std::cerr << std::setw(8) << nfast1 << std::setw(8) << nfast2 << " corners after FAST" << std::endl;
     // std::cerr << std::setw(8) << nbest1 << std::setw(8) << nbest2 << " corners after filtering" << std::endl;
     std::cerr << std::setw(8) << nmatch << std::setw(8) << nmatch << " corners after HIPS" << std::endl;
+    std::cerr << std::setw(8) << ncumatch << std::setw(8) << ncumatch << " corners after HIPS with CUDA" << std::endl;
     std::cerr << std::endl;
     std::cerr << std::setw(8) << timeCopy1       << std::setw(8) << timeCopy2      << " us writing image" << std::endl;
     std::cerr << std::setw(8) << timePreFast1    << std::setw(8) << timePreFast2   << " us culling corners" << std::endl;
@@ -287,6 +315,7 @@ static void testPose(
     std::cerr << std::setw(8) << timeHips1       << std::setw(8) << timeHips2      << " us making HIPS" << std::endl;
     std::cerr << std::endl;
     std::cerr << std::setw(8) << timeMatch       << " us finding HIPS matches" << std::endl;
+    std::cerr << std::setw(8) << timeCuMatch     << " us finding HIPS matches in CUDA" << std::endl;
     std::cerr << std::setw(8) << timeToUvqUv     << " us converting matches to ((u,v,q),(u,v))" << std::endl;
     std::cerr << std::setw(8) << timeMix         << " us selecting matches for 3-point attempts" << std::endl;
     std::cerr << std::setw(8) << timeIdent       << " us assigning identity matrix" << std::endl;

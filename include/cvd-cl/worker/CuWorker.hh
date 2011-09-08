@@ -21,11 +21,12 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_EXPECT_HH__
-#define __CVD_CL_EXPECT_HH__
+#ifndef __CVD_CL_CU_WORKER_HH__
+#define __CVD_CL_CU_WORKER_HH__
 
-#include <cassert>
-#include <stdexcept>
+#include <boost/cstdint.hpp>
+#include <boost/cstdlib.hpp>
+#include <boost/noncopyable.hpp>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -33,27 +34,23 @@
 namespace CVD {
 namespace CL  {
 
-class ExpectationError : public std::invalid_argument {
+class CuWorker : public boost::noncopyable {
 public:
 
-    explicit ExpectationError(const std::string & message) :
-        std::invalid_argument(message) {
-        // Do nothing.
-    }
+    explicit CuWorker(int device);
+    virtual ~CuWorker();
+
+    // Leave public for direct access by steps and states.
+    int const                device;
+
+    size_t      const        defaultLocalSize;
+    dim3        const        defaultLocal;
+
+    size_t                   padGlobalSize(size_t items);
+    dim3                     padGlobal(size_t items);
 };
-
-static void expect(char const * message, bool state) {
-    if (state == false)
-        throw ExpectationError(message);
-}
-
-static void cutry(cudaError_t error) {
-    if (error != cudaSuccess) {
-        throw ExpectationError("CUDA call failed");
-    }
-}
 
 } // namespace CL
 } // namespace CVD
 
-#endif /* __CVD_CL_EXPECT_HH__ */
+#endif /* __CVD_CL_CU_WORKER_HH__ */

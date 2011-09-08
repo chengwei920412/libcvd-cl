@@ -21,39 +21,31 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_EXPECT_HH__
-#define __CVD_CL_EXPECT_HH__
-
-#include <cassert>
-#include <stdexcept>
-
-#include <cuda.h>
-#include <cuda_runtime.h>
+#include "cvd-cl/worker/CuWorker.hh"
 
 namespace CVD {
 namespace CL  {
 
-class ExpectationError : public std::invalid_argument {
-public:
-
-    explicit ExpectationError(const std::string & message) :
-        std::invalid_argument(message) {
-        // Do nothing.
-    }
-};
-
-static void expect(char const * message, bool state) {
-    if (state == false)
-        throw ExpectationError(message);
+CuWorker::CuWorker(int device) :
+    device           (device),
+    defaultLocalSize (256),
+    defaultLocal     (defaultLocalSize)
+{
+    // Do nothing.
 }
 
-static void cutry(cudaError_t error) {
-    if (error != cudaSuccess) {
-        throw ExpectationError("CUDA call failed");
-    }
+CuWorker::~CuWorker() {
+    // Do nothing.
+}
+
+size_t CuWorker::padGlobalSize(size_t items) {
+    // Perform integer arithmetic without assuming power-of-two group size.
+    return (((items + defaultLocalSize - 1) / defaultLocalSize) * defaultLocalSize);
+}
+
+dim3 CuWorker::padGlobal(size_t items) {
+    return dim3(padGlobalSize(items), 1, 1);
 }
 
 } // namespace CL
 } // namespace CVD
-
-#endif /* __CVD_CL_EXPECT_HH__ */

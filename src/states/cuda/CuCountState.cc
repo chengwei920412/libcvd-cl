@@ -21,39 +21,46 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_EXPECT_HH__
-#define __CVD_CL_EXPECT_HH__
-
-#include <cassert>
-#include <stdexcept>
-
-#include <cuda.h>
-#include <cuda_runtime.h>
+#include "cvd-cl/states/cuda/CuCountState.hh"
+#include "cvd-cl/core/Expect.hh"
 
 namespace CVD {
 namespace CL  {
 
-class ExpectationError : public std::invalid_argument {
-public:
+CuCountState::CuCountState(CuWorker & worker, unsigned int size) :
+    CuWorkerState (worker),
+    size          (size),
+    d_count       (NULL)
+{
+    expect("CuCountState::CuCountState() must have positive size",
+        size > 0);
 
-    explicit ExpectationError(const std::string & message) :
-        std::invalid_argument(message) {
-        // Do nothing.
-    }
-};
+    // Allocate memory.
+    cutry(cudaMalloc((void * *) &d_count, sizeof(unsigned int)));
+    assert(d_count != NULL);
 
-static void expect(char const * message, bool state) {
-    if (state == false)
-        throw ExpectationError(message);
+    // Reset counter.
+    setCount(0);
 }
 
-static void cutry(cudaError_t error) {
-    if (error != cudaSuccess) {
-        throw ExpectationError("CUDA call failed");
-    }
+CuCountState::~CuCountState() {
+    cudaFree(d_count);
+    d_count = NULL;
+}
+
+void CuCountState::setCount(unsigned int ncount) {
+    assert(d_count != NULL);
+    expect("CountState::setCount() must fit within size", (ncount <= size));
+    cutry(cudaMemcpy(d_count, &ncount, sizeof(ncount), cudaMemcpyHostToDevice));
+}
+
+unsigned int CuCountState::getCount() {
+    assert(d_count != NULL);
+    unsigned int ncount = 0;
+    cutry(cudaMemcpy(&ncount, d_count, sizeof(ncount), cudaMemcpyDeviceToHost));
+    // Crop against maximum size.
+    return std::min(ncount, size);
 }
 
 } // namespace CL
 } // namespace CVD
-
-#endif /* __CVD_CL_EXPECT_HH__ */
