@@ -31,12 +31,16 @@
 #include <math.h>
 
 #include <XnCppWrapper.h>
+
+#include <cstdlib>
+#include <cstdio>
+
 using namespace xn;
 
 //---------------------------------------------------------------------------
 // Defines
 //---------------------------------------------------------------------------
-#define SAMPLE_XML_PATH "../../../../Data/SamplesConfig.xml"
+#define SAMPLE_XML_PATH "../../Data/SamplesConfig.xml"
 
 #define GL_WIN_SIZE_X 1280
 #define GL_WIN_SIZE_Y 1024
@@ -217,6 +221,52 @@ void glutDisplay (void)
 	glutSwapBuffers();
 }
 
+void takePhoto() {
+    static int index = 1;
+    char fname[256] = {0,};
+    sprintf(fname, "kinect%03d.txt", index++);
+
+    g_depth.GetMetaData(g_depthMD);
+    g_image.GetMetaData(g_imageMD);
+
+    int const nx = g_depthMD.XRes();
+    int const ny = g_depthMD.YRes();
+    assert(nx == g_imageMD.XRes());
+    assert(ny == g_imageMD.YRes());
+
+    const XnDepthPixel* pDepth = g_depthMD.Data();
+    const XnUInt8* pImage = g_imageMD.Data();
+
+    FILE * file = fopen(fname, "wb");
+    fprintf(file, "%d\n%d\n\n", nx, ny);
+
+    for (int y = 0, di = 0, ri = 0, gi = 1, bi = 2; y < ny; y++) {
+        for (int x = 0; x < nx; x++, di++, ri += 3, gi += 3, bi += 3) {
+            int const r = pImage[ri];
+            int const g = pImage[gi];
+            int const b = pImage[bi];
+            int const d = pDepth[di];
+
+            assert(r >= 0);
+            assert(g >= 0);
+            assert(b >= 0);
+            assert(d >= 0);
+
+            assert(r <= 0xFF);
+            assert(g <= 0xFF);
+            assert(b <= 0xFF);
+            assert(d <= 0xFFFF);
+
+            fprintf(file, "%3d %3d %3d %5d\n", r, g, b, d);
+        }
+
+        fprintf(file, "\n");
+    }
+
+    fflush(file);
+    fclose(file);
+}
+
 void glutKeyboard (unsigned char key, int x, int y)
 {
 	switch (key)
@@ -235,6 +285,9 @@ void glutKeyboard (unsigned char key, int x, int y)
 			g_nViewState = DISPLAY_MODE_IMAGE;
 			g_depth.GetAlternativeViewPointCap().ResetViewPoint();
 			break;
+        case 's':
+            takePhoto();
+            break;
 		case 'm':
 			g_context.SetGlobalMirror(!g_context.GetGlobalMirror());
 			break;
