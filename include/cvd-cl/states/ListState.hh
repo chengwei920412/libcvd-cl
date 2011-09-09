@@ -36,7 +36,6 @@ public:
 
     explicit ListState(Worker & worker, cl_uint size) :
         CountState (worker, size),
-        size       (size),
         nbytes     (size * sizeof(Item))
     {
         // Allocate buffers (may throw a CL exception).
@@ -83,7 +82,6 @@ public:
     }
 
     // Public immutable member.
-    cl_uint const size;
     cl_uint const nbytes;
 
     // Members left public for WorkerStep access.
