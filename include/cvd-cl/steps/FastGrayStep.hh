@@ -34,7 +34,7 @@ namespace CL  {
 class FastGrayStep : public WorkerStep {
 public:
 
-    explicit FastGrayStep(GrayImageState & iimage, PointListState & ipoints, GrayImageState & oscores, PointListState & opoints);
+    explicit FastGrayStep(GrayImageState & iimage, PointListState & ipoints, GrayImageState & oscores, PointListState & opoints, cl_int threshold=40, cl_int ring=9);
     virtual ~FastGrayStep();
 
     virtual void execute();
@@ -48,6 +48,10 @@ protected:
     // Outputs.
     GrayImageState & oscores;
     PointListState & opoints;
+
+    // Parameters.
+    cl_int const     threshold;
+    cl_int const     ring;
 
     cl::Program      program;
     cl::Kernel       kernel;

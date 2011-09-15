@@ -70,9 +70,6 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // Enable OpenCL 32-bit integer atomic functions.
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 
-// Specify a threshold for pixel difference.
-#define THRESH  40
-
 // Generate bitwise mask of n bits.
 int mask(int n) {
     return ((1 << n) - 1);
@@ -137,7 +134,7 @@ print
 print "    // Threshold the absolute difference of each circle pixel."
 print "    int  const sum = ("
 print " |\n".join([
-    ("        ((d%02d > THRESH) << %2d)" % (shift + 1, shift))
+    ("        ((d%02d > FAST_THRESH) << %2d)" % (shift + 1, shift))
     for shift in range(0, 16)
 ])
 
@@ -147,7 +144,7 @@ print
 print "    // Check if at least one mask applies entirely."
 print "    int  const yes = ("
 print " ||\n".join([
-    ("        mask_test(sum, 9, 16, %2d)" % (shift))
+    ("        mask_test(sum, FAST_RING, 16, %2d)" % (shift))
     for shift in range(0, 16)
 ])
 print "    );"

@@ -58,9 +58,6 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // Enable OpenCL 32-bit integer atomic functions.
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 
-// Specify a threshold for pixel difference.
-#define THRESH  40
-
 kernel void prefast_gray(
     read_only  image2d_t   image,
     global     int2      * corners,
@@ -87,7 +84,7 @@ print
 
 print "    // Check the absolute difference of each circle pixel."
 for (shift, _) in enumerate(OFFSETS):
-    print ("    int  const d%02d = (abs(p%02d - p00) > THRESH);" % (shift + 1, shift + 1))
+    print ("    int  const d%02d = (abs(p%02d - p00) > FAST_THRESH);" % (shift + 1, shift + 1))
 print
 
 print "    // Check if any two adjacent circle pixels have a high absolute difference."

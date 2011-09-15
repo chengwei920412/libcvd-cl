@@ -24,15 +24,20 @@
 #include "cvd-cl/steps/PreFastGrayStep.hh"
 #include "kernels/prefast-gray.hh"
 
+#include <boost/cstdlib.hpp>
+
 namespace CVD {
 namespace CL  {
 
-PreFastGrayStep::PreFastGrayStep(GrayImageState & image, PointListState & points) :
+PreFastGrayStep::PreFastGrayStep(GrayImageState & image, PointListState & points, cl_int threshold) :
     WorkerStep (image.worker),
     image      (image),
-    points     (points)
+    points     (points),
+    threshold  (threshold)
 {
-    worker.compile(&program, &kernel, OCL_PRE_FAST_GRAY, "prefast_gray");
+    char opt[256] = {0,};
+    snprintf(opt, sizeof(opt) - 1, "-DFAST_THRESH=%d", int(threshold));
+    worker.compile(&program, &kernel, OCL_PRE_FAST_GRAY, "prefast_gray", opt);
 }
 
 PreFastGrayStep::~PreFastGrayStep() {

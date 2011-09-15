@@ -27,14 +27,18 @@
 namespace CVD {
 namespace CL  {
 
-FastGrayStep::FastGrayStep(GrayImageState & iimage, PointListState & ipoints, GrayImageState & oscores, PointListState & opoints) :
+FastGrayStep::FastGrayStep(GrayImageState & iimage, PointListState & ipoints, GrayImageState & oscores, PointListState & opoints, cl_int threshold, cl_int ring) :
     WorkerStep (iimage.worker),
     iimage     (iimage),
     ipoints    (ipoints),
     oscores    (oscores),
-    opoints    (opoints)
+    opoints    (opoints),
+    threshold  (threshold),
+    ring       (ring)
 {
-    worker.compile(&program, &kernel, OCL_FAST_GRAY, "fast_gray");
+    char opt[256] = {0,};
+    snprintf(opt, sizeof(opt) - 1, "-DFAST_THRESH=%d -DFAST_RING=%d", int(threshold), int(ring));
+    worker.compile(&program, &kernel, OCL_FAST_GRAY, "fast_gray", opt);
 }
 
 FastGrayStep::~FastGrayStep() {
