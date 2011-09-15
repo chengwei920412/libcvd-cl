@@ -210,16 +210,30 @@ static void readRGBD(
     file.close();
 }
 
-static void testPose(
+struct stage1input {
+    GrayImage   g1image;
+    GrayImage   g2image;
+    DepthImage  d1image;
+    options     opts;
+};
+
+struct stage1output {
+    std::vector<cl_int2>   points1;
+    std::vector<cl_int2>   points2;
+    std::vector<cl_ulong4> hips1;
+    std::vector<cl_ulong4> hips2;
+};
+
+static void testStage1(
     cl::Device        & device,
-    GrayImage   const & g1image,
-    GrayImage   const & g2image,
-    DepthImage  const & d1image,
-    options     const & opts
+    stage1input const & input,
+    stage1output      & output
 ) {
+    // Refer to inputs.
+    options const & opts = input.opts;
 
     // Extract image dimensions.
-    CVD::ImageRef const size = g1image.size();
+    CVD::ImageRef const size = input.g1image.size();
     int           const nx   = size.x;
     int           const ny   = size.y;
     int           const nxy  = nx * ny;
@@ -246,19 +260,6 @@ static void testPose(
     // Create camera translation states.
     CVD::CL::CameraState     camera      (worker, size);
 
-    // Create states for RANSAC.
-    CVD::CL::PointListState  matches     (worker, ncorners);
-    CVD::CL::UvqUvState      uvquv       (worker, ncorners, 1);
-    CVD::CL::UvqUvState      uvquv_mix   (worker, nhypos, 3);
-    CVD::CL::MatrixState     hypo_m      (worker, nhypos, 4, 4);
-    CVD::CL::MatrixState     hypo_a      (worker, nhypos, 6, 6);
-    CVD::CL::MatrixState     hypo_b      (worker, nhypos, 6, 1);
-    CVD::CL::MatrixState     hypo_x      (worker, nhypos, 6, 1);
-    CVD::CL::MatrixState     hypo_cam    (worker, nhypos, 4, 4);
-    CVD::CL::FloatListState  hypo_scores (worker, nhypos);
-    CVD::CL::CountState      hypo_best   (worker, nhypos);
-    CVD::CL::Float2ListState test_uvs    (worker, ncorners);
-
     // Create steps specific to image1.
     CVD::CL::PreFastGrayStep runPreFast1 (imageNeat, corners1, opts.fast_threshold);
     CVD::CL::ClipDepthStep   runClip1    (camera.qmap,  corners1, corners2);
@@ -272,30 +273,15 @@ static void testPose(
     CVD::CL::FastBestStep    runMaxFast2 (                     scores, corners2,                      im2corners);
     CVD::CL::HipsBlendGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips, opts.hips_blendsize);
 
-    // Create steps for RANSAC.
-    CVD::CL::HipsTurnStep    runMatch    (im1hips, im2hips, matches, opts.hips_maxerr);
-    CVD::CL::ToUvqUvStep     runToUvqUv  (camera, im1corners, im2corners, matches, uvquv);
-    CVD::CL::MixUvqUvStep    runMix      (uvquv, uvquv_mix);
-    CVD::CL::MatIdentStep    runIdent    (hypo_m);
-    CVD::CL::PoseUvqWlsStep  runWls      (uvquv_mix, hypo_m, hypo_a, hypo_b);
-    CVD::CL::CholeskyStep    runCholesky (hypo_a, hypo_b, hypo_x);
-    CVD::CL::SE3ExpStep      runSe3Exp   (hypo_x, hypo_cam);
-    CVD::CL::MatMulStep      runMul      (hypo_cam, hypo_m);
-    CVD::CL::SE3ScoreStep    runSe3Score (uvquv, hypo_cam, hypo_scores);
-    CVD::CL::SE3Run1Step     runSe3One   (uvquv, hypo_cam, hypo_best, test_uvs);
-
-
     // Populate camera states.
     Camera::Linear cvdcamera;
     readCamera(&cvdcamera, "./etc/kinect.conf");
     learnCamera(cvdcamera, camera.umap.asImage(), camera.vmap.asImage());
-    translateDepth(d1image, camera.qmap.asImage());
+    translateDepth(input.d1image, camera.qmap.asImage());
     camera.copyToWorker();
 
-    boost::system_time const t1 = boost::get_system_time();
-
     // Write image 1 to device.
-    int64_t const timeCopy1 = imageNeat.measure(g1image);
+    int64_t const timeCopy1 = imageNeat.measure(input.g1image);
 
     // Zero FAST scores.
     scores.zero();
@@ -315,7 +301,7 @@ static void testPose(
     int64_t const timeHips1 = runHips1.measure();
 
     // Write image 2 to device.
-    int64_t const timeCopy2 = imageNeat.measure(g2image);
+    int64_t const timeCopy2 = imageNeat.measure(input.g2image);
 
     // Zero FAST scores.
     scores.zero();
@@ -334,20 +320,12 @@ static void testPose(
     // Finish any outstanding work.
     worker.finish();
 
-    // Run RANSAC steps.
-    int64_t const timeMatch    = runMatch.measure();
-    size_t  const nmatch       = matches.getCount();
-    int64_t const timeToUvqUv  = runToUvqUv.measure();
-    int64_t const timeMix      = runMix.measure();
-    int64_t const timeIdent    = runIdent.measure();
-
     std::cerr << std::endl;
     std::cerr << std::setw(8) << nxy    << std::setw(8) << nxy    << " corner candidates in image" << std::endl;
     std::cerr << std::setw(8) << ncull1 << std::setw(8) << ncull2 << " corners after culling" << std::endl;
     std::cerr << std::setw(8) << nclip1 << std::setw(8) << ncull2 << " corners after depth" << std::endl;
     std::cerr << std::setw(8) << nfast1 << std::setw(8) << nfast2 << " corners after FAST" << std::endl;
     // std::cerr << std::setw(8) << nbest1 << std::setw(8) << nbest2 << " corners after filtering" << std::endl;
-    std::cerr << std::setw(8) << nmatch << std::setw(8) << nmatch << " corners after HIPS" << std::endl;
     std::cerr << std::endl;
     std::cerr << std::setw(8) << timeCopy1       << std::setw(8) << timeCopy2      << " us writing image" << std::endl;
     std::cerr << std::setw(8) << timePreFast1    << std::setw(8) << timePreFast2   << " us culling corners" << std::endl;
@@ -355,10 +333,104 @@ static void testPose(
     std::cerr << std::setw(8) << timeFast1       << std::setw(8) << timeFast2      << " us running FAST" << std::endl;
     std::cerr << std::setw(8) << timeHips1       << std::setw(8) << timeHips2      << " us making HIPS" << std::endl;
     std::cerr << std::endl;
+
+    // Read out final corner lists.
+    im1corners.get(&output.points1);
+    im2corners.get(&output.points2);
+
+    // Read out final HIPS descriptors.
+    im1hips.get(&output.hips1);
+    im2hips.get(&output.hips2);
+}
+
+static void testStage2(
+    cl::Device         & device,
+    stage1input  const & input,
+    stage1output const & stage1
+) {
+    // Refer to inputs.
+    options const & opts = input.opts;
+    std::vector<cl_int2> const & points1 = stage1.points1;
+    std::vector<cl_int2> const & points2 = stage1.points2;
+
+    // Extract image dimensions.
+    CVD::ImageRef const size = input.g1image.size();
+    int           const nx   = size.x;
+    int           const ny   = size.y;
+    int           const nxy  = nx * ny;
+
+    // Create OpenCL worker.
+    CVD::CL::Worker          worker      (device);
+
+    // Create camera translation states.
+    CVD::CL::CameraState     camera      (worker, size);
+
+    // Populate camera states.
+    Camera::Linear cvdcamera;
+    readCamera(&cvdcamera, "./etc/kinect.conf");
+    learnCamera(cvdcamera, camera.umap.asImage(), camera.vmap.asImage());
+    translateDepth(input.d1image, camera.qmap.asImage());
+    camera.copyToWorker();
+
+    // Create states to restore stage 1 data.
+    CVD::CL::PointListState  im1corners  (worker, ncorners);
+    CVD::CL::PointListState  im2corners  (worker, ncorners);
+    CVD::CL::HipsListState   im1hips     (worker, ncorners);
+    CVD::CL::HipsListState   im2hips     (worker, ncorners);
+
+    // Restore stage 1 data.
+    im1corners.set(stage1.points1);
+    im2corners.set(stage1.points2);
+    im1hips.set(stage1.hips1);
+    im2hips.set(stage1.hips2);
+
+    // Create states for RANSAC.
+    // None of these require images, so they may be used on CPU.
+    CVD::CL::PointListState  matches     (worker, ncorners);
+    CVD::CL::UvqUvState      uvquv       (worker, ncorners, 1);
+    CVD::CL::UvqUvState      uvquv_mix   (worker, nhypos, 3);
+    CVD::CL::MatrixState     hypo_m      (worker, nhypos, 4, 4);
+    CVD::CL::MatrixState     hypo_a      (worker, nhypos, 6, 6);
+    CVD::CL::MatrixState     hypo_b      (worker, nhypos, 6, 1);
+    CVD::CL::MatrixState     hypo_x      (worker, nhypos, 6, 1);
+    CVD::CL::MatrixState     hypo_cam    (worker, nhypos, 4, 4);
+    CVD::CL::FloatListState  hypo_scores (worker, nhypos);
+    CVD::CL::CountState      hypo_best   (worker, nhypos);
+    CVD::CL::Float2ListState test_uvs    (worker, ncorners);
+
+    // Create steps for RANSAC.
+    CVD::CL::HipsTurnStep    runMatch    (im1hips, im2hips, matches, opts.hips_maxerr);
+    CVD::CL::ToUvqUvStep     runToUvqUv  (camera, im1corners, im2corners, matches, uvquv);
+    CVD::CL::MixUvqUvStep    runMix      (uvquv, uvquv_mix);
+    CVD::CL::MatIdentStep    runIdent    (hypo_m);
+    CVD::CL::PoseUvqWlsStep  runWls      (uvquv_mix, hypo_m, hypo_a, hypo_b);
+    CVD::CL::CholeskyStep    runCholesky (hypo_a, hypo_b, hypo_x);
+    CVD::CL::SE3ExpStep      runSe3Exp   (hypo_x, hypo_cam);
+    CVD::CL::MatMulStep      runMul      (hypo_cam, hypo_m);
+    CVD::CL::SE3ScoreStep    runSe3Score (uvquv, hypo_cam, hypo_scores);
+    CVD::CL::SE3Run1Step     runSe3One   (uvquv, hypo_cam, hypo_best, test_uvs);
+
+
+
+
+    boost::system_time const t1 = boost::get_system_time();
+
+
+
+    // Run RANSAC steps.
+    int64_t const timeMatch    = runMatch.measure();
+    size_t  const nmatch       = matches.getCount();
+    int64_t const timeToUvqUv  = runToUvqUv.measure();
+    int64_t const timeMix      = runMix.measure();
+    int64_t const timeIdent    = runIdent.measure();
+
+
     std::cerr << std::setw(8) << timeMatch       << " us finding HIPS matches" << std::endl;
     std::cerr << std::setw(8) << timeToUvqUv     << " us converting matches to ((u,v,q),(u,v))" << std::endl;
     std::cerr << std::setw(8) << timeMix         << " us selecting matches for 3-point attempts" << std::endl;
     std::cerr << std::setw(8) << timeIdent       << " us assigning identity matrix" << std::endl;
+    std::cerr << std::endl;
+    std::cerr << std::setw(8) << nmatch << " HIPS matches" << std::endl;
     std::cerr << std::endl;
 
     for (int i = 0; i < 10; i++) {
@@ -422,14 +494,8 @@ static void testPose(
         runSe3One.measure();
     }
 
-    // Read out final corner lists.
-    std::vector<cl_int2> points1;
-    std::vector<cl_int2> points2;
-    im1corners.get(&points1);
-    im2corners.get(&points2);
-
     // Read out pair lists.
-    std::vector<cl_int2> pairs;
+    std::vector<cl_int2>   pairs;
     matches.get(&pairs);
 
     // Read out transformed coordinate list.
@@ -444,13 +510,13 @@ static void testPose(
 
     CVD::ImageRef const size2(nx * 2, ny * 2);
     CVD::VideoDisplay window(size2);
-    CVD::glDrawPixels(g1image);
+    CVD::glDrawPixels(input.g1image);
     CVD::glRasterPos(CVD::ImageRef(nx,  0));
-    CVD::glDrawPixels(g2image);
+    CVD::glDrawPixels(input.g2image);
     CVD::glRasterPos(CVD::ImageRef( 0, ny));
-    CVD::glDrawPixels(g1image);
+    CVD::glDrawPixels(input.g1image);
     CVD::glRasterPos(CVD::ImageRef(nx, ny));
-    CVD::glDrawPixels(g2image);
+    CVD::glDrawPixels(input.g2image);
 
     glBegin(GL_LINES);
     for (size_t ip = 0; ip < pairs.size(); ip++) {
@@ -497,7 +563,7 @@ static void testPose(
     glEnd();
     glFlush();
 
-    sleep(30);
+    sleep(5);
 }
 
 int main(int argc, char **argv) {
@@ -571,9 +637,21 @@ int main(int argc, char **argv) {
     DepthImage  d1image(ref512);
     d1image.copy_from(d1image_full.sub_image(ref0, ref512));
 
+    // Create structure for stage 1 input.
+    stage1input const input = {g1image, g2image, d1image, opts};
+
+    // Create buffer for stage 1 output, that may be filled by any working stage 1 implementation.
+    stage1output stage1;
+    bool stage1done = false;
+
     try {
+        // Prepare list for all OpenCL devices on all platforms.
+        std::vector<cl::Device> devices;
+
         std::vector<cl::Platform> platforms;
         cl::Platform::get(&platforms);
+
+        std::cerr << "Found " << platforms.size() << " OpenCL platforms" << std::endl;
 
         for (size_t ip = 0; ip < platforms.size(); ip++) {
             cl::Platform &pf = platforms.at(ip);
@@ -584,31 +662,68 @@ int main(int argc, char **argv) {
                 << pf.getInfo<CL_PLATFORM_VERSION>() << ")"
                 << std::endl;
 
-            std::vector<cl::Device> devices;
+            std::vector<cl::Device> newDevices;
 
             try {
-                pf.getDevices(CL_DEVICE_TYPE_ALL, &devices);
+                pf.getDevices(CL_DEVICE_TYPE_ALL, &newDevices);
+                std::cerr << "  Found " << newDevices.size() << " OpenCL devices" << std::endl;
             } catch (cl::Error & err) {
                 std::cerr << err.what() << " (code " << err.err() << ")" << std::endl;
             }
 
-            for (size_t id = 0; id < devices.size(); id++) {
-                cl::Device &dev = devices.at(id);
+            for (size_t id = 0; id < newDevices.size(); id++) {
+                cl::Device &dev = newDevices.at(id);
 
-                std::cerr << "  " << dev.getInfo<CL_DEVICE_NAME>() << std::endl;
+                std::cerr << "    " << dev.getInfo<CL_DEVICE_NAME>() << std::endl;
 
-                std::cerr << "    Compute units:  " << std::setw(8) <<
+                std::cerr << "      Compute units:  " << std::setw(8) <<
                         dev.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << std::endl;
 
-                std::cerr << "    Global memory:  " << std::setw(8) <<
+                std::cerr << "      Global memory:  " << std::setw(8) <<
                         (dev.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>() / MiB) <<
                         " MiB" << std::endl;
 
-                try {
-                    testPose(dev, g1image, g2image, d1image, opts);
-                } catch (cl::Error & err) {
-                    std::cerr << err.what() << " (code " << err.err() << ")" << std::endl;
-                }
+                // Add to list of all devices.
+                devices.push_back(dev);
+            }
+        }
+
+        std::cerr << std::endl << std::endl;
+
+        // Try to run stage 1 on each device.
+
+        for (size_t id = 0; id < devices.size(); id++) {
+            cl::Device &dev = devices.at(id);
+
+            std::cerr << "Stage 1 for \"" << dev.getInfo<CL_DEVICE_NAME>() << "\"" << std::endl;
+
+            try {
+                testStage1(dev, input, stage1);
+                stage1done = true;
+            } catch (cl::Error & err) {
+                std::cerr << err.what() << " (code " << err.err() << ")" << std::endl;
+            } catch (...) {
+                std::cerr << "Unknown other error" << std::endl;
+            }
+        }
+
+        // Abort now if stage 1 failed for all devices.
+        if (stage1done == false)
+            return 1;
+
+        // Try to run stage 2 on each device.
+
+        for (size_t id = 0; id < devices.size(); id++) {
+            cl::Device &dev = devices.at(id);
+
+            std::cerr << "Stage 2 for \"" << dev.getInfo<CL_DEVICE_NAME>() << "\"" << std::endl;
+
+            try {
+                testStage2(dev, input, stage1);
+            } catch (cl::Error & err) {
+                std::cerr << err.what() << " (code " << err.err() << ")" << std::endl;
+            } catch (...) {
+                std::cerr << "Unknown other error" << std::endl;
             }
         }
     } catch (cl::Error & err) {
