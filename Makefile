@@ -22,6 +22,7 @@ all:
 	scripts/codegen-hips-blend.py    | tee opencl/hips-blend.cl    | scripts/embed.py OCL_HIPS_BLEND     > src/kernels/hips-blend.hh
 	scripts/codegen-hips-clip.py     | tee opencl/hips-clip.cl     | scripts/embed.py OCL_HIPS_CLIP      > src/kernels/hips-clip.hh
 	scripts/codegen-hips-find.py     | tee opencl/hips-find.cl     | scripts/embed.py OCL_HIPS_FIND      > src/kernels/hips-find.hh
+	scripts/codegen-hips-turn.py     | tee opencl/hips-turn.cl     | scripts/embed.py OCL_HIPS_TURN      > src/kernels/hips-turn.hh
 	scripts/codegen-clip-depth.py    | tee opencl/clip-depth.cl    | scripts/embed.py OCL_CLIP_DEPTH     > src/kernels/clip-depth.hh
 
 	scripts/codegen-cholesky.py 3    | tee opencl/cholesky3.cl     | scripts/embed.py OCL_CHOLESKY_3     > src/kernels/cholesky3.hh
