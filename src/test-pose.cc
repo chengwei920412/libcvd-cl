@@ -50,6 +50,7 @@
 #include <cvd-cl/steps/SE3ScoreStep.hh>
 #include <cvd-cl/steps/SE3Run1Step.hh>
 
+#include <boost/program_options.hpp>
 
 // Typedefs for image format.
 typedef CVD::byte                 GrayPixel;
@@ -70,6 +71,11 @@ size_t const static ncorners = 2048;
 
 // Number of hypotheses to generate.
 size_t const static nhypos   = 8192;
+
+struct options {
+    cl_int fast_threshold;
+    cl_int fast_ring;
+};
 
 static void readCamera(Camera::Linear * camera, char const * path) {
     // Open parameter file.
@@ -204,7 +210,8 @@ static void testPose(
     cl::Device        & device,
     GrayImage   const & g1image,
     GrayImage   const & g2image,
-    DepthImage  const & d1image
+    DepthImage  const & d1image,
+    options     const & opts
 ) {
 
     // Extract image dimensions.
@@ -249,15 +256,15 @@ static void testPose(
     CVD::CL::Float2ListState test_uvs    (worker, ncorners);
 
     // Create steps specific to image1.
-    CVD::CL::PreFastGrayStep runPreFast1 (imageNeat, corners1);
+    CVD::CL::PreFastGrayStep runPreFast1 (imageNeat, corners1, opts.fast_threshold);
     CVD::CL::ClipDepthStep   runClip1    (camera.qmap,  corners1, corners2);
-    CVD::CL::FastGrayStep    runFast1    (imageNeat, corners2, scores, im1corners);
+    CVD::CL::FastGrayStep    runFast1    (imageNeat, corners2, scores, im1corners, opts.fast_threshold, opts.fast_ring);
     CVD::CL::FastBestStep    runMaxFast1 (                     scores, corners3, im1corners);
     CVD::CL::HipsGrayStep    runHips1    (imageNeat,                             im1corners, im1hips);
 
     // Create steps specific to image2.
-    CVD::CL::PreFastGrayStep runPreFast2 (imageNeat, corners1);
-    CVD::CL::FastGrayStep    runFast2    (imageNeat, corners1, scores, im2corners);
+    CVD::CL::PreFastGrayStep runPreFast2 (imageNeat, corners1, opts.fast_threshold);
+    CVD::CL::FastGrayStep    runFast2    (imageNeat, corners1, scores, im2corners, opts.fast_threshold, opts.fast_ring);
     CVD::CL::FastBestStep    runMaxFast2 (                     scores, corners2,                      im2corners);
     CVD::CL::HipsBlendGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
 
@@ -490,25 +497,56 @@ static void testPose(
 }
 
 int main(int argc, char **argv) {
-    // Assign default paths.
-    char const * path1 = "images/kinect001.txt";
-    char const * path2 = "images/kinect002.txt";
+    namespace po = boost::program_options;
 
-    // Replace default paths.
-    if (argc >= 3) path2 = argv[2];
-    if (argc >= 2) path1 = argv[1];
+    options opts;
+    ::memset(&opts, 0, sizeof(opts));
+
+    std::string path1;
+    std::string path2;
+
+    po::options_description opt;
+    opt.add_options()
+        ("help,h",
+            "Produce this help message")
+        ("path1,f1",
+            po::value(&path1)->default_value("images/kinect001.txt"),
+            "Plaintext RGBD image 1")
+        ("path2,f2",
+            po::value(&path2)->default_value("images/kinect002.txt"),
+            "Plaintext RGBD image 2")
+        ("fast-thresh,t",
+            po::value(&opts.fast_threshold)->default_value(40),
+            "Set FAST absolute difference threshold")
+        ("fast-ring,r",
+            po::value(&opts.fast_ring)->default_value(9),
+            "Set FAST ring size");
+
+    po::positional_options_description pos;
+    pos.add("path1", 1);
+    pos.add("path2", 1);
+
+    po::variables_map vm;
+    po::store(po::command_line_parser(argc, argv).
+              options(opt).positional(pos).run(), vm);
+    po::notify(vm);
+
+    if (vm.count("help") > 0) {
+        std::cerr << opt << std::endl;
+        return 0;
+    }
 
     CVD::ImageRef const ref1(1, 1);
 
-    std::cerr << "Reading image 1" << std::endl;
+    std::cerr << "Reading image 1 (" << path1 << ")" << std::endl;
     GrayImage   g1image_full(ref1);
     DepthImage  d1image_full(ref1);
-    readRGBD(g1image_full, d1image_full, path1);
+    readRGBD(g1image_full, d1image_full, path1.c_str());
 
-    std::cerr << "Reading image 2" << std::endl;
+    std::cerr << "Reading image 2 (" << path2 << ")" << std::endl;
     GrayImage   g2image_full(ref1);
     DepthImage  d2image_full(ref1);
-    readRGBD(g2image_full, d2image_full, path2);
+    readRGBD(g2image_full, d2image_full, path2.c_str());
 
     GrayImage   g1image(ref512);
     g1image.copy_from(g1image_full.sub_image(ref0, ref512));
@@ -553,7 +591,7 @@ int main(int argc, char **argv) {
                         " MiB" << std::endl;
 
                 try {
-                    testPose(dev, g1image, g2image, d1image);
+                    testPose(dev, g1image, g2image, d1image, opts);
                 } catch (cl::Error & err) {
                     std::cerr << err.what() << " (code " << err.err() << ")" << std::endl;
                 }
