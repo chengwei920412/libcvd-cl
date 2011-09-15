@@ -88,6 +88,17 @@ public:
         worker.queue.finish();
     }
 
+    void copyFromViaHost(ListState<Item> & that) {
+        // Create host-side buffer for item data.
+        std::vector<Item> items;
+
+        // Read items from other list.
+        that.get(&items);
+
+        // Write items to this list.
+        set(items);
+    }
+
     // Public immutable member.
     cl_uint const nbytes;
 
