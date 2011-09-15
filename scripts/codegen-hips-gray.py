@@ -23,14 +23,28 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-# Generate indices from -7 to +7 by 2 (-7, -5, ..., 5, 7)
-I_16_2 = range(-7, 8, 2)
-
-# Generate a grid of 2D coordinates.
+# Grid of 2D coordinates, forming a circle.
+# Corresponds to lines 42-60 in featurepatch.cc
 OFFSETS = [
-    (x, y)
-    for y in I_16_2
-    for x in I_16_2
+  ( 3,  0), ( 6, -1), ( 8,  0), ( 9, -2),
+  ( 3, -1), ( 5, -3), ( 7, -3), ( 8, -5),
+  ( 2, -2), ( 3, -5), ( 5, -5), ( 5, -8),
+  ( 1, -3), ( 1, -6), ( 3, -7), ( 2, -9),
+
+  ( 0, -3), (-1, -6), ( 0, -8), (-2, -9),
+  (-1, -3), (-3, -5), (-3, -7), (-5, -8),
+  (-2, -2), (-5, -3), (-5, -5), (-8, -5),
+  (-3, -1), (-6, -1), (-7, -3), (-9, -2),
+
+  (-3,  0), (-6,  1), (-8,  0), (-9,  2),
+  (-3,  1), (-5,  3), (-7,  3), (-8,  5),
+  (-2,  2), (-3,  5), (-5,  5), (-5,  8),
+  (-1,  3), (-1,  6), (-3,  7), (-2,  9),
+
+  ( 0,  3), ( 1,  6), ( 0,  8), ( 2,  9),
+  ( 1,  3), ( 3,  5), ( 3,  7), ( 5,  8),
+  ( 2,  2), ( 5,  3), ( 5,  5), ( 8,  5),
+  ( 3,  1), ( 6,  1), ( 7,  3), ( 9,  2),
 ]
 
 # Expect exactly 64 coordinates.
