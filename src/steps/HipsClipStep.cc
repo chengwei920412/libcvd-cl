@@ -27,12 +27,15 @@
 namespace CVD {
 namespace CL  {
 
-HipsClipStep::HipsClipStep(HipsListState & i_hips, HipsListState & o_hips) :
+HipsClipStep::HipsClipStep(HipsListState & i_hips, HipsListState & o_hips, cl_int maxbits) :
     WorkerStep (i_hips.worker),
     i_hips     (i_hips),
-    o_hips     (o_hips)
+    o_hips     (o_hips),
+    maxbits    (maxbits)
 {
-    worker.compile(&program, &kernel, OCL_HIPS_CLIP, "hips_clip");
+    char opt[256] = {0,};
+    snprintf(opt, sizeof(opt) - 1, "-DHIPS_MAX_BITS=%d", int(maxbits));
+    worker.compile(&program, &kernel, OCL_HIPS_CLIP, "hips_clip", opt);
 }
 
 HipsClipStep::~HipsClipStep() {

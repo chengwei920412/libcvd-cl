@@ -33,7 +33,7 @@ namespace CL  {
 class HipsClipStep : public WorkerStep {
 public:
 
-    explicit HipsClipStep(HipsListState & i_hips, HipsListState & o_hips);
+    explicit HipsClipStep(HipsListState & i_hips, HipsListState & o_hips, cl_int maxbits=150);
     virtual ~HipsClipStep();
 
     virtual void execute();
@@ -45,6 +45,9 @@ protected:
 
     // Outputs.
     HipsListState  & o_hips;
+
+    // Parameters.
+    cl_int const     maxbits;
 
     cl::Program      program;
     cl::Kernel       kernel;

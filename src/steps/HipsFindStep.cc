@@ -27,13 +27,16 @@
 namespace CVD {
 namespace CL  {
 
-HipsFindStep::HipsFindStep(HipsListState & i_hips1, HipsListState & i_hips2, PointListState & o_matches) :
+HipsFindStep::HipsFindStep(HipsListState & i_hips1, HipsListState & i_hips2, PointListState & o_matches, cl_int maxerr) :
     WorkerStep (i_hips1.worker),
     i_hips1    (i_hips1),
     i_hips2    (i_hips2),
-    o_matches  (o_matches)
+    o_matches  (o_matches),
+    maxerr     (maxerr)
 {
-    worker.compile(&program, &kernel, OCL_HIPS_FIND, "hips_find");
+    char opt[256] = {0,};
+    snprintf(opt, sizeof(opt) - 1, "-DHIPS_MAX_ERROR=%d", int(maxerr));
+    worker.compile(&program, &kernel, OCL_HIPS_FIND, "hips_find", opt);
 }
 
 HipsFindStep::~HipsFindStep() {

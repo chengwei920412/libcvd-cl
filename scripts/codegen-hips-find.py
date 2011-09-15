@@ -49,8 +49,6 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // Enable OpenCL 32-bit integer atomic functions.
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 
-#define THRESHOLD 3
-
 // Parallel bit counting magic adapted from
 // http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
 uint bitcount8(uint8 v) {
@@ -81,7 +79,7 @@ kernel void hips_find(
     uint   const error   = bitcount8(hash1 & ~hash2);
 
     // Record match if within error threshold.
-    if (error <= THRESHOLD) {
+    if (error <= HIPS_MAX_ERROR) {
         uint const i = atom_inc(imatch);
         if (i < nmatch) {
             matches[i] = (uint2)(ihash1, ihash2);

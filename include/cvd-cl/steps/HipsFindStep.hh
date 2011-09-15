@@ -33,7 +33,7 @@ namespace CL  {
 class HipsFindStep : public WorkerStep {
 public:
 
-    explicit HipsFindStep(HipsListState & i_hips1, HipsListState & i_hips2, PointListState & o_matches);
+    explicit HipsFindStep(HipsListState & i_hips1, HipsListState & i_hips2, PointListState & o_matches, cl_int maxerr=3);
     virtual ~HipsFindStep();
 
     virtual void execute();
@@ -46,6 +46,9 @@ protected:
 
     // Outputs.
     PointListState & o_matches;
+
+    // Parameters.
+    cl_int const     maxerr;
 
     cl::Program      program;
     cl::Kernel       kernel;

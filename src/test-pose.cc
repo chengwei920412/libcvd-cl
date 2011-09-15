@@ -75,6 +75,8 @@ size_t const static nhypos   = 8192;
 struct options {
     cl_int fast_threshold;
     cl_int fast_ring;
+    cl_int hips_maxbits;
+    cl_int hips_maxerr;
 };
 
 static void readCamera(Camera::Linear * camera, char const * path) {
@@ -269,7 +271,7 @@ static void testPose(
     CVD::CL::HipsBlendGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
 
     // Create steps for RANSAC.
-    CVD::CL::HipsFindStep    runMatch    (im1hips, im2hips, matches);
+    CVD::CL::HipsFindStep    runMatch    (im1hips, im2hips, matches, opts.hips_maxerr);
     CVD::CL::ToUvqUvStep     runToUvqUv  (camera, im1corners, im2corners, matches, uvquv);
     CVD::CL::MixUvqUvStep    runMix      (uvquv, uvquv_mix);
     CVD::CL::MatIdentStep    runIdent    (hypo_m);
@@ -517,10 +519,17 @@ int main(int argc, char **argv) {
             "Plaintext RGBD image 2")
         ("fast-thresh,t",
             po::value(&opts.fast_threshold)->default_value(40),
-            "Set FAST absolute difference threshold")
+            "FAST absolute difference threshold")
         ("fast-ring,r",
             po::value(&opts.fast_ring)->default_value(9),
-            "Set FAST ring size");
+            "FAST ring size")
+        ("hips-max-bits,b",
+            po::value(&opts.hips_maxbits)->default_value(150),
+            "HIPS maximum 1-bits per descriptor")
+        ("hips-max-error,e",
+            po::value(&opts.hips_maxerr)->default_value(3),
+            "HIPS maximum error bits per match")
+        ;
 
     po::positional_options_description pos;
     pos.add("path1", 1);
