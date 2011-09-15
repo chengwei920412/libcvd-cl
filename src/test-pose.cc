@@ -490,17 +490,25 @@ static void testPose(
 }
 
 int main(int argc, char **argv) {
+    // Assign default paths.
+    char const * path1 = "images/kinect001.txt";
+    char const * path2 = "images/kinect002.txt";
+
+    // Replace default paths.
+    if (argc >= 3) path2 = argv[2];
+    if (argc >= 2) path1 = argv[1];
+
     CVD::ImageRef const ref1(1, 1);
 
     std::cerr << "Reading image 1" << std::endl;
     GrayImage   g1image_full(ref1);
     DepthImage  d1image_full(ref1);
-    readRGBD(g1image_full, d1image_full, "images/kinect001.txt");
+    readRGBD(g1image_full, d1image_full, path1);
 
     std::cerr << "Reading image 2" << std::endl;
     GrayImage   g2image_full(ref1);
     DepthImage  d2image_full(ref1);
-    readRGBD(g2image_full, d2image_full, "images/kinect002.txt");
+    readRGBD(g2image_full, d2image_full, path2);
 
     GrayImage   g1image(ref512);
     g1image.copy_from(g1image_full.sub_image(ref0, ref512));
