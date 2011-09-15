@@ -81,6 +81,13 @@ public:
         worker.queue.finish();
     }
 
+    void copyFrom(ListState<Item> & that) {
+        worker.queue.finish();
+        worker.queue.enqueueCopyBuffer(that.buffer, buffer, 0, 0, nbytes);
+        worker.queue.enqueueCopyBuffer(that.count,  count,  0, 0, sizeof(cl_uint));
+        worker.queue.finish();
+    }
+
     // Public immutable member.
     cl_uint const nbytes;
 
