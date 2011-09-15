@@ -31,13 +31,14 @@ namespace CL  {
 // Create (0,0) offset.
 cl_int2 static const offset00 = {{0, 0}};
 
-HipsBlendGrayStep::HipsBlendGrayStep(GrayImageState & i_image, PointListState & i_points, HipsListState & o_hips) :
+HipsBlendGrayStep::HipsBlendGrayStep(GrayImageState & i_image, PointListState & i_points, HipsListState & o_hips, cl_int blendSize) :
     WorkerStep (i_image.worker),
     i_image    (i_image),
     i_points   (i_points),
     o_hips     (o_hips),
     m_hips1    (worker, o_hips.size),
-    m_hips2    (worker, o_hips.size)
+    m_hips2    (worker, o_hips.size),
+    blendSize  (blendSize)
 {
     worker.compile(&program_hips, &kernel_hips, OCL_HIPS_GRAY, "hips_gray");
     worker.compile(&program_blend, &kernel_blend, OCL_HIPS_BLEND, "hips_blend");
@@ -74,6 +75,12 @@ void HipsBlendGrayStep::execute() {
     worker.queue.enqueueNDRangeKernel(kernel_hips, cl::NullRange, global, cl::NullRange);
     worker.queue.enqueueBarrier();
 
+    // Escape early if blend size is less than 5.
+    if (blendSize < HipsBlend5) {
+        o_hips.copyFrom(m_hips1);
+        return;
+    }
+
     // Switch HIPS buffer to internal one.
     kernel_hips.setArg(2, m_hips2.buffer);
     kernel_hips.setArg(3, m_hips2.count);
@@ -86,8 +93,12 @@ void HipsBlendGrayStep::execute() {
     // Blend from different offsets.
     for (int xo = -1; xo <= +1; xo++) {
         for (int yo = -1; yo <= +1; yo++) {
-            // Skip diagonals.
-            if (xo == yo)
+            // Skip centre, which is already done.
+            if ((xo == 0) && (yo == 0))
+                continue;
+
+            // Skip diagonals if blend size is less than 9.
+            if ((blendSize < HipsBlend9) && (xo == yo))
                 continue;
 
             // Assign 2D offset.

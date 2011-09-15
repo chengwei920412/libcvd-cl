@@ -78,6 +78,7 @@ struct options {
     cl_int fast_ring;
     cl_int hips_maxbits;
     cl_int hips_maxerr;
+    cl_int hips_blendsize;
 };
 
 static void readCamera(Camera::Linear * camera, char const * path) {
@@ -269,7 +270,7 @@ static void testPose(
     CVD::CL::PreFastGrayStep runPreFast2 (imageNeat, corners1, opts.fast_threshold);
     CVD::CL::FastGrayStep    runFast2    (imageNeat, corners1, scores, im2corners, opts.fast_threshold, opts.fast_ring);
     CVD::CL::FastBestStep    runMaxFast2 (                     scores, corners2,                      im2corners);
-    CVD::CL::HipsBlendGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
+    CVD::CL::HipsBlendGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips, opts.hips_blendsize);
 
     // Create steps for RANSAC.
     CVD::CL::HipsTurnStep    runMatch    (im1hips, im2hips, matches, opts.hips_maxerr);
@@ -524,6 +525,9 @@ int main(int argc, char **argv) {
         ("fast-ring,r",
             po::value(&opts.fast_ring)->default_value(9),
             "FAST ring size")
+        ("hips-blend-size,B",
+            po::value(&opts.hips_blendsize)->default_value(CVD::CL::HipsBlend5),
+            "HIPS blend size ( 1 | 5 | 9 )")
         ("hips-max-bits,b",
             po::value(&opts.hips_maxbits)->default_value(150),
             "HIPS maximum 1-bits per descriptor")

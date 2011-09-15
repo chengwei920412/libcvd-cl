@@ -31,10 +31,15 @@
 namespace CVD {
 namespace CL  {
 
+// "Flags" to control blend selections.
+cl_int static const HipsBlend1 = 1;
+cl_int static const HipsBlend5 = 5;
+cl_int static const HipsBlend9 = 9;
+
 class HipsBlendGrayStep : public WorkerStep {
 public:
 
-    explicit HipsBlendGrayStep(GrayImageState & i_image, PointListState & i_points, HipsListState & o_hips);
+    explicit HipsBlendGrayStep(GrayImageState & i_image, PointListState & i_points, HipsListState & o_hips, cl_int blendSize = HipsBlend5);
     virtual ~HipsBlendGrayStep();
 
     virtual void execute();
@@ -51,6 +56,9 @@ protected:
     // Internal.
     HipsListState    m_hips1;
     HipsListState    m_hips2;
+
+    // Parameters.
+    cl_int const     blendSize;
 
     cl::Program      program_hips;
     cl::Kernel       kernel_hips;
