@@ -142,6 +142,64 @@ static void translateDepth(
     }
 }
 
+static void readRGBD(
+    GrayImage        & gray,
+    DepthImage       & depth,
+    char       const * path
+) {
+    // Open file, enabling exceptions.
+    std::ifstream file;
+    file.exceptions(~std::ios_base::goodbit);
+    file.open(path, std::ios::in | std::ios::binary);
+
+    int nx = 0;
+    int ny = 0;
+
+    file >> nx;
+    file >> ny;
+
+    assert(nx > 0);
+    assert(ny > 0);
+
+    // Allocate images of given size.
+    CVD::ImageRef const size(nx, ny);
+     gray.resize(size);
+    depth.resize(size);
+
+    for (int y = 0; y < ny; y++) {
+        for (int x = 0; x < nx; x++) {
+            int r = 0;
+            int g = 0;
+            int b = 0;
+            int d = 0;
+
+            file >> r;
+            file >> g;
+            file >> b;
+            file >> d;
+
+            assert(r >= 0);
+            assert(g >= 0);
+            assert(b >= 0);
+            assert(d >= 0);
+
+            assert(r <= 0xFF);
+            assert(g <= 0xFF);
+            assert(b <= 0xFF);
+            assert(d <= 0xFFFF);
+
+            // Mix colours to grayscale.
+            int const avg = ((r + g + b) / 3);
+
+            gray  [y][x] = avg;
+            depth [y][x] = d;
+        }
+    }
+
+    // Close file.
+    file.close();
+}
+
 static void testPose(
     cl::Device        & device,
     GrayImage   const & g1image,
@@ -432,9 +490,17 @@ static void testPose(
 }
 
 int main(int argc, char **argv) {
-    GrayImage   g1image_full = CVD::img_load("images/c27.png");
-    DepthImage  d1image_full = CVD::img_load("images/d27.png");
-    GrayImage   g2image_full = CVD::img_load("images/c28.png");
+    CVD::ImageRef const ref1(1, 1);
+
+    std::cerr << "Reading image 1" << std::endl;
+    GrayImage   g1image_full(ref1);
+    DepthImage  d1image_full(ref1);
+    readRGBD(g1image_full, d1image_full, "images/kinect001.txt");
+
+    std::cerr << "Reading image 2" << std::endl;
+    GrayImage   g2image_full(ref1);
+    DepthImage  d2image_full(ref1);
+    readRGBD(g2image_full, d2image_full, "images/kinect002.txt");
 
     GrayImage   g1image(ref512);
     g1image.copy_from(g1image_full.sub_image(ref0, ref512));
