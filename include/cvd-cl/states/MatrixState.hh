@@ -35,6 +35,12 @@ public:
     explicit MatrixState(Worker & worker, size_t count, size_t rows, size_t cols);
     virtual ~MatrixState();
 
+    void setFloats(std::vector<cl_float> const & items);
+    void getFloats(std::vector<cl_float>       * items);
+
+    void copyFrom(MatrixState & that);
+    void copyFromViaHost(MatrixState & that);
+
     // Public immutable members.
     size_t       const count;
     size_t       const rows;

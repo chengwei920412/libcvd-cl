@@ -46,5 +46,36 @@ MatrixState::~MatrixState() {
     // Do nothing.
 }
 
+void MatrixState::setFloats(std::vector<cl_float> const & items) {
+    expect("MatrixState::setFloats() must have exact size",
+        floats == items.size());
+
+    worker.queue.enqueueWriteBuffer(memory, CL_TRUE, 0, bytes, items.data());
+}
+
+void MatrixState::getFloats(std::vector<cl_float>       * items) {
+    expect("MatrixState::getFloats() must have exact size",
+        floats == items->size());
+
+    worker.queue.enqueueReadBuffer(memory, CL_TRUE, 0, bytes, items->data());
+}
+
+void MatrixState::copyFrom(MatrixState & that) {
+    worker.queue.finish();
+    worker.queue.enqueueCopyBuffer(that.memory, memory, 0, 0, bytes);
+    worker.queue.finish();
+}
+
+void MatrixState::copyFromViaHost(MatrixState & that) {
+    // Create host-side buffer for float data.
+    std::vector<cl_float> items(floats);
+
+    // Read items from other buffer.
+    that.getFloats(&items);
+
+    // Write items to this buffer.
+    setFloats(items);
+}
+
 } // namespace CL
 } // namespace CVD
