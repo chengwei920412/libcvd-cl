@@ -70,7 +70,7 @@ uint error(ulong4 t, ulong4 r) {
 
 // Forest structure in 992 descriptors:
 // [32 nodes] [64 nodes] [128 nodes] [256 nodes] [512 leaves]
-// Each thread starts from the same 16 roots (excluded) to select 16 from 32 initial nodes.
+// Each thread starts from the same 16 roots (excluded) to select 16 from 32 initial nodes (included).
 // Each thread will do exactly 10 (5 levels * 2 children) error calculations per root.
 // Each thread will pick 0 or 1 leaf per root, so 0-16 in total per thread.
 
@@ -90,7 +90,7 @@ kernel void hips_tree_find(
     // Loop over 16 roots.
     #pragma unroll
     for (uint iroot = 0; iroot < 16; iroot++) {
-        // Start traversal at pre-root.
+        // Start traversal at root.
         uint best = iroot;
         uint last = 1000;
 
@@ -98,8 +98,8 @@ kernel void hips_tree_find(
         #pragma unroll
         for (uint idepth = 0; idepth < 5; idepth++) {
             // Calculate positions of both children.
-            uint const ihash2a = ((iroot * 2)    );
-            uint const ihash2b = ((iroot * 2) + 1);
+            uint const ihash2a = ((best * 2)    );
+            uint const ihash2b = ((best * 2) + 1);
 
             // Calculate errors for both children.
             uint const erra = error(hash1, hashes2[ihash2a]);
@@ -109,11 +109,7 @@ kernel void hips_tree_find(
             last = min(erra, errb);
 
             // Keep child with lower error.
-            // TODO: Branchless selection.
-            if (erra < errb)
-                best = ihash2a;
-            else
-                best = ihash2b;
+            best = select(ihash2a, ihash2b, erra > errb);
         }
 
         // Record match if within error threshold.
