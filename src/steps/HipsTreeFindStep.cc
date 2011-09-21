@@ -48,8 +48,8 @@ void HipsTreeFindStep::execute() {
     size_t const np2_128 = (i_hips.getCount() / 128) * 128;
 
     // Assign kernel parameters.
-    kernel.setArg(0, i_tree.tree.buffer);
-    kernel.setArg(1, i_tree.maps.buffer);
+    kernel.setArg(0, i_tree.tree);
+    kernel.setArg(1, i_tree.maps);
     kernel.setArg(2, i_hips.buffer);
     kernel.setArg(3, o_matches.buffer);
     kernel.setArg(4, o_matches.count);

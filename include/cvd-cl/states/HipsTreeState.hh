@@ -54,10 +54,12 @@ public:
     virtual ~HipsTreeState();
 
     // HIPS tree looks like a HIPS descriptor list.
-    HipsListState  tree;
+    // (1024) * (8) * (32-bit unsigned integer).
+    cl::Image2D    tree;
 
     // Indices of original corners/descriptors.
-    ShortListState maps;
+    // (1024) *       (16-bit unsigned integer).
+    cl::Image2D    maps;
 };
 
 } // namespace CL

@@ -26,10 +26,13 @@
 namespace CVD {
 namespace CL  {
 
+cl::ImageFormat static const HipsFormat(CL_RGBA, CL_UNSIGNED_INT32);
+cl::ImageFormat static const MapsFormat(CL_R,    CL_UNSIGNED_INT16);
+
 HipsTreeState::HipsTreeState(Worker & worker) :
     WorkerState (worker),
-    tree        (worker, NNODE),
-    maps        (worker, NNODE)
+    tree        (worker.context, CL_MEM_READ_ONLY, HipsFormat, 2, 1024),
+    maps        (worker.context, CL_MEM_READ_ONLY, MapsFormat, 1, 1024)
 {
     // Do nothing.
 }

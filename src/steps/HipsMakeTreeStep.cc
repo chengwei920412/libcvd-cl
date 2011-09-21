@@ -287,6 +287,7 @@ void HipsMakeTreeStep::execute() {
     std::cerr << std::endl;
 #endif
 
+#ifdef CVD_CL_DEBUG
     // Check that every descriptor was filled.
     for (size_t icell = 0; icell < HipsTreeState::NNODE; icell++) {
         // Refer to tree HIPS descriptor.
@@ -305,18 +306,25 @@ void HipsMakeTreeStep::execute() {
         used.insert(map);
         assert(used.count(map) == 1);
     }
-
-    // Undo all previous effort by writing flat list.
-    for (size_t inode = 0; inode < HipsTreeState::NLEAF; inode++) {
-        //tree.at(inode + HipsTreeState::START) = hips.at(inode);
-        //maps.at(inode + HipsTreeState::START) = inode;
-    }
+#endif
 
     // Write tree to device state.
-    o_tree.tree.set(tree);
+    cl::size_t<3> origin0;
+    origin0[0] = 0;
+    origin0[1] = 0;
+    origin0[2] = 0;
+    cl::size_t<3> regionH;
+    regionH[0] = 2;
+    regionH[1] = HipsTreeState::NNODE;
+    regionH[2] = 1;
+    worker.queue.enqueueWriteImage(o_tree.tree, CL_TRUE, origin0, regionH, 0, 0, tree.data());
 
     // Write maps to device state.
-    o_tree.maps.set(maps);
+    cl::size_t<3> regionM;
+    regionM[0] = 1;
+    regionM[1] = HipsTreeState::NNODE;
+    regionM[2] = 1;
+    worker.queue.enqueueWriteImage(o_tree.maps, CL_TRUE, origin0, regionM, 0, 0, maps.data());
 }
 
 } // namespace CL
