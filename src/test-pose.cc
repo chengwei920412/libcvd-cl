@@ -39,6 +39,7 @@
 #include <cvd-cl/steps/FastBestStep.hh>
 #include <cvd-cl/steps/HipsGrayStep.hh>
 #include <cvd-cl/steps/HipsBlendGrayStep.hh>
+#include <cvd-cl/steps/HipsMakeTreeStep.hh>
 #include <cvd-cl/steps/HipsFindStep.hh>
 #include <cvd-cl/steps/HipsTurnStep.hh>
 #include <cvd-cl/steps/ToUvqUvStep.hh>
@@ -252,6 +253,7 @@ static void testStage1(
     CVD::CL::PointListState  im1corners  (worker, ncorners);
     CVD::CL::HipsListState   im1hips     (worker, ncorners);
     CVD::CL::GrayImageState  im1depth    (worker, size);
+    CVD::CL::HipsTreeState   im1tree     (worker);
 
     // Create states specific to image2 (colour only).
     CVD::CL::PointListState  im2corners  (worker, ncorners);
@@ -266,6 +268,7 @@ static void testStage1(
     CVD::CL::FastGrayStep    runFast1    (imageNeat, corners2, scores, im1corners, opts.fast_threshold, opts.fast_ring);
     CVD::CL::FastBestStep    runMaxFast1 (                     scores, corners3, im1corners);
     CVD::CL::HipsGrayStep    runHips1    (imageNeat,                             im1corners, im1hips);
+    CVD::CL::HipsMakeTreeStep runTree1   (im1hips, im1tree);
 
     // Create steps specific to image2.
     CVD::CL::PreFastGrayStep runPreFast2 (imageNeat, corners1, opts.fast_threshold);
@@ -299,6 +302,7 @@ static void testStage1(
     // runMaxFast1.measure();
     size_t const nbest1 = im1corners.getCount();
     int64_t const timeHips1 = runHips1.measure();
+    int64_t const timeTree1 = runTree1.measure();
 
     // Write image 2 to device.
     int64_t const timeCopy2 = imageNeat.measure(input.g2image);
@@ -332,6 +336,7 @@ static void testStage1(
     std::cerr << std::setw(8) << timeClip1       << std::setw(8) << 0              << " us filtering by depth" << std::endl;
     std::cerr << std::setw(8) << timeFast1       << std::setw(8) << timeFast2      << " us running FAST" << std::endl;
     std::cerr << std::setw(8) << timeHips1       << std::setw(8) << timeHips2      << " us making HIPS" << std::endl;
+    std::cerr << std::setw(8) << timeTree1       << std::setw(8) << 0              << " us making HIPS tree" << std::endl;
     std::cerr << std::endl;
 
     // Read out final corner lists.
