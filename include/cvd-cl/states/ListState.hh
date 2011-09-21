@@ -111,6 +111,7 @@ typedef ListState<cl_float > FloatListState;
 typedef ListState<cl_float2> Float2ListState;
 typedef ListState<cl_ulong4> HipsListState;
 typedef ListState<cl_int   > IntListState;
+typedef ListState<cl_ushort> ShortListState;
 
 } // namespace CL
 } // namespace CVD
