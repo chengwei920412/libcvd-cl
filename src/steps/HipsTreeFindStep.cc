@@ -45,7 +45,7 @@ HipsTreeFindStep::~HipsTreeFindStep() {
 
 void HipsTreeFindStep::execute() {
     // Read number of descriptors in the test list.
-    size_t const np2 = i_hips.getCount();
+    size_t const np2_128 = (i_hips.getCount() / 128) * 128;
 
     // Assign kernel parameters.
     kernel.setArg(0, i_tree.tree.buffer);
@@ -59,7 +59,7 @@ void HipsTreeFindStep::execute() {
     o_matches.setCount(0);
 
     // Queue kernel with global size set to number of input points in the test list.
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np2), cl::NullRange);
+    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np2_128), cl::NDRange(128));
 }
 
 } // namespace CL
