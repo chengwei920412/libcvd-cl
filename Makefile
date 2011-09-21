@@ -1,7 +1,8 @@
 CFLAGS   = -std=gnu++98 -fopenmp -pthread -O2 -march=native
 CFLAGS  += -I/usr/local/include -Iinclude -Isrc
 CFLAGS  += -Wall -Wextra -Wno-unused -Wno-ignored-qualifiers -fmessage-length=0
-#CFLAGS  += -g3 -DCVD_IMAGE_DEBUG
+#CFLAGS  += -g3 -DCVD_IMAGE_DEBUG -O0
+#CFLAGS  += -DCVD_CL_VERBOSE
 
 LIBS     = -lOpenCL -lcvd -lm -lboost_program_options-mt
 
@@ -22,6 +23,7 @@ all:
 	scripts/codegen-hips-blend.py    | tee opencl/hips-blend.cl    | scripts/embed.py OCL_HIPS_BLEND     > src/kernels/hips-blend.hh
 	scripts/codegen-hips-clip.py     | tee opencl/hips-clip.cl     | scripts/embed.py OCL_HIPS_CLIP      > src/kernels/hips-clip.hh
 	scripts/codegen-hips-find.py     | tee opencl/hips-find.cl     | scripts/embed.py OCL_HIPS_FIND      > src/kernels/hips-find.hh
+	scripts/codegen-hips-tfind.py    | tee opencl/hips-tfind.cl    | scripts/embed.py OCL_HIPS_TFIND     > src/kernels/hips-tfind.hh
 	scripts/codegen-hips-turn.py     | tee opencl/hips-turn.cl     | scripts/embed.py OCL_HIPS_TURN      > src/kernels/hips-turn.hh
 	scripts/codegen-clip-depth.py    | tee opencl/clip-depth.cl    | scripts/embed.py OCL_CLIP_DEPTH     > src/kernels/clip-depth.hh
 

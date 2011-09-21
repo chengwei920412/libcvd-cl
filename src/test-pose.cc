@@ -40,6 +40,7 @@
 #include <cvd-cl/steps/HipsGrayStep.hh>
 #include <cvd-cl/steps/HipsBlendGrayStep.hh>
 #include <cvd-cl/steps/HipsMakeTreeStep.hh>
+#include <cvd-cl/steps/HipsTreeFindStep.hh>
 #include <cvd-cl/steps/HipsFindStep.hh>
 #include <cvd-cl/steps/HipsTurnStep.hh>
 #include <cvd-cl/steps/ToUvqUvStep.hh>
@@ -253,7 +254,6 @@ static void testStage1(
     CVD::CL::PointListState  im1corners  (worker, ncorners);
     CVD::CL::HipsListState   im1hips     (worker, ncorners);
     CVD::CL::GrayImageState  im1depth    (worker, size);
-    CVD::CL::HipsTreeState   im1tree     (worker);
 
     // Create states specific to image2 (colour only).
     CVD::CL::PointListState  im2corners  (worker, ncorners);
@@ -267,14 +267,13 @@ static void testStage1(
     CVD::CL::ClipDepthStep   runClip1    (camera.qmap,  corners1, corners2);
     CVD::CL::FastGrayStep    runFast1    (imageNeat, corners2, scores, im1corners, opts.fast_threshold, opts.fast_ring);
     CVD::CL::FastBestStep    runMaxFast1 (                     scores, corners3, im1corners);
-    CVD::CL::HipsGrayStep    runHips1    (imageNeat,                             im1corners, im1hips);
-    CVD::CL::HipsMakeTreeStep runTree1   (im1hips, im1tree);
+    CVD::CL::HipsBlendGrayStep    runHips1    (imageNeat,                             im1corners, im1hips, opts.hips_blendsize);
 
     // Create steps specific to image2.
     CVD::CL::PreFastGrayStep runPreFast2 (imageNeat, corners1, opts.fast_threshold);
     CVD::CL::FastGrayStep    runFast2    (imageNeat, corners1, scores, im2corners, opts.fast_threshold, opts.fast_ring);
     CVD::CL::FastBestStep    runMaxFast2 (                     scores, corners2,                      im2corners);
-    CVD::CL::HipsBlendGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips, opts.hips_blendsize);
+    CVD::CL::HipsGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
 
     // Populate camera states.
     Camera::Linear cvdcamera;
@@ -302,7 +301,6 @@ static void testStage1(
     // runMaxFast1.measure();
     size_t const nbest1 = im1corners.getCount();
     int64_t const timeHips1 = runHips1.measure();
-    int64_t const timeTree1 = runTree1.measure();
 
     // Write image 2 to device.
     int64_t const timeCopy2 = imageNeat.measure(input.g2image);
@@ -336,7 +334,6 @@ static void testStage1(
     std::cerr << std::setw(8) << timeClip1       << std::setw(8) << 0              << " us filtering by depth" << std::endl;
     std::cerr << std::setw(8) << timeFast1       << std::setw(8) << timeFast2      << " us running FAST" << std::endl;
     std::cerr << std::setw(8) << timeHips1       << std::setw(8) << timeHips2      << " us making HIPS" << std::endl;
-    std::cerr << std::setw(8) << timeTree1       << std::setw(8) << 0              << " us making HIPS tree" << std::endl;
     std::cerr << std::endl;
 
     // Read out final corner lists.
@@ -383,6 +380,9 @@ static void testStage2(
     CVD::CL::HipsListState   im1hips     (worker, ncorners);
     CVD::CL::HipsListState   im2hips     (worker, ncorners);
 
+    // Create state for HIPS tree based on stage 1.
+    CVD::CL::HipsTreeState   im1tree     (worker);
+
     // Restore stage 1 data.
     im1corners.set(stage1.points1);
     im2corners.set(stage1.points2);
@@ -403,8 +403,11 @@ static void testStage2(
     CVD::CL::CountState      hypo_best   (worker, nhypos);
     CVD::CL::Float2ListState test_uvs    (worker, ncorners);
 
+    // Create step for HIPS tree based on stage 1.
+    CVD::CL::HipsMakeTreeStep runTree1   (im1hips, im1tree);
+
     // Create steps for RANSAC.
-    CVD::CL::HipsTurnStep    runMatch    (im1hips, im2hips, matches, opts.hips_maxerr);
+    CVD::CL::HipsTreeFindStep runMatch    (im1tree, im2hips, matches, opts.hips_maxerr);
     CVD::CL::ToUvqUvStep     runToUvqUv  (camera, im1corners, im2corners, matches, uvquv);
     CVD::CL::MixUvqUvStep    runMix      (uvquv, uvquv_mix);
     CVD::CL::MatIdentStep    runIdent    (hypo_m);
@@ -421,6 +424,8 @@ static void testStage2(
     boost::system_time const t1 = boost::get_system_time();
 
 
+    // Run HIPS tree step.
+    int64_t const timeTree     = runTree1.measure();
 
     // Run RANSAC steps.
     int64_t const timeMatch    = runMatch.measure();
@@ -430,6 +435,7 @@ static void testStage2(
     int64_t const timeIdent    = runIdent.measure();
 
 
+    std::cerr << std::setw(8) << timeTree        << " us making HIPS tree" << std::endl;
     std::cerr << std::setw(8) << timeMatch       << " us finding HIPS matches" << std::endl;
     std::cerr << std::setw(8) << timeToUvqUv     << " us converting matches to ((u,v,q),(u,v))" << std::endl;
     std::cerr << std::setw(8) << timeMix         << " us selecting matches for 3-point attempts" << std::endl;

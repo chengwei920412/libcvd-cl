@@ -58,7 +58,7 @@ uint bitcount8(uint8 v) {
     return (v.s0 + v.s1 + v.s2 + v.s3 + v.s4 + v.s5 + v.s6 + v.s7);
 }
 
-uint error(ulong4 t, ulong4 r) {
+uint error(uint8 t, uint8 r) {
     return bitcount8(t & ~r);
 }
 
@@ -74,50 +74,54 @@ uint error(ulong4 t, ulong4 r) {
 // Each thread will do exactly 10 (5 levels * 2 children) error calculations per root.
 // Each thread will pick 0 or 1 leaf per root, so 0-16 in total per thread.
 
+#define CELL_OFF 32
+
 kernel void hips_tree_find(
     // N.B.: These uint8 are actually ulong4.
-    global   uint8  const * hashes1,  // T
-    constant uint8  const * hashes2,  // R (forest structure)
+    constant uint8        * hashes1,  // R (forest of descriptors, as above)
+    constant ushort       * indices,  // Original index of each hash in R, defined only for leaves.
+    global   uint8  const * hashes2,  // T (list of descriptors)
     global   uint2        * matches,  // Pairs of indices into hashes1 and hashes2.
     global   uint         * imatch,   // Output number of hash1 matches.
              uint           nmatch    // Maximum number of matches.
 ) {
 
-    // Use global work item for hash1 index.
-    uint   const ihash1 = get_global_id(0);
-    uint8  const  hash1 = hashes1[ihash1];
+    // Use global work item for hash2 index.
+    uint   const ihash2 = get_global_id(0);
+    uint8  const  hash2 = hashes2[ihash2];
 
     // Loop over 16 roots.
     #pragma unroll
     for (uint iroot = 0; iroot < 16; iroot++) {
         // Start traversal at root.
-        uint best = iroot;
-        uint last = 1000;
+        uint icell = (iroot + (CELL_OFF / 2));
+        uint last  = 10000;
 
         // Recurse exactly 5 levels deep (including first level).
         #pragma unroll
         for (uint idepth = 0; idepth < 5; idepth++) {
             // Calculate positions of both children.
-            uint const ihash2a = ((best * 2)    );
-            uint const ihash2b = ((best * 2) + 1);
+            uint const icell0 = (icell * 2);
+            uint const icell1 = (icell0    );
+            uint const icell2 = (icell0 + 1);
 
             // Calculate errors for both children.
-            uint const erra = error(hash1, hashes2[ihash2a]);
-            uint const errb = error(hash1, hashes2[ihash2b]);
+            uint const erra = error(hash2, hashes1[icell1 - CELL_OFF]);
+            uint const errb = error(hash2, hashes1[icell2 - CELL_OFF]);
 
             // Determine lower error.
             last = min(erra, errb);
 
             // Keep child with lower error.
-            best = select(ihash2a, ihash2b, erra > errb);
+            icell = select(icell1, icell2, erra > errb);
         }
 
         // Record match if within error threshold.
         if (last <= HIPS_MAX_ERROR) {
             uint const i = atom_inc(imatch);
             if (i < nmatch) {
-                // Subtract 480 to remove non-leaf tree elements.
-                matches[i] = (uint2)(ihash1, best - 480);
+                // Store pair against original index.
+                matches[i] = (uint2)(indices[icell - CELL_OFF], ihash2);
             }
         }
     }

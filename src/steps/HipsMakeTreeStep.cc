@@ -24,6 +24,7 @@
 #include "cvd-cl/steps/HipsMakeTreeStep.hh"
 
 #include <climits>
+#include <set>
 
 #ifdef CVD_CL_VERBOSE
 #include <iomanip>
@@ -160,18 +161,30 @@ struct HipsTreeLevel {
     std::vector<cl_ushort2> pairs;
 };
 
-static void fillTree(std::vector<HipsTreeLevel> const & levels, std::vector<cl_ulong4> & tree, std::vector<cl_ushort> maps, size_t ilevel, size_t inode, size_t icell) {
+size_t static const CELL_OFF = 32;
+
+static void fillTree(std::vector<HipsTreeLevel> const & levels, std::vector<cl_ulong4> & tree, std::vector<cl_ushort> & maps, size_t ilevel, size_t inode, size_t icell) {
     // Refer to tree level.
     HipsTreeLevel const & level = levels.at(ilevel);
 
+    // Refer to tree HIPS descriptor.
+    cl_ulong4 & cell = tree.at(icell);
+
+    // Check that the descriptor has not been filled.
+    assert((cell.x | cell.y | cell.z | cell.w) == 0);
+
     // Fill descriptor at this level.
-    tree.at(icell) = level.hips.at(inode);
+    cell = level.hips.at(inode);
 
     // If at lowest level, conclude.
     if (ilevel < 1) {
+        assert(icell >= HipsTreeState::START);
+
         // Fill map at this level.
         maps.at(icell) = inode;
         return;
+    } else {
+        assert(icell <  HipsTreeState::START);
     }
 
     // Refer to pair constructing this descriptor.
@@ -180,10 +193,15 @@ static void fillTree(std::vector<HipsTreeLevel> const & levels, std::vector<cl_u
     // Find child positions in next level.
     size_t const inode1 = pair.x;
     size_t const inode2 = pair.y;
+    assert(inode1 != inode2);
 
     // Calculate indices in final tree.
-    size_t const icell1 = ((icell * 2)    );
-    size_t const icell2 = ((icell * 2) + 1);
+    size_t const icell0 = ((icell + CELL_OFF) * 2);
+    size_t const icell1 = ((icell0    ) - CELL_OFF);
+    size_t const icell2 = ((icell0 + 1) - CELL_OFF);
+    assert(icell1 != icell2);
+    assert(icell1 >  icell);
+    assert(icell2 >  icell);
 
     // Recurse into child positions.
     fillTree(levels, tree, maps, ilevel - 1, inode1, icell1);
@@ -268,6 +286,31 @@ void HipsMakeTreeStep::execute() {
     std::cerr << "  Tree filled in " << std::setw(9) << t_fill <<  " us" << std::endl;
     std::cerr << std::endl;
 #endif
+
+    // Check that every descriptor was filled.
+    for (size_t icell = 0; icell < HipsTreeState::NNODE; icell++) {
+        // Refer to tree HIPS descriptor.
+        cl_ulong4 const & cell = tree.at(icell);
+
+        // Check that the descriptor has been filled.
+        assert((cell.x | cell.y | cell.z | cell.w) > 0);
+    }
+
+    // Check that every position was used exactly once.
+    std::set<cl_ushort> used;
+    for (size_t icell = HipsTreeState::START; icell < HipsTreeState::NNODE; icell++) {
+        cl_ushort const map = maps.at(icell);
+
+        assert(used.count(map) == 0);
+        used.insert(map);
+        assert(used.count(map) == 1);
+    }
+
+    // Undo all previous effort by writing flat list.
+    for (size_t inode = 0; inode < HipsTreeState::NLEAF; inode++) {
+        //tree.at(inode + HipsTreeState::START) = hips.at(inode);
+        //maps.at(inode + HipsTreeState::START) = inode;
+    }
 
     // Write tree to device state.
     o_tree.tree.set(tree);
