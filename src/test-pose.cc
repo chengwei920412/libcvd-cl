@@ -707,8 +707,6 @@ int main(int argc, char **argv) {
                 stage1done = true;
             } catch (cl::Error & err) {
                 std::cerr << err.what() << " (code " << err.err() << ")" << std::endl;
-            } catch (...) {
-                std::cerr << "Unknown other error" << std::endl;
             }
         }
 
@@ -727,8 +725,6 @@ int main(int argc, char **argv) {
                 testStage2(dev, input, stage1);
             } catch (cl::Error & err) {
                 std::cerr << err.what() << " (code " << err.err() << ")" << std::endl;
-            } catch (...) {
-                std::cerr << "Unknown other error" << std::endl;
             }
         }
     } catch (cl::Error & err) {
