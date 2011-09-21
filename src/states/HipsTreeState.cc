@@ -41,5 +41,39 @@ HipsTreeState::~HipsTreeState() {
     // Do nothing.
 }
 
+void HipsTreeState::setTree(std::vector<cl_ulong4> const & list) {
+    cl::size_t<3> origin;
+    origin[0] = 0;
+    origin[1] = 0;
+    origin[2] = 0;
+
+    cl::size_t<3> region;
+    region[0] = 2;
+    region[1] = HipsTreeState::NNODE;
+    region[2] = 1;
+
+    // Cast to non-const void due to error in cl.hpp.
+    cl_ulong4 * data = const_cast<cl_ulong4 *>(list.data());
+
+    worker.queue.enqueueWriteImage(tree, CL_TRUE, origin, region, 0, 0, data);
+}
+
+void HipsTreeState::setMaps(std::vector<cl_ushort> const & list) {
+    cl::size_t<3> origin;
+    origin[0] = 0;
+    origin[1] = 0;
+    origin[2] = 0;
+
+    cl::size_t<3> region;
+    region[0] = 1;
+    region[1] = HipsTreeState::NNODE;
+    region[2] = 1;
+
+    // Cast to non-const void due to error in cl.hpp.
+    cl_ushort * data = const_cast<cl_ushort *>(list.data());
+
+    worker.queue.enqueueWriteImage(maps, CL_TRUE, origin, region, 0, 0, data);
+}
+
 } // namespace CL
 } // namespace CVD

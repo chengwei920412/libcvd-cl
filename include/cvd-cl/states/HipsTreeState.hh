@@ -53,6 +53,9 @@ public:
     explicit HipsTreeState(Worker & worker);
     virtual ~HipsTreeState();
 
+    void setTree(std::vector<cl_ulong4> const & list);
+    void setMaps(std::vector<cl_ushort> const & list);
+
     // HIPS tree looks like a HIPS descriptor list.
     // (1024) * (8) * (32-bit unsigned integer).
     cl::Image2D    tree;

@@ -308,23 +308,9 @@ void HipsMakeTreeStep::execute() {
     }
 #endif
 
-    // Write tree to device state.
-    cl::size_t<3> origin0;
-    origin0[0] = 0;
-    origin0[1] = 0;
-    origin0[2] = 0;
-    cl::size_t<3> regionH;
-    regionH[0] = 2;
-    regionH[1] = HipsTreeState::NNODE;
-    regionH[2] = 1;
-    worker.queue.enqueueWriteImage(o_tree.tree, CL_TRUE, origin0, regionH, 0, 0, tree.data());
-
-    // Write maps to device state.
-    cl::size_t<3> regionM;
-    regionM[0] = 1;
-    regionM[1] = HipsTreeState::NNODE;
-    regionM[2] = 1;
-    worker.queue.enqueueWriteImage(o_tree.maps, CL_TRUE, origin0, regionM, 0, 0, maps.data());
+    // Write tree and mapping to device.
+    o_tree.setTree(tree);
+    o_tree.setMaps(maps);
 }
 
 } // namespace CL
