@@ -32,11 +32,11 @@
 namespace CVD {
 namespace CL  {
 
-static size_t leavesToLevels(size_t nLeaves) {
+static cl_uint leavesToLevels(cl_uint nLeaves) {
     expect("nLeaves must be at least 8",   nLeaves >= 8);
     expect("nLeaves must be at most 2048", nLeaves <= 2048);
 
-    size_t nTreeLevels = 1;
+    cl_uint nTreeLevels = 1;
     while ((nLeaves & 1) == 0) {
         nLeaves >>= 1;
         nTreeLevels++;
@@ -46,7 +46,7 @@ static size_t leavesToLevels(size_t nLeaves) {
     return nTreeLevels;
 }
 
-HipsTreeShape::HipsTreeShape(size_t nLeaves, size_t nKeepLevels) :
+HipsTreeShape::HipsTreeShape(cl_uint nLeaves, cl_uint nKeepLevels) :
     // Assign parameters.
     nLeaves     (nLeaves),
     nKeepLevels (nKeepLevels),

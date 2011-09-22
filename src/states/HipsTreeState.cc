@@ -35,7 +35,7 @@ namespace CL  {
 cl::ImageFormat static const HipsFormat(CL_RGBA, CL_UNSIGNED_INT32);
 cl::ImageFormat static const MapsFormat(CL_R,    CL_UNSIGNED_INT16);
 
-HipsTreeState::HipsTreeState(Worker & worker, size_t nLeaves, size_t nKeepLevels) :
+HipsTreeState::HipsTreeState(Worker & worker, cl_uint nLeaves, cl_uint nKeepLevels) :
     WorkerState (worker),
     shape       (nLeaves, nKeepLevels),
     // Allocate image objects.

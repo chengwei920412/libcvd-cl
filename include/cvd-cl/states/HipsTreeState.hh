@@ -51,7 +51,7 @@ public:
     cl_uint static const START = (NNODE - NLEAF);
     cl_uint static const LEVEL =   5;
 
-    explicit HipsTreeState(Worker & worker, size_t nLeaves = 512, size_t nKeepLevels = 5);
+    explicit HipsTreeState(Worker & worker, cl_uint nLeaves = 512, cl_uint nKeepLevels = 5);
     virtual ~HipsTreeState();
 
     void setTree(std::vector<cl_ulong4> const & list);

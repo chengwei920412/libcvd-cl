@@ -32,40 +32,40 @@ namespace CL  {
 class HipsTreeShape {
 public:
 
-    HipsTreeShape(size_t nLeaves, size_t nKeepLevels);
+    HipsTreeShape(cl_uint nLeaves, cl_uint nKeepLevels);
     ~HipsTreeShape();
 
     /** Leaves in the HIPS tree. Must be a power of 2 and [8 <= nLeaves <= 2048]. */
-    size_t const     nLeaves;
+    cl_uint const nLeaves;
 
     /** Levels kept of the tree, from leaves up. Must satisfy [1 < nKeepLevels < nTreeLevels]. */
-    size_t const     nKeepLevels;
+    cl_uint const nKeepLevels;
 
     // Calculations from parameters.
 
     /** Levels in the full tree = log2(nLeaves). */
-    size_t const     nTreeLevels;
+    cl_uint const nTreeLevels;
 
     /** Round-up to next power of 2. */
-    size_t const     nFullNodes;
+    cl_uint const nFullNodes;
 
     /** Nodes stored in the full tree. */
-    size_t const     nTreeNodes;
+    cl_uint const nTreeNodes;
 
     /** Levels dropped from the full tree. */
-    size_t const     nDropLevels;
+    cl_uint const nDropLevels;
 
     /** Tree roots stored in the forest. */
-    size_t const     nTreeRoots;
+    cl_uint const nTreeRoots;
 
     /** Number of nodes dropped from the tree. */
-    size_t const     nDropNodes;
+    cl_uint const nDropNodes;
 
     /** Nodes kept of the tree. */
-    size_t const     nKeepNodes;
+    cl_uint const nKeepNodes;
 
     /** Index of the first leaf in the stored forest. */
-    size_t const     iLeaf0;
+    cl_uint const iLeaf0;
 };
 
 } // namespace CL
