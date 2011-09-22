@@ -24,7 +24,7 @@
 #ifndef __CVD_CL_HIPS_TREE_STATE_HH__
 #define __CVD_CL_HIPS_TREE_STATE_HH__
 
-#include <cvd-cl/states/ListState.hh>
+#include <cvd-cl/worker/WorkerState.hh>
 
 namespace CVD {
 namespace CL  {

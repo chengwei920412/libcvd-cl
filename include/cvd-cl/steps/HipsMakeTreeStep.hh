@@ -25,6 +25,7 @@
 #define __CVD_CL_HIPS_MAKE_TREE_STEP_HH__
 
 #include <cvd-cl/states/HipsTreeState.hh>
+#include <cvd-cl/states/ListState.hh>
 #include <cvd-cl/worker/WorkerStep.hh>
 
 namespace CVD {
