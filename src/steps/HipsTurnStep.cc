@@ -43,13 +43,24 @@ HipsTurnStep::HipsTurnStep(HipsTreeState & i_tree, HipsListState & i_hips, Point
     m_best     (worker, o_matches.size),
     maxerr     (maxerr)
 {
-    // Compile turning kernel.
-    worker.compile(&program_turn, &kernel_turn, OCL_HIPS_TURN, "hips_turn");
+
+    // Refer to tree shape.
+    HipsTreeShape const & shape = i_tree.shape;
+
+    // Number of "pre-roots", pairing roots in the forest.
+    cl_uint const nPreRoot = (shape.nTreeRoots / 2);
+
+    // Format OpenCL compiler options.
+    char opt[512] = {0,};
+    snprintf(opt, sizeof(opt) - 1,
+        "-DHIPS_MAX_ERROR=%d -DTREE_PRE_ROOTS=%d -DTREE_LEVELS=%d -DTREE_DROP_NODES=%d -DTREE_LEAF0=%d",
+        int(maxerr), int(nPreRoot), int(shape.nKeepLevels), int(shape.nDropNodes), int(shape.iTreeLeaf0));
 
     // Compile finding kernel.
-    char opt[256] = {0,};
-    snprintf(opt, sizeof(opt) - 1, "-DHIPS_MAX_ERROR=%d", int(maxerr));
     worker.compile(&program_find, &kernel_find, OCL_HIPS_TFIND, "hips_tree_find", opt);
+
+    // Compile turning kernel.
+    worker.compile(&program_turn, &kernel_turn, OCL_HIPS_TURN, "hips_turn");
 }
 
 HipsTurnStep::~HipsTurnStep() {

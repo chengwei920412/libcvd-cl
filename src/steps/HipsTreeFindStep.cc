@@ -34,8 +34,19 @@ HipsTreeFindStep::HipsTreeFindStep(HipsTreeState & i_tree, HipsListState & i_hip
     o_matches  (o_matches),
     maxerr     (maxerr)
 {
-    char opt[256] = {0,};
-    snprintf(opt, sizeof(opt) - 1, "-DHIPS_MAX_ERROR=%d", int(maxerr));
+
+    // Refer to tree shape.
+    HipsTreeShape const & shape = i_tree.shape;
+
+    // Number of "pre-roots", pairing roots in the forest.
+    cl_uint const nPreRoot = (shape.nTreeRoots / 2);
+
+    // Format OpenCL compiler options.
+    char opt[512] = {0,};
+    snprintf(opt, sizeof(opt) - 1,
+        "-DHIPS_MAX_ERROR=%d -DTREE_PRE_ROOTS=%d -DTREE_LEVELS=%d -DTREE_DROP_NODES=%d -DTREE_LEAF0=%d",
+        int(maxerr), int(nPreRoot), int(shape.nKeepLevels), int(shape.nDropNodes), int(shape.iTreeLeaf0));
+
     worker.compile(&program, &kernel, OCL_HIPS_TFIND, "hips_tree_find", opt);
 }
 

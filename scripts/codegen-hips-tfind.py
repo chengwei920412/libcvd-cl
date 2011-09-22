@@ -62,20 +62,6 @@ uint error(uint4 t, uint4 r) {
     return bitcount4(t & ~r);
 }
 
-// Bytes in constant memory:                32768
-// Bytes per descriptor:                       32
-//                                          -----
-// Maximum descriptors in array:             1024
-// Maximum leaf descriptors:                  512
-
-// Forest structure in 992 descriptors:
-// [32 nodes] [64 nodes] [128 nodes] [256 nodes] [512 leaves]
-// Each thread starts from the same 16 roots (excluded) to select 16 from 32 initial nodes (included).
-// Each thread will do exactly 10 (5 levels * 2 children) error calculations per root.
-// Each thread will pick 0 or 1 leaf per root, so 0-16 in total per thread.
-
-#define CELL_OFF 32
-
 kernel void hips_tree_find(
     // N.B.: These uint8 are actually ulong4.
     read_only image2d_t     hashesR,  // R (forest of descriptors, as above)
@@ -95,24 +81,24 @@ kernel void hips_tree_find(
     uint4  const  hashTa = hashT.s0123;
     uint4  const  hashTb = hashT.s4567;
 
-    // Loop over 16 roots.
+    // Loop over pre-roots.
     #pragma unroll
-    for (uint iroot = 0; iroot < 16; iroot++) {
+    for (uint iroot = 0; iroot < TREE_PRE_ROOTS; iroot++) {
         // Start traversal at root.
-        uint icell = (iroot + (CELL_OFF / 2));
+        uint icell = (iroot + TREE_PRE_ROOTS - 1);
         uint last  = 10000;
 
-        // Recurse exactly 5 levels deep (including first level).
+        // Recurse within available tree levels..
         #pragma unroll
-        for (uint idepth = 0; idepth < 5; idepth++) {
+        for (uint idepth = 0; idepth < TREE_LEVELS; idepth++) {
             // Calculate positions of both children.
-            uint const icell0 = (icell * 2);
-            uint const icell1 = (icell0    );
-            uint const icell2 = (icell0 + 1);
+            uint const icell0 = (icell  * 2);
+            uint const icell1 = (icell0 + 1);
+            uint const icell2 = (icell0 + 2);
 
             // Correct for tree truncation.
-            uint const icell10 = (icell1 - CELL_OFF);
-            uint const icell20 = (icell2 - CELL_OFF);
+            uint const icell10 = (icell1 - TREE_DROP_NODES);
+            uint const icell20 = (icell2 - TREE_DROP_NODES);
 
             // Read integers for both children.
             uint4 const hashR1a = read_imageui(hashesR, sampler, (int2)(0, icell10));
@@ -135,7 +121,7 @@ kernel void hips_tree_find(
         if (last <= HIPS_MAX_ERROR) {
             uint const i = atom_inc(imatch);
             if (i < nmatch) {
-                uint const index = read_imageui(indices, sampler, (int2)(0, icell - CELL_OFF - 480)).x;
+                uint const index = read_imageui(indices, sampler, (int2)(0, icell - TREE_LEAF0)).x;
 
                 // Store pair against original index.
                 matches[i] = (uint2)(index, ihashT);
