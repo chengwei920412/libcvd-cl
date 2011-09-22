@@ -24,6 +24,7 @@
 #ifndef __CVD_CL_HIPS_TURN_STEP_HH__
 #define __CVD_CL_HIPS_TURN_STEP_HH__
 
+#include <cvd-cl/states/HipsTreeState.hh>
 #include <cvd-cl/states/ListState.hh>
 #include <cvd-cl/worker/WorkerStep.hh>
 
@@ -33,7 +34,7 @@ namespace CL  {
 class HipsTurnStep : public WorkerStep {
 public:
 
-    explicit HipsTurnStep(HipsListState & i_hips1, HipsListState & i_hips2, PointListState & o_matches, cl_int maxerr=3);
+    explicit HipsTurnStep(HipsTreeState & i_tree, HipsListState & i_hips, PointListState & o_matches, cl_int maxerr=3);
     virtual ~HipsTurnStep();
 
     virtual void execute();
@@ -41,8 +42,8 @@ public:
 protected:
 
     // Inputs.
-    HipsListState  & i_hips1;
-    HipsListState  & i_hips2;
+    HipsTreeState  & i_tree;
+    HipsListState  & i_hips;
 
     // Outputs.
     PointListState & o_matches;

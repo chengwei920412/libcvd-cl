@@ -22,7 +22,7 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 
 #include "cvd-cl/steps/HipsTurnStep.hh"
-#include "kernels/hips-find.hh"
+#include "kernels/hips-tfind.hh"
 #include "kernels/hips-turn.hh"
 
 #ifdef CVD_CL_VERBOSE
@@ -33,13 +33,13 @@
 namespace CVD {
 namespace CL  {
 
-HipsTurnStep::HipsTurnStep(HipsListState & i_hips1, HipsListState & i_hips2, PointListState & o_matches, cl_int maxerr) :
-    WorkerStep (i_hips1.worker),
-    i_hips1    (i_hips1),
-    i_hips2    (i_hips2),
+HipsTurnStep::HipsTurnStep(HipsTreeState & i_tree, HipsListState & i_hips, PointListState & o_matches, cl_int maxerr) :
+    WorkerStep (i_tree.worker),
+    i_tree     (i_tree),
+    i_hips     (i_hips),
     o_matches  (o_matches),
-    m_hips1    (worker, i_hips1.size),
-    m_hips2    (worker, i_hips1.size),
+    m_hips1    (worker, i_hips.size),
+    m_hips2    (worker, i_hips.size),
     m_best     (worker, o_matches.size),
     maxerr     (maxerr)
 {
@@ -49,7 +49,7 @@ HipsTurnStep::HipsTurnStep(HipsListState & i_hips1, HipsListState & i_hips2, Poi
     // Compile finding kernel.
     char opt[256] = {0,};
     snprintf(opt, sizeof(opt) - 1, "-DHIPS_MAX_ERROR=%d", int(maxerr));
-    worker.compile(&program_find, &kernel_find, OCL_HIPS_FIND, "hips_find", opt);
+    worker.compile(&program_find, &kernel_find, OCL_HIPS_TFIND, "hips_tree_find", opt);
 }
 
 HipsTurnStep::~HipsTurnStep() {
@@ -58,25 +58,22 @@ HipsTurnStep::~HipsTurnStep() {
 
 void HipsTurnStep::execute() {
     // Read number of descriptors.
-    size_t const np1 = i_hips1.getCount();
-    size_t const np2 = i_hips2.getCount();
+    size_t const np2 = i_hips.getCount();
 
     // Round down number of descriptors.
-    cl_int const np1_16 = (np1 / 16) * 16;
-    cl_int const np2_16 = (np2 / 16) * 16;
+    size_t const np2_128 = (np2 / 128) * 128;
 
-    // Create 1D work size (turn kernel).
-    cl::NDRange const global1D(np1_16);
+    // Create 1D work size.
+    cl::NDRange const global(np2_128);
+    cl::NDRange const local(128);
 
-    // Create 2D work size (find kernel).
-    cl::NDRange const global2D(np1_16, np2_16);
-    cl::NDRange const local2D(16, 16);
-
-    // Assign find kernel parameters except first list.
-    kernel_find.setArg(1, i_hips2.buffer);
-    kernel_find.setArg(2, o_matches.buffer);
-    kernel_find.setArg(3, o_matches.count);
-    kernel_find.setArg(4, o_matches.size);
+    // Assign find kernel parameters except HIPS list.
+    kernel_find.setArg(0, i_tree.tree);
+    kernel_find.setArg(1, i_tree.maps);
+    // Assign HIPS list later.
+    kernel_find.setArg(3, o_matches.buffer);
+    kernel_find.setArg(4, o_matches.count);
+    kernel_find.setArg(5, o_matches.size);
 
     // Keep note of best results.
     cl_uint bestCount = 0;
@@ -87,7 +84,7 @@ void HipsTurnStep::execute() {
     HipsListState * list2 = &m_hips2;
 
     // Copy HIPS descriptors to first internal buffer.
-    m_hips1.copyFrom(i_hips1);
+    m_hips1.copyFrom(i_hips);
 
     // Try 16 rotations.
     for (int rot = 0; rot < 16; rot++) {
@@ -95,8 +92,8 @@ void HipsTurnStep::execute() {
         o_matches.setCount(0);
 
         // Match rotated first list against second list.
-        kernel_find.setArg(0, list1->buffer);
-        worker.queue.enqueueNDRangeKernel(kernel_find, cl::NullRange, global2D, local2D);
+        kernel_find.setArg(2, list1->buffer);
+        worker.queue.enqueueNDRangeKernel(kernel_find, cl::NullRange, global, local);
 
         // Note number of matches.
         cl_uint const thisCount = o_matches.getCount();
@@ -116,7 +113,7 @@ void HipsTurnStep::execute() {
             // Rotate the HIPS descriptors in list 1 to list 2.
             kernel_turn.setArg(0, list1->buffer);
             kernel_turn.setArg(1, list2->buffer);
-            worker.queue.enqueueNDRangeKernel(kernel_turn, cl::NullRange, global1D, cl::NullRange);
+            worker.queue.enqueueNDRangeKernel(kernel_turn, cl::NullRange, global, local);
 
             // Swap list pointers.
             std::swap(list1, list2);
