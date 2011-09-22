@@ -58,7 +58,8 @@ HipsTreeShape::HipsTreeShape(cl_uint nLeaves, cl_uint nKeepLevels) :
     nTreeRoots  (1 << nDropLevels),
     nDropNodes  (nTreeRoots - 1),
     nKeepNodes  (nTreeNodes - nDropNodes),
-    iLeaf0      (nKeepNodes - nLeaves)
+    iTreeLeaf0  (nTreeNodes - nLeaves),
+    iKeepLeaf0  (nKeepNodes - nLeaves)
 {
 #ifdef CVD_CL_VERBOSE
     std::cerr << "HIPS tree shape:" << std::endl;
@@ -71,7 +72,8 @@ HipsTreeShape::HipsTreeShape(cl_uint nLeaves, cl_uint nKeepLevels) :
     std::cerr << std::setw(9) << nTreeNodes  << " nTreeNodes"  << std::endl;
     std::cerr << std::setw(9) << nDropNodes  << " nDropNodes"  << std::endl;
     std::cerr << std::setw(9) << nKeepNodes  << " nKeepNodes"  << std::endl;
-    std::cerr << std::setw(9) << iLeaf0      << " iLeaf0"      << std::endl;
+    std::cerr << std::setw(9) << iTreeLeaf0  << " iTreeLeaf0"  << std::endl;
+    std::cerr << std::setw(9) << iKeepLeaf0  << " iKeepLeaf0"  << std::endl;
     std::cerr << std::endl;
 #endif // CVD_CL_VERBOSE
 }

@@ -50,7 +50,7 @@ HipsTreeState::~HipsTreeState() {
 }
 
 void HipsTreeState::setTree(std::vector<cl_ulong4> const & list) {
-    assert(list.size() == shape.nKeepNodes);
+    assert(list.size() == shape.nTreeNodes);
 
     cl::size_t<3> origin;
     origin[0] = 0;
@@ -65,7 +65,10 @@ void HipsTreeState::setTree(std::vector<cl_ulong4> const & list) {
     // Cast to non-const void due to error in cl.hpp.
     cl_ulong4 * data = const_cast<cl_ulong4 *>(list.data());
 
-    worker.queue.enqueueWriteImage(tree, CL_TRUE, origin, region, 0, 0, data);
+    // Offset to avoid skipped nodes.
+    cl_ulong4 * start = (data + shape.nDropNodes);
+
+    worker.queue.enqueueWriteImage(tree, CL_TRUE, origin, region, 0, 0, start);
 }
 
 void HipsTreeState::setMaps(std::vector<cl_ushort> const & list) {

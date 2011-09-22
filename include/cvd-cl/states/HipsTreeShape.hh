@@ -64,8 +64,11 @@ public:
     /** Nodes kept of the tree. */
     cl_uint const nKeepNodes;
 
+    /** Index of the first leaf in the full tree. */
+    cl_uint const iTreeLeaf0;
+
     /** Index of the first leaf in the stored forest. */
-    cl_uint const iLeaf0;
+    cl_uint const iKeepLeaf0;
 };
 
 } // namespace CL

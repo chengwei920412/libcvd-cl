@@ -33,24 +33,6 @@ namespace CL  {
 class HipsTreeState : public WorkerState {
 public:
 
-    // Bytes in constant memory:                32768
-    // Bytes per descriptor:                       32
-    //                                          -----
-    // Maximum descriptors in array:             1024
-    // Maximum leaf descriptors:                  512
-
-    // Forest structure in 992 descriptors:
-    // [32 nodes] [64 nodes] [128 nodes] [256 nodes] [512 leaves]
-    // Each thread starts from the same 16 roots (excluded) to select 16 from 32 initial nodes (included).
-    // Each thread will do exactly 10 (5 levels * 2 children) error calculations per root.
-    // Each thread will pick 0 or 1 leaf per root, so 0-16 in total per thread.
-
-    cl_uint static const NLEAF = 512;
-    cl_uint static const NROOT =  32;
-    cl_uint static const NNODE = 992;
-    cl_uint static const START = (NNODE - NLEAF);
-    cl_uint static const LEVEL =   5;
-
     explicit HipsTreeState(Worker & worker, cl_uint nLeaves = 512, cl_uint nKeepLevels = 5);
     virtual ~HipsTreeState();
 
