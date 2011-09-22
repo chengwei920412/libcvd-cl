@@ -113,12 +113,17 @@ static void pairup(std::vector<cl_ulong4> const & hips, std::vector<cl_ushort2> 
             if (err < be2) {
                 be2 = err;
                 bi2 = i2;
+
+                // If the error is now 0, it cannot be improved.
+                // This is actually a bad sign for later traversing the tree.
+                if (be2 < 1)
+                    break;
             }
         }
 
         // If no unused descriptors exist, return now.
         if (more == false)
-            break;
+            return;
 
         // Consume the best pairing found.
         used.at(i1)  = true;
