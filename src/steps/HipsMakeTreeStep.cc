@@ -50,8 +50,8 @@ static int bitcount4(cl_ulong4 t, cl_ulong4 r) {
         bitcount(t.w ^ r.w);
 }
 
-// Zeroed descriptor as filler.
-cl_ulong4 static const HIPS_ZERO = {{0, 0, 0, 0}};
+// "Zeroed" descriptor as filler. Actually non-zero to verify successful fill.
+cl_ulong4 static const HIPS_ZERO = {{0, 0, 0, 1}};
 
 HipsMakeTreeStep::HipsMakeTreeStep(HipsListState & i_hips, HipsTreeState & o_tree) :
     WorkerStep (i_hips.worker),
@@ -183,7 +183,7 @@ static void fillTree(
     cl_ulong4 & cell = tree.at(icell);
 
     // Check that the descriptor has not been filled.
-    assert((cell.x | cell.y | cell.z | cell.w) == 0);
+    assert(::memcmp(&cell, &HIPS_ZERO, sizeof(cell)) == 0);
 
     // Fill descriptor at this level.
     cell = level.hips.at(inode);
