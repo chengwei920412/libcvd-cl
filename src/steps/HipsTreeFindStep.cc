@@ -24,9 +24,6 @@
 #include "cvd-cl/steps/HipsTreeFindStep.hh"
 #include "kernels/hips-tfind.hh"
 
-#include <iomanip>
-#include <iostream>
-
 namespace CVD {
 namespace CL  {
 
@@ -46,110 +43,23 @@ HipsTreeFindStep::~HipsTreeFindStep() {
     // Do nothing.
 }
 
-template <typename T>
-static int bitcount (T v){
-  v = v - ((v >> 1) & (T)~(T)0/3);                           // temp
-  v = (v & (T)~(T)0/15*3) + ((v >> 2) & (T)~(T)0/15*3);      // temp
-  v = (v + (v >> 4)) & (T)~(T)0/255*15;                      // temp
-  return (T)(v * ((T)~(T)0/255)) >> (sizeof(T) - 1) * CHAR_BIT; // count
-}
-
-static int error(cl_ulong4 t, cl_ulong4 r) {
-    return
-        bitcount(t.x &~ r.x) +
-        bitcount(t.y &~ r.y) +
-        bitcount(t.z &~ r.z) +
-        bitcount(t.w &~ r.w);
-}
-
-size_t static const CELL_OFF = 32;
-
 void HipsTreeFindStep::execute() {
-    // Refer to HIPS tree and indices.
-    std::vector<cl_ulong4> const & tree = i_tree.treeVector;
-    std::vector<cl_ushort> const & maps = i_tree.mapsVector;
+    // Read number of descriptors in the test list.
+    size_t const np2_128 = (i_hips.getCount() / 128) * 128;
 
-    // Read HIPS descriptors.
-    std::vector<cl_ulong4> hips;
-    i_hips.get(&hips);
-    size_t const nhips = hips.size();
+    // Assign kernel parameters.
+    kernel.setArg(0, i_tree.tree);
+    kernel.setArg(1, i_tree.maps);
+    kernel.setArg(2, i_hips.buffer);
+    kernel.setArg(3, o_matches.buffer);
+    kernel.setArg(4, o_matches.count);
+    kernel.setArg(5, o_matches.size);
 
-    // Record of matching points.
-    // Reserve expected size.
-    std::vector<cl_int2> matches(o_matches.size);
+    // Reset number of output pairs.
+    o_matches.setCount(0);
 
-    // Count of points.
-    uint32_t const maxmatches = matches.size();
-    uint32_t nmatches = 0;
-
-    boost::system_time t1 = boost::get_system_time();
-
-    // Loop over HIPS descriptors with OpenMP.
-    #pragma omp parallel for
-    for (size_t ihashT = 0; ihashT < nhips; ihashT++) {
-        cl_ulong4 const & hashT = hips.at(ihashT);
-
-        // Try each tree root.
-        for (size_t iroot = 0; iroot < 16; iroot++) {
-            // Start traversal at root.
-            size_t icell = (iroot + (CELL_OFF / 2));
-            size_t last  = 10000;
-
-            // Recurse exactly 5 levels deep (including first level).
-            for (size_t idepth = 0; idepth < 5; idepth++) {
-                // Calculate positions of both children.
-                size_t const icell0 = (icell * 2);
-                size_t const icell1 = (icell0    );
-                size_t const icell2 = (icell0 + 1);
-
-                // Refer to hashes for both children.
-                cl_ulong4 const & hashR1 = tree.at(icell1 - CELL_OFF);
-                cl_ulong4 const & hashR2 = tree.at(icell2 - CELL_OFF);
-
-                // Calculate errors for both children.
-                uint const err1 = error(hashT, hashR1);
-                uint const err2 = error(hashT, hashR2);
-
-                // Determine lower error.
-                if (err1 < err2) {
-                    last = err1;
-                    icell = icell1;
-                } else {
-                    last = err2;
-                    icell = icell2;
-                }
-            }
-
-            // Record match if within error threshold.
-            if (last <= (size_t) maxerr) {
-                // Increment index with atomic intrinsics.
-                uint32_t const count = __sync_add_and_fetch(&nmatches, 1);
-
-                // Check against list fill.
-                if (count <= maxmatches) {
-                    // Read index.
-                    cl_ushort const index = maps.at(icell - CELL_OFF);
-
-                    // Pack match struct.
-                    cl_int2 const pair = {{index, ihashT}};
-
-                    // Record in output array.
-                    matches.at(count - 1) = pair;
-                }
-            }
-        }
-    }
-
-    boost::system_time t2 = boost::get_system_time();
-
-    int64_t const t_find = (t2 - t1).total_microseconds();
-    std::cerr << "CPU tree search in " << std::setw(9) << t_find << " us" << std::endl;
-
-    // Write match list.
-    o_matches.set(matches);
-
-    // Truncate match list.
-    o_matches.setCount(nmatches);
+    // Queue kernel with global size set to number of input points in the test list.
+    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np2_128), cl::NDRange(128));
 }
 
 } // namespace CL
