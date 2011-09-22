@@ -25,6 +25,7 @@
 #define __CVD_CL_HIPS_TREE_STATE_HH__
 
 #include <cvd-cl/worker/WorkerState.hh>
+#include <cvd-cl/states/HipsTreeShape.hh>
 
 namespace CVD {
 namespace CL  {
@@ -57,38 +58,8 @@ public:
     void setMaps(std::vector<cl_ushort> const & list);
 
 
-
-    /** Leaves in the HIPS tree. Must be a power of 2 and [8 <= nLeaves <= 2048]. */
-    size_t const     nLeaves;
-
-    /** Levels kept of the tree, from leaves up. Must satisfy [1 < nKeepLevels < nTreeLevels]. */
-    size_t const     nKeepLevels;
-
-    // Calculations from parameters.
-
-    /** Levels in the full tree = log2(nLeaves). */
-    size_t const     nTreeLevels;
-
-    /** Round-up to next power of 2. */
-    size_t const     nFullNodes;
-
-    /** Nodes stored in the full tree. */
-    size_t const     nTreeNodes;
-
-    /** Levels dropped from the full tree. */
-    size_t const     nDropLevels;
-
-    /** Tree roots stored in the forest. */
-    size_t const     nTreeRoots;
-
-    /** Number of nodes dropped from the tree. */
-    size_t const     nDropNodes;
-
-    /** Nodes kept of the tree. */
-    size_t const     nKeepNodes;
-
-    /** Index of the first leaf in the stored forest. */
-    size_t const     iLeaf0;
+    /** Virtual and actual shape of the HIPS descriptor forest. */
+    HipsTreeShape const shape;
 
     /**
      * OpenCL image object for HIPS descriptor forest.
