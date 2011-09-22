@@ -381,7 +381,7 @@ static void testStage2(
     CVD::CL::HipsListState   im2hips     (worker, ncorners);
 
     // Create state for HIPS tree based on stage 1.
-    CVD::CL::HipsTreeState   im1tree     (worker);
+    CVD::CL::HipsTreeState   im1tree     (worker, 1024);
 
     // Restore stage 1 data.
     im1corners.set(stage1.points1);
