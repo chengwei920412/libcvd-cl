@@ -78,11 +78,11 @@ static void pairup(std::vector<cl_ulong4> const & hips, std::vector<cl_ushort2> 
     // Perform greedy algorithm for best-pair matching.
     for (size_t i1 = 0; i1 < nhips; i1++) {
         // Skip if already used.
-        if (used.at(i1) == true)
+        if (used[i1] == true)
             continue;
 
         // Refer to descriptor 1.
-        cl_ulong4 const & d1 = hips.at(i1);
+        cl_ulong4 const & d1 = hips[i1];
 
         // Note if any unused descriptors exist.
         bool more = false;
@@ -93,7 +93,7 @@ static void pairup(std::vector<cl_ulong4> const & hips, std::vector<cl_ushort2> 
 
         for (size_t i2 = 0; i2 < nhips; i2++) {
             // Skip if already used.
-            if (used.at(i2) == true)
+            if (used[i2] == true)
                 continue;
 
             // Note that a descriptor remains available.
@@ -104,7 +104,7 @@ static void pairup(std::vector<cl_ulong4> const & hips, std::vector<cl_ushort2> 
                 continue;
 
             // Refer to descriptor 2.
-            cl_ulong4 const & d2 = hips.at(i2);
+            cl_ulong4 const & d2 = hips[i2];
 
             // Calculate the error between the descriptors.
             int const err = bitcount4(d1, d2);
@@ -126,8 +126,8 @@ static void pairup(std::vector<cl_ulong4> const & hips, std::vector<cl_ushort2> 
             return;
 
         // Consume the best pairing found.
-        used.at(i1)  = true;
-        used.at(bi2) = true;
+        used[i1]  = true;
+        used[bi2] = true;
 
         // Record the pairing.
         cl_ushort2 const pair = {{i1, bi2}};
@@ -149,9 +149,9 @@ static void blend(std::vector<cl_ulong4> const & ihips, std::vector<cl_ushort2> 
 
     for (size_t i = 0; i < npairs; i++) {
         // Refer to descriptor pairing and component descriptors.
-        cl_ushort2 const & pair = pairs.at(i);
-        cl_ulong4  const & d1   = ihips.at(pair.x);
-        cl_ulong4  const & d2   = ihips.at(pair.y);
+        cl_ushort2 const & pair = pairs[i];
+        cl_ulong4  const & d1   = ihips[pair.x];
+        cl_ulong4  const & d2   = ihips[pair.y];
 
         // Calculate blended descriptor.
         cl_ulong4  const   d3   = blend(d1, d2);
@@ -170,23 +170,23 @@ size_t static const CELL_OFF = 32;
 
 static void fillTree(std::vector<HipsTreeLevel> const & levels, std::vector<cl_ulong4> & tree, std::vector<cl_ushort> & maps, size_t ilevel, size_t inode, size_t icell) {
     // Refer to tree level.
-    HipsTreeLevel const & level = levels.at(ilevel);
+    HipsTreeLevel const & level = levels[ilevel];
 
     // Refer to tree HIPS descriptor.
-    cl_ulong4 & cell = tree.at(icell);
+    cl_ulong4 & cell = tree[icell];
 
     // Check that the descriptor has not been filled.
     assert((cell.x | cell.y | cell.z | cell.w) == 0);
 
     // Fill descriptor at this level.
-    cell = level.hips.at(inode);
+    cell = level.hips[inode];
 
     // If at lowest level, conclude.
     if (ilevel < 1) {
         assert(icell >= HipsTreeState::START);
 
         // Fill map at this level.
-        maps.at(icell) = inode;
+        maps[icell] = inode;
         return;
     } else {
         assert(icell <  HipsTreeState::START);

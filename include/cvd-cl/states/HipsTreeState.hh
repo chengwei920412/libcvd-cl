@@ -63,6 +63,10 @@ public:
     // Indices of original corners/descriptors.
     // (1024) *       (16-bit unsigned integer).
     cl::Image2D    maps;
+
+    // Saved copies of actual vectors, for CPU algorithms.
+    std::vector<cl_ulong4> treeVector;
+    std::vector<cl_ushort> mapsVector;
 };
 
 } // namespace CL

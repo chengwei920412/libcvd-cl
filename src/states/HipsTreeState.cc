@@ -42,6 +42,9 @@ HipsTreeState::~HipsTreeState() {
 }
 
 void HipsTreeState::setTree(std::vector<cl_ulong4> const & list) {
+    // Copy to vector.
+    treeVector = list;
+
     cl::size_t<3> origin;
     origin[0] = 0;
     origin[1] = 0;
@@ -59,6 +62,9 @@ void HipsTreeState::setTree(std::vector<cl_ulong4> const & list) {
 }
 
 void HipsTreeState::setMaps(std::vector<cl_ushort> const & list) {
+    // Copy to vector.
+    mapsVector = list;
+
     cl::size_t<3> origin;
     origin[0] = 0;
     origin[1] = 0;
