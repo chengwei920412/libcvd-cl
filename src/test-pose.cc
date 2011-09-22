@@ -81,6 +81,8 @@ struct options {
     cl_int hips_maxbits;
     cl_int hips_maxerr;
     cl_int hips_blendsize;
+    cl_int hips_leaves;
+    cl_int hips_levels;
 };
 
 static void readCamera(Camera::Linear * camera, char const * path) {
@@ -381,7 +383,7 @@ static void testStage2(
     CVD::CL::HipsListState   im2hips     (worker, ncorners);
 
     // Create state for HIPS tree based on stage 1.
-    CVD::CL::HipsTreeState   im1tree     (worker, 1024);
+    CVD::CL::HipsTreeState   im1tree     (worker, opts.hips_leaves, opts.hips_levels);
 
     // Restore stage 1 data.
     im1corners.set(stage1.points1);
@@ -611,6 +613,12 @@ int main(int argc, char **argv) {
         ("hips-max-error,e",
             po::value(&opts.hips_maxerr)->default_value(3),
             "HIPS maximum error bits per match")
+        ("hips-tree-leaves,l",
+            po::value(&opts.hips_leaves)->default_value(512),
+            "HIPS descriptor tree leaves")
+        ("hips-tree-levels,L",
+            po::value(&opts.hips_levels)->default_value(5),
+            "HIPS descriptor tree levels")
         ;
 
     po::positional_options_description pos;
