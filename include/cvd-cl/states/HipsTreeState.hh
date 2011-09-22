@@ -50,18 +50,67 @@ public:
     cl_uint static const START = (NNODE - NLEAF);
     cl_uint static const LEVEL =   5;
 
-    explicit HipsTreeState(Worker & worker);
+    explicit HipsTreeState(Worker & worker, size_t nLeaves = 512, size_t nKeepLevels = 5);
     virtual ~HipsTreeState();
 
     void setTree(std::vector<cl_ulong4> const & list);
     void setMaps(std::vector<cl_ushort> const & list);
 
-    // HIPS tree looks like a HIPS descriptor list.
-    // (1024) * (8) * (32-bit unsigned integer).
+
+
+    /** Leaves in the HIPS tree. Must be a power of 2 and [8 <= nLeaves <= 2048]. */
+    size_t const     nLeaves;
+
+    /** Levels kept of the tree, from leaves up. Must satisfy [1 < nKeepLevels < nTreeLevels]. */
+    size_t const     nKeepLevels;
+
+    // Calculations from parameters.
+
+    /** Levels in the full tree = log2(nLeaves). */
+    size_t const     nTreeLevels;
+
+    /** Round-up to next power of 2. */
+    size_t const     nFullNodes;
+
+    /** Nodes stored in the full tree. */
+    size_t const     nTreeNodes;
+
+    /** Levels dropped from the full tree. */
+    size_t const     nDropLevels;
+
+    /** Tree roots stored in the forest. */
+    size_t const     nTreeRoots;
+
+    /** Number of nodes dropped from the tree. */
+    size_t const     nDropNodes;
+
+    /** Nodes kept of the tree. */
+    size_t const     nKeepNodes;
+
+    /** Index of the first leaf in the stored forest. */
+    size_t const     iLeaf0;
+
+    /**
+     * OpenCL image object for HIPS descriptor forest.
+     *
+     * Each pixel is an RGBA of 32-bit unsigned integers, 128 bits in total.
+     * Each row is a 256 bit HIPS descriptor, contiguous in host-side memory.
+     *
+     * height = nKeepNodes
+     * width  = 2
+     *
+     * This order is used to keep cl_ulong4 halves adjacent.
+     */
     cl::Image2D    tree;
 
-    // Indices of original corners/descriptors.
-    // (1024) *       (16-bit unsigned integer).
+    /**
+     * OpenCL image object for the original index of each tree leaf.
+     *
+     * Each pixel is a 16-bit unsigned integer.
+     *
+     * height = nLeaves
+     * width  = 1
+     */
     cl::Image2D    maps;
 };
 

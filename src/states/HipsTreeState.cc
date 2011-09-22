@@ -22,6 +22,12 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 
 #include "cvd-cl/states/HipsTreeState.hh"
+#include "cvd-cl/core/Expect.hh"
+
+#ifdef CVD_CL_VERBOSE
+#include <iomanip>
+#include <iostream>
+#endif
 
 namespace CVD {
 namespace CL  {
@@ -29,12 +35,52 @@ namespace CL  {
 cl::ImageFormat static const HipsFormat(CL_RGBA, CL_UNSIGNED_INT32);
 cl::ImageFormat static const MapsFormat(CL_R,    CL_UNSIGNED_INT16);
 
-HipsTreeState::HipsTreeState(Worker & worker) :
+static size_t leavesToLevels(size_t nLeaves) {
+    expect("nLeaves must be at least 8",   nLeaves >= 8);
+    expect("nLeaves must be at most 2048", nLeaves <= 2048);
+
+    size_t nTreeLevels = 1;
+    while ((nLeaves & 1) == 0) {
+        nLeaves >>= 1;
+        nTreeLevels++;
+    }
+
+    expect("nLeaves must be a power of 2", nLeaves == 1);
+    return nTreeLevels;
+}
+
+HipsTreeState::HipsTreeState(Worker & worker, size_t nLeaves, size_t nKeepLevels) :
     WorkerState (worker),
-    tree        (worker.context, CL_MEM_READ_ONLY, HipsFormat, 2, 1024),
-    maps        (worker.context, CL_MEM_READ_ONLY, MapsFormat, 1, 1024)
+    // Assign parameters.
+    nLeaves     (nLeaves),
+    nKeepLevels (nKeepLevels),
+    // Calculate other sizes.
+    nTreeLevels (leavesToLevels(nLeaves)),
+    nFullNodes  (nLeaves * 2),
+    nTreeNodes  (nFullNodes - 1),
+    nDropLevels (nTreeLevels - nKeepLevels),
+    nTreeRoots  (1 << nDropLevels),
+    nDropNodes  (nTreeRoots - 1),
+    nKeepNodes  (nTreeNodes - nDropNodes),
+    iLeaf0      (nKeepNodes - nLeaves),
+    // Allocate image objects.
+    tree        (worker.context, CL_MEM_READ_ONLY, HipsFormat, 2, nFullNodes),
+    maps        (worker.context, CL_MEM_READ_ONLY, MapsFormat, 1, nLeaves)
 {
-    // Do nothing.
+#ifdef CVD_CL_VERBOSE
+    std::cerr << "Building HIPS tree" << std::endl;
+    std::cerr << std::setw(9) << nLeaves     << " nLeaves"     << std::endl;
+    std::cerr << std::setw(9) << nFullNodes  << " nFullNodes"  << std::endl;
+    std::cerr << std::setw(9) << nTreeLevels << " nTreeLevels" << std::endl;
+    std::cerr << std::setw(9) << nDropLevels << " nDropLevels" << std::endl;
+    std::cerr << std::setw(9) << nKeepLevels << " nKeepLevels" << std::endl;
+    std::cerr << std::setw(9) << nTreeRoots  << " nTreeRoots"  << std::endl;
+    std::cerr << std::setw(9) << nTreeNodes  << " nTreeNodes"  << std::endl;
+    std::cerr << std::setw(9) << nDropNodes  << " nDropNodes"  << std::endl;
+    std::cerr << std::setw(9) << nKeepNodes  << " nKeepNodes"  << std::endl;
+    std::cerr << std::setw(9) << iLeaf0      << " iLeaf0"      << std::endl;
+    std::cerr << std::endl;
+#endif // CVD_CL_VERBOSE
 }
 
 HipsTreeState::~HipsTreeState() {
@@ -42,6 +88,8 @@ HipsTreeState::~HipsTreeState() {
 }
 
 void HipsTreeState::setTree(std::vector<cl_ulong4> const & list) {
+    assert(list.size() == nKeepNodes);
+
     cl::size_t<3> origin;
     origin[0] = 0;
     origin[1] = 0;
@@ -49,7 +97,7 @@ void HipsTreeState::setTree(std::vector<cl_ulong4> const & list) {
 
     cl::size_t<3> region;
     region[0] = 2;
-    region[1] = HipsTreeState::NNODE;
+    region[1] = nKeepNodes;
     region[2] = 1;
 
     // Cast to non-const void due to error in cl.hpp.
@@ -59,6 +107,8 @@ void HipsTreeState::setTree(std::vector<cl_ulong4> const & list) {
 }
 
 void HipsTreeState::setMaps(std::vector<cl_ushort> const & list) {
+    assert(list.size() == nLeaves);
+
     cl::size_t<3> origin;
     origin[0] = 0;
     origin[1] = 0;
@@ -66,7 +116,7 @@ void HipsTreeState::setMaps(std::vector<cl_ushort> const & list) {
 
     cl::size_t<3> region;
     region[0] = 1;
-    region[1] = HipsTreeState::NNODE;
+    region[1] = nLeaves;
     region[2] = 1;
 
     // Cast to non-const void due to error in cl.hpp.

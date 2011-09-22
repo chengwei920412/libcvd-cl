@@ -135,7 +135,7 @@ kernel void hips_tree_find(
         if (last <= HIPS_MAX_ERROR) {
             uint const i = atom_inc(imatch);
             if (i < nmatch) {
-                uint const index = read_imageui(indices, sampler, (int2)(0, icell - CELL_OFF)).x;
+                uint const index = read_imageui(indices, sampler, (int2)(0, icell - CELL_OFF - 480)).x;
 
                 // Store pair against original index.
                 matches[i] = (uint2)(index, ihashT);

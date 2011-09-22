@@ -186,7 +186,7 @@ static void fillTree(std::vector<HipsTreeLevel> const & levels, std::vector<cl_u
         assert(icell >= HipsTreeState::START);
 
         // Fill map at this level.
-        maps.at(icell) = inode;
+        maps.at(icell - HipsTreeState::START) = inode;
         return;
     } else {
         assert(icell <  HipsTreeState::START);
@@ -273,7 +273,7 @@ void HipsMakeTreeStep::execute() {
     std::vector<cl_ulong4> tree(HipsTreeState::NNODE, HIPS_ZERO);
 
     // Create vector representing descriptor index maps.
-    std::vector<cl_ushort> maps(HipsTreeState::NNODE, 0);
+    std::vector<cl_ushort> maps(HipsTreeState::NLEAF, 0);
 
 #ifdef CVD_CL_VERBOSE
     boost::system_time t1 = boost::get_system_time();
@@ -304,7 +304,7 @@ void HipsMakeTreeStep::execute() {
 
     // Check that every position was used exactly once.
     std::set<cl_ushort> used;
-    for (size_t icell = HipsTreeState::START; icell < HipsTreeState::NNODE; icell++) {
+    for (size_t icell = 0; icell < HipsTreeState::NLEAF; icell++) {
         cl_ushort const map = maps.at(icell);
 
         assert(used.count(map) == 0);
