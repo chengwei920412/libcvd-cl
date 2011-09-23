@@ -52,13 +52,17 @@ void HipsBlendGrayStep::execute() {
     // Read number of input points.
     size_t const np = i_points.getCount();
 
+    // Round down number of input points.
+    size_t const np_64 = ((np / 64) * 64);
+
     // Reset number of output points.
-    o_hips.setCount(np);
-    m_hips1.setCount(np);
-    m_hips2.setCount(np);
+    o_hips.setCount(np_64);
+    m_hips1.setCount(np_64);
+    m_hips2.setCount(np_64);
 
     // Create work dimensions.
-    cl::NDRange const global(np);
+    cl::NDRange const global(np_64);
+    cl::NDRange const local(64);
 
     // Zero all descriptor lists.
     m_hips1.zero();
@@ -72,7 +76,7 @@ void HipsBlendGrayStep::execute() {
     kernel_hips.setArg(3, offset00);
 
     // Build initial descriptors at centre.
-    worker.queue.enqueueNDRangeKernel(kernel_hips, cl::NullRange, global, cl::NullRange);
+    worker.queue.enqueueNDRangeKernel(kernel_hips, cl::NullRange, global, local);
     worker.queue.enqueueBarrier();
 
     // Escape early if blend size is less than 5.
@@ -107,11 +111,11 @@ void HipsBlendGrayStep::execute() {
 
             // Create new HIPS descriptors.
             worker.queue.enqueueBarrier();
-            worker.queue.enqueueNDRangeKernel(kernel_hips, cl::NullRange, global, cl::NullRange);
+            worker.queue.enqueueNDRangeKernel(kernel_hips, cl::NullRange, global, local);
 
             // Blend into existing descriptors.
             worker.queue.enqueueBarrier();
-            worker.queue.enqueueNDRangeKernel(kernel_blend, cl::NullRange, global, cl::NullRange);
+            worker.queue.enqueueNDRangeKernel(kernel_blend, cl::NullRange, global, local);
         }
     }
 

@@ -53,11 +53,14 @@ void HipsGrayStep::execute() {
     // Read number of input points.
     size_t const np = ipoints.getCount();
 
+    // Round down number of input points.
+    size_t const np_64 = ((np / 64) * 64);
+
     // Reset number of output points.
-    ohips.setCount(np);
+    ohips.setCount(np_64);
 
     // Queue kernel with global size set to number of input points.
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np), cl::NullRange);
+    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np_64), cl::NDRange(64));
 }
 
 } // namespace CL
