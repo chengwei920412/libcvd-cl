@@ -83,6 +83,7 @@ struct options {
     cl_int hips_blendsize;
     cl_int hips_leaves;
     cl_int hips_levels;
+    bool   hips_rotate;
 };
 
 static void readCamera(Camera::Linear * camera, char const * path) {
@@ -409,7 +410,7 @@ static void testStage2(
     CVD::CL::HipsMakeTreeStep runTree1   (im1hips, im1tree);
 
     // Create steps for RANSAC.
-    CVD::CL::HipsTreeFindStep runMatch    (im1tree, im2hips, matches, opts.hips_maxerr);
+    CVD::CL::HipsTreeFindStep runMatch    (im1tree, im2hips, matches, opts.hips_maxerr, opts.hips_rotate);
     CVD::CL::ToUvqUvStep     runToUvqUv  (camera, im1corners, im2corners, matches, uvquv);
     CVD::CL::MixUvqUvStep    runMix      (uvquv, uvquv_mix);
     CVD::CL::MatIdentStep    runIdent    (hypo_m);
@@ -619,6 +620,8 @@ int main(int argc, char **argv) {
         ("hips-tree-levels,L",
             po::value(&opts.hips_levels)->default_value(5),
             "HIPS descriptor tree levels")
+        ("no-rotate,R",
+            "Do not rotate HIPS descriptors")
         ;
 
     po::positional_options_description pos;
@@ -634,6 +637,9 @@ int main(int argc, char **argv) {
         std::cerr << opt << std::endl;
         return 0;
     }
+
+    // Read booleans.
+    opts.hips_rotate = (vm.count("no-rotate") < 1);
 
     CVD::ImageRef const ref1(1, 1);
 
