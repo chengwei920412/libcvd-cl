@@ -72,67 +72,24 @@ void HipsTurnStep::execute() {
     size_t const np2 = i_hips.getCount();
 
     // Round down number of descriptors.
-    size_t const np2_128 = (np2 / 128) * 128;
+    size_t const np2_16 = (np2 / 16) * 16;
 
     // Create 1D work size.
-    cl::NDRange const global(np2_128);
-    cl::NDRange const local(128);
+    cl::NDRange const global(np2_16, 16);
+    cl::NDRange const local(16, 16);
 
     // Assign find kernel parameters except HIPS list.
     kernel_find.setArg(0, i_tree.tree);
     kernel_find.setArg(1, i_tree.maps);
-    // Assign HIPS list later.
+    kernel_find.setArg(2, i_hips.buffer);
     kernel_find.setArg(3, o_matches.buffer);
     kernel_find.setArg(4, o_matches.count);
     kernel_find.setArg(5, o_matches.size);
 
-    // Keep note of best results.
-    cl_uint bestCount = 0;
-    m_best.setCount(0);
+    // Reset output count.
+    o_matches.setCount(0);
 
-    // Keep pointers to buffers, to swap them.
-    HipsListState * list1 = &m_hips1;
-    HipsListState * list2 = &m_hips2;
-
-    // Copy HIPS descriptors to first internal buffer.
-    m_hips1.copyFrom(i_hips);
-
-    // Try 16 rotations.
-    for (int rot = 0; rot < 16; rot++) {
-        // Reset number of output pairs.
-        o_matches.setCount(0);
-
-        // Match rotated first list against second list.
-        kernel_find.setArg(2, list1->buffer);
-        worker.queue.enqueueNDRangeKernel(kernel_find, cl::NullRange, global, local);
-
-        // Note number of matches.
-        cl_uint const thisCount = o_matches.getCount();
-
-#ifdef CVD_CL_VERBOSE
-        std::cerr << "Rotation " << std::setw(3) << rot << " produces " << std::setw(8) << thisCount << " matches" << std::endl;
-#endif
-
-        // Check if this number is an improvement.
-        if (thisCount > bestCount) {
-            bestCount = thisCount;
-            // Save the best list.
-            m_best.copyFrom(o_matches);
-        }
-
-        if (rot < 15) {
-            // Rotate the HIPS descriptors in list 1 to list 2.
-            kernel_turn.setArg(0, list1->buffer);
-            kernel_turn.setArg(1, list2->buffer);
-            worker.queue.enqueueNDRangeKernel(kernel_turn, cl::NullRange, global, local);
-
-            // Swap list pointers.
-            std::swap(list1, list2);
-        }
-    }
-
-    // Restore best list.
-    o_matches.copyFrom(m_best);
+    worker.queue.enqueueNDRangeKernel(kernel_find, cl::NullRange, global, local);
 }
 
 } // namespace CL

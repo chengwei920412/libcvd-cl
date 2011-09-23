@@ -63,10 +63,9 @@ uint error(uint4 t, uint4 r) {
 }
 
 kernel void hips_tree_find(
-    // N.B.: These uint8 are actually ulong4.
     read_only image2d_t     hashesR,  // R (forest of descriptors, as above)
     read_only image2d_t     indices,  // Original index of each hash in R, defined only for leaves.
-    global   uint8  const * hashesT,  // T (list of descriptors)
+    global   ulong4 const * hashesT,  // T (list of descriptors)
     global   uint2        * matches,  // Pairs of indices into hashes1 and hashes2.
     global   uint         * imatch,   // Output number of hash1 matches.
              uint           nmatch    // Maximum number of matches.
@@ -75,9 +74,19 @@ kernel void hips_tree_find(
     // Prepare a suitable OpenCL image sampler.
     sampler_t const sampler = CLK_ADDRESS_CLAMP | CLK_FILTER_NEAREST;
 
-    // Use global work item for hashT index.
+    // Use global work item in dimension 0 for hashT index.
     uint   const ihashT  = get_global_id(0);
-    uint8  const  hashT  = hashesT[ihashT];
+    ulong4 const  hashT0 = hashesT[ihashT];
+
+    // Use global work item in dimension 1 for rotation index.
+    uint   const ishift  = get_global_id(1);
+    uint   const lshift  = (ishift * 4);
+    uint   const rshift  = (64 - lshift);
+
+    // Rotate and cast descriptor.
+    uint8  const  hashT  = as_uint8((hashT0 >> rshift) | (hashT0 << lshift));
+
+    // Extract halves of descriptor.
     uint4  const  hashTa = hashT.s0123;
     uint4  const  hashTb = hashT.s4567;
 
