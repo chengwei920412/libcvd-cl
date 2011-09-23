@@ -42,7 +42,6 @@
 #include <cvd-cl/steps/HipsMakeTreeStep.hh>
 #include <cvd-cl/steps/HipsTreeFindStep.hh>
 #include <cvd-cl/steps/HipsFindStep.hh>
-#include <cvd-cl/steps/HipsTurnStep.hh>
 #include <cvd-cl/steps/ToUvqUvStep.hh>
 #include <cvd-cl/steps/MixUvqUvStep.hh>
 #include <cvd-cl/steps/PoseUvqWlsStep.hh>
