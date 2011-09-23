@@ -51,15 +51,15 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 
 // Parallel bit counting magic adapted from
 // http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
-uint bitcount4(uint4 v) {
+uint bitcount8(uint8 v) {
     v = (v - ((v >> 1) & 0x55555555));
     v = ((v & 0x33333333) + ((v >> 2) & 0x33333333));
     v = ((((v + (v >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24);
-    return (v.s0 + v.s1 + v.s2 + v.s3);
+    return (v.s0 + v.s1 + v.s2 + v.s3 + v.s4 + v.s5 + v.s6 + v.s7);
 }
 
-uint error(uint4 t, uint4 r) {
-    return bitcount4(t & ~r);
+uint error(uint8 t, uint8 r) {
+    return bitcount8(t & ~r);
 }
 
 kernel void hips_tree_find(
@@ -86,10 +86,6 @@ kernel void hips_tree_find(
     // Rotate and cast descriptor.
     uint8  const  hashT  = as_uint8((hashT0 >> rshift) | (hashT0 << lshift));
 
-    // Extract halves of descriptor.
-    uint4  const  hashTa = hashT.s0123;
-    uint4  const  hashTb = hashT.s4567;
-
     // Loop over pre-roots.
     #pragma unroll
     for (uint iroot = 0; iroot < TREE_PRE_ROOTS; iroot++) {
@@ -110,14 +106,16 @@ kernel void hips_tree_find(
             uint const icell20 = (icell2 - TREE_DROP_NODES);
 
             // Read integers for both children.
-            uint4 const hashR1a = read_imageui(hashesR, sampler, (int2)(0, icell10));
-            uint4 const hashR1b = read_imageui(hashesR, sampler, (int2)(1, icell10));
-            uint4 const hashR2a = read_imageui(hashesR, sampler, (int2)(0, icell20));
-            uint4 const hashR2b = read_imageui(hashesR, sampler, (int2)(1, icell20));
+            uint8 hashR1;
+            uint8 hashR2;
+            hashR1.s0123 = read_imageui(hashesR, sampler, (int2)(0, icell10));
+            hashR1.s4567 = read_imageui(hashesR, sampler, (int2)(1, icell10));
+            hashR2.s0123 = read_imageui(hashesR, sampler, (int2)(0, icell20));
+            hashR2.s4567 = read_imageui(hashesR, sampler, (int2)(1, icell20));
 
             // Calculate errors for both children.
-            uint const err1 = error(hashTa, hashR1a) + error(hashTb, hashR1b);
-            uint const err2 = error(hashTa, hashR2a) + error(hashTb, hashR2b);
+            uint const err1 = error(hashT, hashR1);
+            uint const err2 = error(hashT, hashR2);
 
             // Determine lower error.
             last = min(err1, err2);
