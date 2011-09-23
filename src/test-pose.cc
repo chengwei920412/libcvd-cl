@@ -409,7 +409,7 @@ static void testStage2(
     CVD::CL::HipsMakeTreeStep runTree1   (im1hips, im1tree);
 
     // Create steps for RANSAC.
-    CVD::CL::HipsTurnStep    runMatch    (im1tree, im2hips, matches, opts.hips_maxerr);
+    CVD::CL::HipsTreeFindStep runMatch    (im1tree, im2hips, matches, opts.hips_maxerr);
     CVD::CL::ToUvqUvStep     runToUvqUv  (camera, im1corners, im2corners, matches, uvquv);
     CVD::CL::MixUvqUvStep    runMix      (uvquv, uvquv_mix);
     CVD::CL::MatIdentStep    runIdent    (hypo_m);
