@@ -34,7 +34,7 @@ namespace CL  {
 class HipsTreeFindStep : public WorkerStep {
 public:
 
-    explicit HipsTreeFindStep(HipsTreeState & i_tree, HipsListState & i_hips, PointListState & o_matches, cl_int maxerr=3);
+    explicit HipsTreeFindStep(HipsTreeState & i_tree, HipsListState & i_hips, PointListState & o_matches, cl_int maxerr=3, bool rotate=true);
     virtual ~HipsTreeFindStep();
 
     virtual void execute();
@@ -50,6 +50,7 @@ protected:
 
     // Parameters.
     cl_int const     maxerr;
+    bool   const     rotate;
 
     cl::Program      program;
     cl::Kernel       kernel;

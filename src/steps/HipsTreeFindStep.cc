@@ -27,12 +27,13 @@
 namespace CVD {
 namespace CL  {
 
-HipsTreeFindStep::HipsTreeFindStep(HipsTreeState & i_tree, HipsListState & i_hips, PointListState & o_matches, cl_int maxerr) :
+HipsTreeFindStep::HipsTreeFindStep(HipsTreeState & i_tree, HipsListState & i_hips, PointListState & o_matches, cl_int maxerr, bool rotate) :
     WorkerStep (i_tree.worker),
     i_tree     (i_tree),
     i_hips     (i_hips),
     o_matches  (o_matches),
-    maxerr     (maxerr)
+    maxerr     (maxerr),
+    rotate     (rotate)
 {
 
     // Refer to tree shape.
@@ -56,14 +57,17 @@ HipsTreeFindStep::~HipsTreeFindStep() {
 
 void HipsTreeFindStep::execute() {
     // Read number of descriptors.
-    size_t const np2 = i_hips.getCount();
+    size_t const nh = i_hips.getCount();
 
     // Round down number of descriptors.
-    size_t const np2_16 = (np2 / 16) * 16;
+    size_t const nh_16 = (nh / 16) * 16;
+
+    // Set number of rotations by parameter.
+    size_t const nr = (rotate ? 16 : 1);
 
     // Create 1D work size (no rotation).
-    cl::NDRange const global(np2_16, 1);
-    cl::NDRange const local(16, 1);
+    cl::NDRange const global(nh_16, nr);
+    cl::NDRange const local(16, nr);
 
     // Assign kernel parameters.
     kernel.setArg(0, i_tree.tree);
