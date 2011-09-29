@@ -34,7 +34,7 @@ namespace CL  {
 class PreFastGrayStep : public WorkerStep {
 public:
 
-    explicit PreFastGrayStep(GrayImageState & image, PointListState & points, cl_int threshold=40);
+    explicit PreFastGrayStep(GrayImageState & i_image, PointListState & o_points, cl_int threshold=40);
     virtual ~PreFastGrayStep();
 
     virtual void execute();
@@ -42,10 +42,10 @@ public:
 protected:
 
     // Inputs.
-    GrayImageState & image;
+    GrayImageState & i_image;
 
     // Outputs.
-    PointListState & points;
+    PointListState & o_points;
 
     // Parameters.
     cl_int const     threshold;

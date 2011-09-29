@@ -34,7 +34,7 @@ namespace CL  {
 class HipsRichStep : public WorkerStep {
 public:
 
-    explicit HipsRichStep(RichImageState & iimage, PointListState & ipoints, HipsListState & ohips);
+    explicit HipsRichStep(RichImageState & i_image, PointListState & i_points, HipsListState & o_hips);
     virtual ~HipsRichStep();
 
     virtual void execute();
@@ -42,11 +42,11 @@ public:
 protected:
 
     // Inputs.
-    RichImageState & iimage;
-    PointListState & ipoints;
+    RichImageState & i_image;
+    PointListState & i_points;
 
     // Outputs.
-    HipsListState  & ohips;
+    HipsListState  & o_hips;
 
     cl::Program      program;
     cl::Kernel       kernel;

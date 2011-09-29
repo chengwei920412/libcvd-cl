@@ -140,24 +140,24 @@ static cl_ulong4 blend(cl_ulong4 const & d1, cl_ulong4 const & d2) {
     return out;
 }
 
-static void blend(std::vector<cl_ulong4> const & ihips, std::vector<cl_ushort2> const & pairs, std::vector<cl_ulong4> & ohips) {
+static void blend(std::vector<cl_ulong4> const & i_hips, std::vector<cl_ushort2> const & pairs, std::vector<cl_ulong4> & o_hips) {
     // Number of HIPS descriptor pairs.
     size_t const npairs = pairs.size();
 
     // Allocate output.
-    ohips.resize(npairs, HIPS_ZERO);
+    o_hips.resize(npairs, HIPS_ZERO);
 
     for (size_t i = 0; i < npairs; i++) {
         // Refer to descriptor pairing and component descriptors.
         cl_ushort2 const & pair = pairs.at(i);
-        cl_ulong4  const & d1   = ihips.at(pair.x);
-        cl_ulong4  const & d2   = ihips.at(pair.y);
+        cl_ulong4  const & d1   = i_hips.at(pair.x);
+        cl_ulong4  const & d2   = i_hips.at(pair.y);
 
         // Calculate blended descriptor.
         cl_ulong4  const   d3   = blend(d1, d2);
 
         // Store blended descriptor.
-        ohips.at(i) = d3;
+        o_hips.at(i) = d3;
     }
 }
 

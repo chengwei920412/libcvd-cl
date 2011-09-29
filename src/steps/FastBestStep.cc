@@ -27,11 +27,11 @@
 namespace CVD {
 namespace CL  {
 
-FastBestStep::FastBestStep(GrayImageState & scores, PointListState & ipoints, PointListState & opoints) :
-    WorkerStep (scores.worker),
-    iscores    (scores),
-    ipoints    (ipoints),
-    opoints    (opoints)
+FastBestStep::FastBestStep(GrayImageState & i_scores, PointListState & i_points, PointListState & o_points) :
+    WorkerStep (i_scores.worker),
+    i_scores   (i_scores),
+    i_points   (i_points),
+    o_points   (o_points)
 {
     worker.compile(&program, &kernel, OCL_FAST_BEST, "fast_best");
 }
@@ -42,16 +42,16 @@ FastBestStep::~FastBestStep() {
 
 void FastBestStep::execute() {
     // Assign kernel parameters.
-    kernel.setArg(0, iscores.image);
-    kernel.setArg(1, ipoints.buffer);
-    kernel.setArg(2, opoints.buffer);
-    kernel.setArg(3, opoints.count);
+    kernel.setArg(0, i_scores.image);
+    kernel.setArg(1, i_points.buffer);
+    kernel.setArg(2, o_points.buffer);
+    kernel.setArg(3, o_points.count);
 
     // Read number of input points.
-    size_t const np = ipoints.getCount();
+    size_t const np = i_points.getCount();
 
     // Reset number of output points.
-    opoints.setCount(0);
+    o_points.setCount(0);
 
     // Queue kernel with global size set to number of input points.
     worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np), cl::NullRange);

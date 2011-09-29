@@ -27,11 +27,11 @@
 namespace CVD {
 namespace CL  {
 
-HipsRichStep::HipsRichStep(RichImageState & iimage, PointListState & ipoints, HipsListState & ohips) :
-    WorkerStep (iimage.worker),
-    iimage     (iimage),
-    ipoints    (ipoints),
-    ohips      (ohips)
+HipsRichStep::HipsRichStep(RichImageState & i_image, PointListState & i_points, HipsListState & o_hips) :
+    WorkerStep (i_image.worker),
+    i_image    (i_image),
+    i_points   (i_points),
+    o_hips     (o_hips)
 {
     worker.compile(&program, &kernel, OCL_HIPS_RICH, "hips_rich");
 }
@@ -42,15 +42,15 @@ HipsRichStep::~HipsRichStep() {
 
 void HipsRichStep::execute() {
     // Assign kernel parameters.
-    kernel.setArg(0, iimage.image);
-    kernel.setArg(1, ipoints.buffer);
-    kernel.setArg(2, ohips.buffer);
+    kernel.setArg(0, i_image.image);
+    kernel.setArg(1, i_points.buffer);
+    kernel.setArg(2, o_hips.buffer);
 
     // Read number of input points.
-    size_t const np = ipoints.getCount();
+    size_t const np = i_points.getCount();
 
     // Reset number of output points.
-    ohips.setCount(np);
+    o_hips.setCount(np);
 
     // Queue kernel with global size set to number of input points.
     worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np), cl::NullRange);

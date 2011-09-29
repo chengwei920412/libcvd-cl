@@ -28,14 +28,14 @@
 namespace CVD {
 namespace CL  {
 
-BlurRichStep::BlurRichStep(RichImageState & imagei, RichImageState & imageo) :
-    WorkerStep (imagei.worker),
-    iimage     (imagei),
-    oimage     (imageo)
+BlurRichStep::BlurRichStep(RichImageState & i_image, RichImageState & o_image) :
+    WorkerStep (i_image.worker),
+    i_image    (i_image),
+    o_image    (o_image)
 {
     // Expect identical image dimensions.
     expect("BlurRichStep::BlurRichStep() must have identical image sizes",
-        imagei.size == imageo.size);
+        i_image.size == o_image.size);
 
     worker.compile(&program, &kernel, OCL_BLUR_RICH, "blur_rich");
 }
@@ -46,12 +46,12 @@ BlurRichStep::~BlurRichStep() {
 
 void BlurRichStep::execute() {
     // Assign kernel parameters.
-    kernel.setArg(0, iimage.image);
-    kernel.setArg(1, oimage.image);
+    kernel.setArg(0, i_image.image);
+    kernel.setArg(1, o_image.image);
 
     // Read image dimensions.
-    size_t const nx = iimage.size.x;
-    size_t const ny = iimage.size.y;
+    size_t const nx = i_image.size.x;
+    size_t const ny = i_image.size.y;
 
     // Queue kernel with square local size.
     // 16x16 appears to give good performance on most devices.

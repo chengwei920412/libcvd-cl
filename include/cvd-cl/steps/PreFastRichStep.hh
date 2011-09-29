@@ -34,7 +34,7 @@ namespace CL  {
 class PreFastRichStep : public WorkerStep {
 public:
 
-    explicit PreFastRichStep(RichImageState & image, PointListState & points);
+    explicit PreFastRichStep(RichImageState & i_image, PointListState & o_points);
     virtual ~PreFastRichStep();
 
     virtual void execute();
@@ -42,10 +42,10 @@ public:
 protected:
 
     // Inputs.
-    RichImageState & image;
+    RichImageState & i_image;
 
     // Outputs.
-    PointListState & points;
+    PointListState & o_points;
 
     cl::Program      program;
     cl::Kernel       kernel;

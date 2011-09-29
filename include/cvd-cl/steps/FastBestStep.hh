@@ -34,7 +34,7 @@ namespace CL  {
 class FastBestStep : public WorkerStep {
 public:
 
-    explicit FastBestStep(GrayImageState & iscores, PointListState & ipoints, PointListState & opoints);
+    explicit FastBestStep(GrayImageState & i_scores, PointListState & i_points, PointListState & o_points);
     virtual ~FastBestStep();
 
     virtual void execute();
@@ -42,11 +42,11 @@ public:
 protected:
 
     // Inputs.
-    GrayImageState & iscores;
-    PointListState & ipoints;
+    GrayImageState & i_scores;
+    PointListState & i_points;
 
     // Outputs.
-    PointListState & opoints;
+    PointListState & o_points;
 
     cl::Program      program;
     cl::Kernel       kernel;

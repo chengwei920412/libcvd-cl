@@ -34,7 +34,7 @@ namespace CL  {
 class HipsGrayStep : public WorkerStep {
 public:
 
-    explicit HipsGrayStep(GrayImageState & iimage, PointListState & ipoints, HipsListState & ohips);
+    explicit HipsGrayStep(GrayImageState & i_image, PointListState & i_points, HipsListState & o_hips);
     virtual ~HipsGrayStep();
 
     virtual void execute();
@@ -42,11 +42,11 @@ public:
 protected:
 
     // Inputs.
-    GrayImageState & iimage;
-    PointListState & ipoints;
+    GrayImageState & i_image;
+    PointListState & i_points;
 
     // Outputs.
-    HipsListState  & ohips;
+    HipsListState  & o_hips;
 
     cl::Program      program;
     cl::Kernel       kernel;

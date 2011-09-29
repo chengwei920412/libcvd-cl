@@ -24,15 +24,13 @@
 #include "cvd-cl/steps/PreFastGrayStep.hh"
 #include "kernels/prefast-gray.hh"
 
-#include <boost/cstdlib.hpp>
-
 namespace CVD {
 namespace CL  {
 
-PreFastGrayStep::PreFastGrayStep(GrayImageState & image, PointListState & points, cl_int threshold) :
-    WorkerStep (image.worker),
-    image      (image),
-    points     (points),
+PreFastGrayStep::PreFastGrayStep(GrayImageState & i_image, PointListState & o_points, cl_int threshold) :
+    WorkerStep (i_image.worker),
+    i_image    (i_image),
+    o_points   (o_points),
     threshold  (threshold)
 {
     char opt[256] = {0,};
@@ -46,16 +44,16 @@ PreFastGrayStep::~PreFastGrayStep() {
 
 void PreFastGrayStep::execute() {
     // Reset number of output points.
-    points.setCount(0);
+    o_points.setCount(0);
 
     // Assign kernel parameters.
-    kernel.setArg(0, image.image);
-    kernel.setArg(1, points.buffer);
-    kernel.setArg(2, points.count);
+    kernel.setArg(0, i_image.image);
+    kernel.setArg(1, o_points.buffer);
+    kernel.setArg(2, o_points.count);
 
     // Read image dimensions.
-    size_t const nx = image.size.x - 16;
-    size_t const ny = image.size.y - 16;
+    size_t const nx = i_image.size.x - 16;
+    size_t const ny = i_image.size.y - 16;
 
     // Construct global, local and offset with a safety boundary.
     // 16x16 appears to give good performance on most devices.

@@ -27,12 +27,12 @@
 namespace CVD {
 namespace CL  {
 
-FastGrayStep::FastGrayStep(GrayImageState & iimage, PointListState & ipoints, GrayImageState & oscores, PointListState & opoints, cl_int threshold, cl_int ring) :
-    WorkerStep (iimage.worker),
-    iimage     (iimage),
-    ipoints    (ipoints),
-    oscores    (oscores),
-    opoints    (opoints),
+FastGrayStep::FastGrayStep(GrayImageState & i_image, PointListState & i_points, GrayImageState & o_scores, PointListState & o_points, cl_int threshold, cl_int ring) :
+    WorkerStep (i_image.worker),
+    i_image    (i_image),
+    i_points   (i_points),
+    o_scores   (o_scores),
+    o_points   (o_points),
     threshold  (threshold),
     ring       (ring)
 {
@@ -47,21 +47,21 @@ FastGrayStep::~FastGrayStep() {
 
 void FastGrayStep::execute() {
     // Read number of input points.
-    size_t const np = ipoints.getCount();
+    size_t const np = i_points.getCount();
 
     // Assign kernel parameters.
-    kernel.setArg(0, iimage.image);
-    kernel.setArg(1, oscores.image);
-    kernel.setArg(2, ipoints.buffer);
-    kernel.setArg(3, opoints.buffer);
-    kernel.setArg(4, opoints.count);
+    kernel.setArg(0, i_image.image);
+    kernel.setArg(1, o_scores.image);
+    kernel.setArg(2, i_points.buffer);
+    kernel.setArg(3, o_points.buffer);
+    kernel.setArg(4, o_points.count);
     kernel.setArg(5, (cl_uint) np);
 
     // Reset number of output points.
-    opoints.setCount(0);
+    o_points.setCount(0);
 
     // Zero scores buffer (may be slow).
-    oscores.zero();
+    o_scores.zero();
 
     // Prepare global and local size.
     cl::NDRange const global(worker.padGlobal(np));

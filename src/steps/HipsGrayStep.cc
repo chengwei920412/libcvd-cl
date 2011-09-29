@@ -30,11 +30,11 @@ namespace CL  {
 // Create (0,0) offset.
 cl_int2 static const offset00 = {{0, 0}};
 
-HipsGrayStep::HipsGrayStep(GrayImageState & iimage, PointListState & ipoints, HipsListState & ohips) :
-    WorkerStep (iimage.worker),
-    iimage     (iimage),
-    ipoints    (ipoints),
-    ohips      (ohips)
+HipsGrayStep::HipsGrayStep(GrayImageState & i_image, PointListState & i_points, HipsListState & o_hips) :
+    WorkerStep (i_image.worker),
+    i_image    (i_image),
+    i_points   (i_points),
+    o_hips     (o_hips)
 {
     worker.compile(&program, &kernel, OCL_HIPS_GRAY, "hips_gray");
 }
@@ -45,19 +45,19 @@ HipsGrayStep::~HipsGrayStep() {
 
 void HipsGrayStep::execute() {
     // Assign kernel parameters.
-    kernel.setArg(0, iimage.image);
-    kernel.setArg(1, ipoints.buffer);
-    kernel.setArg(2, ohips.buffer);
+    kernel.setArg(0, i_image.image);
+    kernel.setArg(1, i_points.buffer);
+    kernel.setArg(2, o_hips.buffer);
     kernel.setArg(3, offset00);
 
     // Read number of input points.
-    size_t const np = ipoints.getCount();
+    size_t const np = i_points.getCount();
 
     // Round down number of input points.
     size_t const np_64 = ((np / 64) * 64);
 
     // Reset number of output points.
-    ohips.setCount(np_64);
+    o_hips.setCount(np_64);
 
     // Queue kernel with global size set to number of input points.
     worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np_64), cl::NDRange(64));

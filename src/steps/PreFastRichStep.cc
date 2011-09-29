@@ -27,10 +27,10 @@
 namespace CVD {
 namespace CL  {
 
-PreFastRichStep::PreFastRichStep(RichImageState & image, PointListState & points) :
-    WorkerStep (image.worker),
-    image      (image),
-    points     (points)
+PreFastRichStep::PreFastRichStep(RichImageState & i_image, PointListState & o_points) :
+    WorkerStep (i_image.worker),
+    i_image    (i_image),
+    o_points   (o_points)
 {
     worker.compile(&program, &kernel, OCL_PRE_FAST_RICH, "prefast_rich");
 }
@@ -41,16 +41,16 @@ PreFastRichStep::~PreFastRichStep() {
 
 void PreFastRichStep::execute() {
     // Assign kernel parameters.
-    kernel.setArg(0, image.image);
-    kernel.setArg(1, points.buffer);
-    kernel.setArg(2, points.count);
+    kernel.setArg(0, i_image.image);
+    kernel.setArg(1, o_points.buffer);
+    kernel.setArg(2, o_points.count);
 
     // Read image dimensions.
-    size_t const nx = image.size.x;
-    size_t const ny = image.size.y;
+    size_t const nx = i_image.size.x;
+    size_t const ny = i_image.size.y;
 
     // Reset number of output points.
-    points.setCount(0);
+    o_points.setCount(0);
 
     // Queue kernel with square local size.
     // 16x16 appears to give good performance on most devices.
