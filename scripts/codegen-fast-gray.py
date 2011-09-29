@@ -70,21 +70,22 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // Enable OpenCL 32-bit integer atomic functions.
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 
-// Generate bitwise mask of n bits.
-int mask(int n) {
-    return ((1 << n) - 1);
-}
+int mask_test9(uint x16) {
+    // Duplicate bit pattern to simulate barrel shift.
+    uint const x = (x16 | (x16 << 16));
 
-// Create a bitwise mask of n bits, rotated by r bits, in a ring of w bits.
-int mask_turn(int n, int w, int r) {
-    int const m = mask(n);
-    return (((m << r) | (m >> (w - r))) & mask(w));
-}
-
-// Test a value x against a bitwise mask of n bits, rotated by r bits, in a ring of w bits.
-int mask_test(int x, int n, int w, int r) {
-    int const m = mask_turn(n, w, r);
-    return ((x & m) == m);
+    // AND against 8 shifts.
+    return (
+        (x     ) &
+        (x >> 1) &
+        (x >> 2) &
+        (x >> 3) &
+        (x >> 4) &
+        (x >> 5) &
+        (x >> 6) &
+        (x >> 7) &
+        (x >> 8)
+    ) > 0;
 }
 
 kernel void fast_gray(
@@ -141,16 +142,8 @@ print " |\n".join([
 print "    );"
 print
 
-print "    // Check if at least one mask applies entirely."
-print "    int  const yes = ("
-print " ||\n".join([
-    ("        mask_test(sum, FAST_RING, 16, %2d)" % (shift))
-    for shift in range(0, 16)
-])
-print "    );"
-
 print """
-    if (yes) {
+    if (mask_test9(sum)) {
         // Atomically append to corner buffer.
         filtered[atom_inc(icorner)] = xy;
     }
