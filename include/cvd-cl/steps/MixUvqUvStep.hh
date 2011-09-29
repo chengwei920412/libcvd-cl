@@ -34,7 +34,7 @@ namespace CL  {
 class MixUvqUvStep : public WorkerStep {
 public:
 
-    explicit MixUvqUvStep(UvqUvState & i_uvquv, UvqUvState & o_uvquv);
+    explicit MixUvqUvStep(UvqUvState<1> & i_uvquv, UvqUvState<3> & o_uvquv);
     virtual ~MixUvqUvStep();
 
     virtual void execute();
@@ -42,10 +42,10 @@ public:
 protected:
 
     // Inputs.
-    UvqUvState      & i_uvquv;
+    UvqUvState<1>   & i_uvquv;
 
     // Outputs.
-    UvqUvState      & o_uvquv;
+    UvqUvState<3>   & o_uvquv;
 
     // Internal.
     CountState        m_max;

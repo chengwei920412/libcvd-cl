@@ -34,7 +34,7 @@ namespace CL  {
 class SE3ScoreStep : public WorkerStep {
 public:
 
-    explicit SE3ScoreStep(UvqUvState & i_uvquv, MatrixState & i_mats, FloatListState & o_scores);
+    explicit SE3ScoreStep(UvqUvState<1> & i_uvquv, MatrixState<4, 4> & i_mats, FloatListState & o_scores);
     virtual ~SE3ScoreStep();
 
     virtual void execute();
@@ -42,11 +42,11 @@ public:
 protected:
 
     // Inputs.
-    UvqUvState     & i_uvquv;
-    MatrixState    & i_mats;
+    UvqUvState<1>     & i_uvquv;
+    MatrixState<4, 4> & i_mats;
 
     // Outputs.
-    FloatListState & o_scores;
+    FloatListState    & o_scores;
 
     cl::Program      program;
     cl::Kernel       kernel;

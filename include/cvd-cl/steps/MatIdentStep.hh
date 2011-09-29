@@ -30,18 +30,62 @@
 namespace CVD {
 namespace CL  {
 
+// Include kernels inside namespace.
+namespace kernels {
+#include "kernels/mat-mki-3.hh"
+#include "kernels/mat-mki-4.hh"
+#include "kernels/mat-mki-5.hh"
+#include "kernels/mat-mki-6.hh"
+}
+
+template<size_t rows>
 class MatIdentStep : public WorkerStep {
+private:
+
+    // Check that the matrix size is supported.
+    BOOST_STATIC_ASSERT(rows >= 3);
+    BOOST_STATIC_ASSERT(rows <= 6);
+
 public:
 
-    explicit MatIdentStep(MatrixState & o_a);
-    virtual ~MatIdentStep();
+    typedef MatrixState<rows, rows> MyMatrix;
 
-    virtual void execute();
+    explicit MatIdentStep(MyMatrix & o_a) :
+        WorkerStep (o_a.worker),
+        o_a        (o_a)
+    {
+
+        // Select a kernel based on the size.
+        // This is decidable at compile-time.
+        using namespace CVD::CL::kernels;
+        switch (rows) {
+        case 3: worker.compile(&program, &kernel, OCL_MAT_MKI_3, "mat_mki_3"); break;
+        case 4: worker.compile(&program, &kernel, OCL_MAT_MKI_4, "mat_mki_4"); break;
+        case 5: worker.compile(&program, &kernel, OCL_MAT_MKI_5, "mat_mki_5"); break;
+        case 6: worker.compile(&program, &kernel, OCL_MAT_MKI_6, "mat_mki_6"); break;
+        default: break;
+        }
+    }
+
+    virtual ~MatIdentStep() {
+        // Do nothing.
+    }
+
+    virtual void execute() {
+        // Assign kernel parameters.
+        kernel.setArg(0, o_a.memory);
+
+        // Number of matrices to calculate in parallel.
+        size_t const count = o_a.count;
+
+        // Queue kernel with global size set to number of matrices.
+        worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(count), cl::NullRange);
+    }
 
 protected:
 
     // Outputs.
-    MatrixState    & o_a;
+    MyMatrix       & o_a;
 
     cl::Program      program;
     cl::Kernel       kernel;

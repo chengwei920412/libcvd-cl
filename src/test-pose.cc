@@ -394,13 +394,13 @@ static void testStage2(
     // Create states for RANSAC.
     // None of these require images, so they may be used on CPU.
     CVD::CL::PointListState  matches     (worker, ncorners);
-    CVD::CL::UvqUvState      uvquv       (worker, ncorners, 1);
-    CVD::CL::UvqUvState      uvquv_mix   (worker, nhypos, 3);
-    CVD::CL::MatrixState     hypo_m      (worker, nhypos, 4, 4);
-    CVD::CL::MatrixState     hypo_a      (worker, nhypos, 6, 6);
-    CVD::CL::MatrixState     hypo_b      (worker, nhypos, 6, 1);
-    CVD::CL::MatrixState     hypo_x      (worker, nhypos, 6, 1);
-    CVD::CL::MatrixState     hypo_cam    (worker, nhypos, 4, 4);
+    CVD::CL::UvqUvState<1>     uvquv       (worker, ncorners);
+    CVD::CL::UvqUvState<3>     uvquv_mix   (worker, nhypos);
+    CVD::CL::MatrixState<4, 4> hypo_m      (worker, nhypos);
+    CVD::CL::MatrixState<6, 6> hypo_a      (worker, nhypos);
+    CVD::CL::MatrixState<6, 1> hypo_b      (worker, nhypos);
+    CVD::CL::MatrixState<6, 1> hypo_x      (worker, nhypos);
+    CVD::CL::MatrixState<4, 4> hypo_cam    (worker, nhypos);
     CVD::CL::FloatListState  hypo_scores (worker, nhypos);
     CVD::CL::CountState      hypo_best   (worker, nhypos);
     CVD::CL::Float2ListState test_uvs    (worker, ncorners);
@@ -412,11 +412,11 @@ static void testStage2(
     CVD::CL::HipsTreeFindStep runMatch    (im1tree, im2hips, matches, opts.hips_maxerr, opts.hips_rotate);
     CVD::CL::ToUvqUvStep     runToUvqUv  (camera, im1corners, im2corners, matches, uvquv);
     CVD::CL::MixUvqUvStep    runMix      (uvquv, uvquv_mix);
-    CVD::CL::MatIdentStep    runIdent    (hypo_m);
+    CVD::CL::MatIdentStep<4> runIdent    (hypo_m);
     CVD::CL::PoseUvqWlsStep  runWls      (uvquv_mix, hypo_m, hypo_a, hypo_b);
-    CVD::CL::CholeskyStep    runCholesky (hypo_a, hypo_b, hypo_x);
+    CVD::CL::CholeskyStep<6> runCholesky (hypo_a, hypo_b, hypo_x);
     CVD::CL::SE3ExpStep      runSe3Exp   (hypo_x, hypo_cam);
-    CVD::CL::MatMulStep      runMul      (hypo_cam, hypo_m);
+    CVD::CL::MatMulStep<4>   runMul      (hypo_cam, hypo_m);
     CVD::CL::SE3ScoreStep    runSe3Score (uvquv, hypo_cam, hypo_scores);
     CVD::CL::SE3Run1Step     runSe3One   (uvquv, hypo_cam, hypo_best, test_uvs);
 

@@ -25,26 +25,81 @@
 #define __CVD_CL_MATRIX_STATE_HH__
 
 #include <cvd-cl/worker/WorkerState.hh>
+#include <cvd-cl/core/Expect.hh>
+
+#include <boost/static_assert.hpp>
 
 namespace CVD {
 namespace CL  {
 
+template<size_t rows, size_t cols>
 class MatrixState : public WorkerState {
+private:
+
+    BOOST_STATIC_ASSERT(rows > 0);
+    BOOST_STATIC_ASSERT(cols > 0);
+    BOOST_STATIC_ASSERT(rows < 0x10000);
+    BOOST_STATIC_ASSERT(rows < 0x10000);
+
 public:
 
-    explicit MatrixState(Worker & worker, size_t count, size_t rows, size_t cols);
-    virtual ~MatrixState();
+    size_t static const elms = (rows * cols);
 
-    void setFloats(std::vector<cl_float> const & items);
-    void getFloats(std::vector<cl_float>       * items);
+    explicit MatrixState(Worker & worker, size_t count)  :
+        WorkerState (worker),
+        count       (count),
+        floats      (count * elms),
+        bytes       (floats * sizeof(cl_float))
+    {
+        // Allocate buffer (may throw a CL exception).
+        memory = cl::Buffer(worker.context, CL_MEM_READ_WRITE, bytes);
+    }
 
-    void copyFrom(MatrixState & that);
-    void copyFromViaHost(MatrixState & that);
+    virtual ~MatrixState() {
+        // Do nothing.
+    }
+
+    void setFloats(std::vector<cl_float> const & items) {
+        expect("MatrixState::setFloats() must have exact size",
+            floats == items.size());
+
+        worker.queue.enqueueWriteBuffer(memory, CL_TRUE, 0, bytes, items.data());
+    }
+
+    void getFloats(std::vector<cl_float> * items) {
+        expect("MatrixState::getFloats() must have exact size",
+            floats == items->size());
+
+        worker.queue.enqueueReadBuffer(memory, CL_TRUE, 0, bytes, items->data());
+    }
+
+    template<size_t rows2, size_t cols2>
+    void copyFrom(MatrixState<rows2, cols2> & that) {
+        expect("MatrixState::copyFrom() must have exact size",
+            bytes == that.bytes);
+
+        worker.queue.finish();
+        worker.queue.enqueueCopyBuffer(that.memory, memory, 0, 0, bytes);
+        worker.queue.finish();
+    }
+
+    template<size_t rows2, size_t cols2>
+    void copyFromViaHost(MatrixState<rows2, cols2> & that) {
+        expect("MatrixState::copyFrom() must have exact size",
+            bytes == that.bytes);
+
+        // Create host-side buffer for float data.
+        std::vector<cl_float> items(floats);
+
+        // Read items from other buffer.
+        that.getFloats(&items);
+
+        // Write items to this buffer.
+        setFloats(items);
+    }
 
     // Public immutable members.
     size_t       const count;
-    size_t       const rows;
-    size_t       const cols;
     size_t       const floats;
     size_t       const bytes;
 

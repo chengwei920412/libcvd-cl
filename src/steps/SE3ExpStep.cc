@@ -29,23 +29,14 @@
 namespace CVD {
 namespace CL  {
 
-SE3ExpStep::SE3ExpStep(MatrixState & i_vecs, MatrixState & o_mats) :
+SE3ExpStep::SE3ExpStep(MatrixState<6, 1> & i_vecs, MatrixState<4, 4> & o_mats) :
     WorkerStep (i_vecs.worker),
     i_vecs     (i_vecs),
     o_mats     (o_mats)
 {
 
-    // Check the input consists of 6-vectors.
-    assert(i_vecs.count >= 1);
-    assert(i_vecs.rows  == 6);
-    assert(i_vecs.cols  == 1);
-
-    // Check the output consists of 4x4 matrices.
-    assert(o_mats.count >= 1);
-    assert(o_mats.rows  == 4);
-    assert(o_mats.cols  == 4);
-
     // Check that the counts match.
+    assert(o_mats.count >= 1);
     assert(o_mats.count == i_vecs.count);
 
     worker.compile(&program, &kernel, OCL_SE3_EXP, "se3_exp");

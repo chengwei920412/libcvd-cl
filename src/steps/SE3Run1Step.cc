@@ -29,7 +29,7 @@
 namespace CVD {
 namespace CL  {
 
-SE3Run1Step::SE3Run1Step(UvqUvState & i_uvquv, MatrixState & i_mats, CountState & i_which, Float2ListState & o_uvs) :
+SE3Run1Step::SE3Run1Step(UvqUvState<1> & i_uvquv, MatrixState<4, 4> & i_mats, CountState & i_which, Float2ListState & o_uvs) :
     WorkerStep (i_uvquv.worker),
     i_uvquv    (i_uvquv),
     i_mats     (i_mats),
@@ -37,10 +37,7 @@ SE3Run1Step::SE3Run1Step(UvqUvState & i_uvquv, MatrixState & i_mats, CountState 
     o_uvs      (o_uvs)
 {
     // State consistency checks.
-    assert(i_uvquv.setSize == 1);
-    assert(o_uvs.size      >= i_uvquv.setSize);
-    assert(i_mats.rows     == 4);
-    assert(i_mats.cols     == 4);
+    assert(o_uvs.size >= i_uvquv.maxCount);
 
     worker.compile(&program, &kernel, OCL_SE3_RUN1, "se3_run1");
 }

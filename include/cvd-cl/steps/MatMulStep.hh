@@ -30,21 +30,67 @@
 namespace CVD {
 namespace CL  {
 
+// Include kernels inside namespace.
+namespace kernels {
+#include "kernels/mat-mul-3.hh"
+#include "kernels/mat-mul-4.hh"
+#include "kernels/mat-mul-5.hh"
+#include "kernels/mat-mul-6.hh"
+}
+
+template<size_t rows>
 class MatMulStep : public WorkerStep {
+private:
+
+    // Check that the matrix size is supported.
+    BOOST_STATIC_ASSERT(rows >= 3);
+    BOOST_STATIC_ASSERT(rows <= 6);
+
 public:
 
-    explicit MatMulStep(MatrixState & i_a, MatrixState & io_b);
-    virtual ~MatMulStep();
+    typedef MatrixState<rows, rows> MyMatrix;
 
-    virtual void execute();
+    explicit MatMulStep(MyMatrix & i_a, MyMatrix & io_b) :
+        WorkerStep (i_a.worker),
+        i_a        (i_a),
+        io_b       (io_b)
+    {
+
+        // Select a kernel based on the size.
+        // This is decidable at compile-time.
+        using namespace CVD::CL::kernels;
+        switch (rows) {
+        case 3: worker.compile(&program, &kernel, OCL_MAT_MUL_3, "mat_mul_3"); break;
+        case 4: worker.compile(&program, &kernel, OCL_MAT_MUL_4, "mat_mul_4"); break;
+        case 5: worker.compile(&program, &kernel, OCL_MAT_MUL_5, "mat_mul_5"); break;
+        case 6: worker.compile(&program, &kernel, OCL_MAT_MUL_6, "mat_mul_6"); break;
+        default: break;
+        }
+    }
+
+    virtual ~MatMulStep() {
+        // Do nothing.
+    }
+
+    virtual void execute() {
+        // Assign kernel parameters.
+        kernel.setArg(0, i_a.memory);
+        kernel.setArg(1, io_b.memory);
+
+        // Number of matrices to calculate in parallel.
+        size_t const count = i_a.count;
+
+        // Queue kernel with global size set to number of matrices.
+        worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(count), cl::NullRange);
+    }
 
 protected:
 
     // Inputs.
-    MatrixState    & i_a;
+    MyMatrix       & i_a;
 
     // Input-outputs.
-    MatrixState    & io_b;
+    MyMatrix       & io_b;
 
     cl::Program      program;
     cl::Kernel       kernel;

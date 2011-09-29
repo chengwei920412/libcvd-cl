@@ -29,17 +29,14 @@
 namespace CVD {
 namespace CL  {
 
-SE3ScoreStep::SE3ScoreStep(UvqUvState & i_uvquv, MatrixState & i_mats, FloatListState & o_scores) :
+SE3ScoreStep::SE3ScoreStep(UvqUvState<1> & i_uvquv, MatrixState<4, 4> & i_mats, FloatListState & o_scores) :
     WorkerStep (i_uvquv.worker),
     i_uvquv    (i_uvquv),
     i_mats     (i_mats),
     o_scores   (o_scores)
 {
     // State consistency checks.
-    assert(i_uvquv.setSize == 1);
-    assert(i_mats.count    == o_scores.size);
-    assert(i_mats.rows     == 4);
-    assert(i_mats.cols     == 4);
+    assert(i_mats.count == o_scores.size);
 
     worker.compile(&program, &kernel, OCL_SE3_SCORE, "se3_score");
 }

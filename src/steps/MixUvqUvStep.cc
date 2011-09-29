@@ -28,7 +28,7 @@
 namespace CVD {
 namespace CL  {
 
-MixUvqUvStep::MixUvqUvStep(UvqUvState & i_uvquv, UvqUvState & o_uvquv) :
+MixUvqUvStep::MixUvqUvStep(UvqUvState<1> & i_uvquv, UvqUvState<3> & o_uvquv) :
     WorkerStep (i_uvquv.worker),
     i_uvquv    (i_uvquv),
     o_uvquv    (o_uvquv),
@@ -36,10 +36,6 @@ MixUvqUvStep::MixUvqUvStep(UvqUvState & i_uvquv, UvqUvState & o_uvquv) :
     m_ints     (worker, o_uvquv.maxRecords),
     randomise  (m_max, m_ints)
 {
-    // Check sizes.
-    assert(i_uvquv.setSize  == 1);
-    assert(o_uvquv.setSize  >= 2);
-
     worker.compile(&program, &kernel, OCL_FMIX, "fmix");
 }
 

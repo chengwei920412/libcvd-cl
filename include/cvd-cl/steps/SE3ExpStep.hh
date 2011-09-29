@@ -33,7 +33,7 @@ namespace CL  {
 class SE3ExpStep : public WorkerStep {
 public:
 
-    explicit SE3ExpStep(MatrixState & i_vecs, MatrixState & o_mats);
+    explicit SE3ExpStep(MatrixState<6, 1> & i_vecs, MatrixState<4, 4> & o_mats);
     virtual ~SE3ExpStep();
 
     virtual void execute();
@@ -41,10 +41,10 @@ public:
 protected:
 
     // Inputs.
-    MatrixState    & i_vecs;
+    MatrixState<6, 1> & i_vecs;
 
     // Outputs.
-    MatrixState    & o_mats;
+    MatrixState<4, 4> & o_mats;
 
     cl::Program      program;
     cl::Kernel       kernel;

@@ -28,7 +28,7 @@
 namespace CVD {
 namespace CL  {
 
-ToUvqUvStep::ToUvqUvStep(CameraState & i_camera, PointListState & i_xy1, PointListState & i_xy2, PointListState & i_matches, UvqUvState & o_uvquv) :
+ToUvqUvStep::ToUvqUvStep(CameraState & i_camera, PointListState & i_xy1, PointListState & i_xy2, PointListState & i_matches, UvqUvState<1> & o_uvquv) :
     WorkerStep (i_camera.worker),
     i_camera   (i_camera),
     i_xy1      (i_xy1),

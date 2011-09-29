@@ -29,14 +29,23 @@
 namespace CVD {
 namespace CL  {
 
-class UvqState : public UvState {
+template<size_t setSize>
+class UvqState : public UvState<setSize> {
 public:
 
-    explicit UvqState(Worker & worker, size_t setCount, size_t setSize);
-    virtual ~UvqState();
+    explicit UvqState(Worker & worker, size_t setCount) :
+        UvState<setSize> (worker, setCount),
+        qs               (worker, setCount)
+    {
+        // Do nothing.
+    }
+
+    virtual ~UvqState() {
+        // Do nothing.
+    }
 
     // Public sub-states.
-    MatrixState        qs;
+    MatrixState<setSize, 1> qs;
 };
 
 } // namespace CL

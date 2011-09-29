@@ -29,23 +29,35 @@
 namespace CVD {
 namespace CL  {
 
+template<size_t setSize>
 class UvqUvState : public WorkerState {
 public:
 
-    explicit UvqUvState(Worker & worker, size_t maxCount, size_t setSize);
-    virtual ~UvqUvState();
+    explicit UvqUvState(Worker & worker, size_t maxCount) :
+        WorkerState (worker),
+        maxCount    (maxCount),
+        maxRecords  (maxCount * setSize),
+        setCount    (maxCount),
+        uvq         (worker, maxCount),
+        uv          (worker, maxCount)
+    {
+        // Do nothing.
+    }
+
+    virtual ~UvqUvState() {
+        // Do nothing.
+    }
 
     // Public immutable members.
     size_t       const maxCount;
-    size_t       const setSize;
     size_t       const maxRecords; // = maxCount * setSize
 
     // Public mutable member.
     size_t             setCount;
 
     // Public sub-states.
-    UvqState           uvq;
-    UvState            uv;
+    UvqState <setSize> uvq;
+    UvState  <setSize> uv;
 };
 
 } // namespace CL

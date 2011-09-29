@@ -29,20 +29,31 @@
 namespace CVD {
 namespace CL  {
 
+template<size_t setSize>
 class UvState : public WorkerState {
 public:
 
-    explicit UvState(Worker & worker, size_t setCount, size_t setSize);
-    virtual ~UvState();
+    explicit UvState(Worker & worker, size_t setCount) :
+        WorkerState (worker),
+        setCount    (setCount),
+        records     (setCount * setSize),
+        us          (worker, setCount),
+        vs          (worker, setCount)
+    {
+        // Do nothing.
+    }
+
+    virtual ~UvState() {
+        // Do nothing.
+    }
 
     // Public immutable members.
     size_t       const setCount;
-    size_t       const setSize;
     size_t       const records; // = setCount * setSize
 
     // Public sub-states.
-    MatrixState        us;
-    MatrixState        vs;
+    MatrixState<setSize, 1> us;
+    MatrixState<setSize, 1> vs;
 };
 
 } // namespace CL

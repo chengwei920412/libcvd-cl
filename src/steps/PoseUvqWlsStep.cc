@@ -29,28 +29,20 @@
 namespace CVD {
 namespace CL  {
 
-PoseUvqWlsStep::PoseUvqWlsStep(UvqUvState & i_uvquv, MatrixState & i_m, MatrixState & o_a, MatrixState & o_b) :
+PoseUvqWlsStep::PoseUvqWlsStep(UvqUvState<3> & i_uvquv, MatrixState<4, 4> & i_m, MatrixState<6, 6> & o_a, MatrixState<6, 1> & o_b) :
     WorkerStep (i_uvquv.worker),
     i_uvquv    (i_uvquv),
     i_m        (i_m),
     o_a        (o_a),
     o_b        (o_b)
 {
-    // Individual state sanity checks.
-    assert(i_uvquv.setSize  == 3);
-    assert(i_m.rows         == 4);
-    assert(i_m.cols         == 4);
-    assert(o_a.rows         == 6);
-    assert(o_b.rows         == 6);
-    assert(o_a.cols         == 6);
-    assert(o_b.cols         == 1);
 
     // State consistency checks.
-    assert(i_uvquv.setCount >= 1);
     assert(i_m.count        == o_a.count);
     assert(o_a.count        == o_b.count);
     assert(i_uvquv.setCount == o_a.count);
     assert(i_uvquv.setCount == o_b.count);
+    assert(i_uvquv.setCount >= 1);
 
     worker.compile(&program, &kernel, OCL_WLS_UVQ, "wls_uvq");
 }
@@ -62,11 +54,11 @@ PoseUvqWlsStep::~PoseUvqWlsStep() {
 void PoseUvqWlsStep::execute() {
     // Repeat state consistency checks.
     // i_uvquv.setCount is actually mutable.
-    assert(i_uvquv.setCount >= 1);
     assert(i_m.count        == o_a.count);
     assert(o_a.count        == o_b.count);
     assert(i_uvquv.setCount == o_a.count);
     assert(i_uvquv.setCount == o_b.count);
+    assert(i_uvquv.setCount >= 1);
 
     // Assign kernel parameters.
     kernel.setArg(0, i_uvquv.uvq.us.memory);

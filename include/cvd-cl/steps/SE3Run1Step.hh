@@ -34,7 +34,7 @@ namespace CL  {
 class SE3Run1Step : public WorkerStep {
 public:
 
-    explicit SE3Run1Step(UvqUvState & i_uvquv, MatrixState & i_mats, CountState & i_which, Float2ListState & o_uvs);
+    explicit SE3Run1Step(UvqUvState<1> & i_uvquv, MatrixState<4, 4> & i_mats, CountState & i_which, Float2ListState & o_uvs);
     virtual ~SE3Run1Step();
 
     virtual void execute();
@@ -42,12 +42,12 @@ public:
 protected:
 
     // Inputs.
-    UvqUvState     & i_uvquv;
-    MatrixState    & i_mats;
-    CountState     & i_which;
+    UvqUvState<1>     & i_uvquv;
+    MatrixState<4, 4> & i_mats;
+    CountState        & i_which;
 
     // Outputs.
-    Float2ListState & o_uvs;
+    Float2ListState   & o_uvs;
 
     cl::Program      program;
     cl::Kernel       kernel;
