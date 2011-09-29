@@ -26,10 +26,10 @@
 # 2D offsets from "corner" candidate pixel.
 # Corresponds to SUBSET OF lines 17-32 in fast_9_detect.cxx
 OFFSETS = [
-    ( 0,  3),
-    ( 3,  0),
-    ( 0, -3),
-    (-3,  0),
+    ( 0,  4),
+    ( 1,  0),
+    ( 0, -4),
+    (-1,  0),
 ]
 
 print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
@@ -71,33 +71,47 @@ kernel void prefast_gray(
     int  const x   = get_global_id(0);
     int  const y   = get_global_id(1);
     int2 const xy  = (int2)(x, y);
+    int2 const xy4 = xy * (int2)(4,1);
 
-    // Read the candidate pixel.
-    int  const p00 = read_imageui(image, sampler, xy).x;
+    // Read candidate pixel vector.
+    int4 const p00 = read_imagei(image, sampler, xy);
+
 """
 
 print "    // Read other pixels in a circle around the candidate pixel."""
 
-for (shift, (x, y)) in enumerate(OFFSETS):
-    print ("    int  const p%02d = read_imageui(image, sampler, xy + (int2)(%2d, %2d)).x;" % (shift + 1, x, y))
+for (shift, (x, y)) in enumerate(OFFSETS, 1):
+    print ("    int4 const p%02d = read_imagei(image, sampler, xy + (int2)(%2d, %2d));" % (shift, x, y))
 print
 
 print "    // Check the absolute difference of each circle pixel."
-for (shift, _) in enumerate(OFFSETS):
-    print ("    int  const d%02d = (abs(p%02d - p00) > FAST_THRESH);" % (shift + 1, shift + 1))
+for (shift, _) in enumerate(OFFSETS, 1):
+    print ("    uint4 const d%02d = (abs(p%02d - p00) / FAST_THRESH);" % (shift, shift))
 print
 
 print "    // Check if any two adjacent circle pixels have a high absolute difference."
-print "    int  const yes = ("
-print " ||\n".join([
-    ("        (d%02d && d%02d)" % (shift + 1, ((shift + 1) % len(OFFSETS)) + 1))
-    for (shift, _) in enumerate(OFFSETS)
+print "    uint4 const yes = ("
+print " |\n".join([
+    ("        (d%02d & d%02d)" % (shift, (shift % len(OFFSETS)) + 1))
+    for (shift, _) in enumerate(OFFSETS, 1)
 ])
 print """    );
 
-    if (yes) {
+    if (yes.x) {
         // Atomically append to corner buffer.
-        corners[atom_inc(icorner)] = xy;
+        corners[atom_inc(icorner)] = xy4;
+    }
+    if (yes.y) {
+        // Atomically append to corner buffer.
+        corners[atom_inc(icorner)] = xy4 + (int2)(1,0);
+    }
+    if (yes.z) {
+        // Atomically append to corner buffer.
+        corners[atom_inc(icorner)] = xy4 + (int2)(2,0);
+    }
+    if (yes.w) {
+        // Atomically append to corner buffer.
+        corners[atom_inc(icorner)] = xy4 + (int2)(3,0);
     }
 }
 """

@@ -26,6 +26,8 @@
 
 #include <boost/cstdlib.hpp>
 
+#include <iostream>
+
 namespace CVD {
 namespace CL  {
 
@@ -48,23 +50,40 @@ void PreFastGrayStep::execute() {
     // Reset number of output points.
     points.setCount(0);
 
+    // Prepare converted image.
+    CVD::ImageRef const & size = image.size;
+    CVD::ImageRef const   size2(size.x / 4, size.y);
+    RichImageState rimage(worker, size2);
+    assert(image.nbytes == rimage.nbytes);
+
+    // Copy image to image via host (slow).
+    image.copyFromWorker();
+    ::memcpy(rimage.mapping, image.mapping, image.nbytes);
+    rimage.copyToWorker();
+
     // Assign kernel parameters.
-    kernel.setArg(0, image.image);
+    kernel.setArg(0, rimage.image);
     kernel.setArg(1, points.buffer);
     kernel.setArg(2, points.count);
 
     // Read image dimensions.
-    size_t const nx = image.size.x - 16;
-    size_t const ny = image.size.y - 16;
+    size_t const nx = image.size.x - 32;
+    size_t const ny = image.size.y - 32;
 
     // Construct global, local and offset with a safety boundary.
     // 16x16 appears to give good performance on most devices.
-    cl::NDRange const global (nx - 16, ny - 16);
-    cl::NDRange const local  (     16,      16);
-    cl::NDRange const offset (      8,       8);
+    cl::NDRange const global ((nx - 32) / 4, ny - 32);
+    cl::NDRange const local  (     4,      16);
+    cl::NDRange const offset (     4,      16);
 
     // Queue kernel.
+    worker.queue.finish();
+    boost::system_time const t1 = boost::get_system_time();
     worker.queue.enqueueNDRangeKernel(kernel, offset, global, local);
+    worker.queue.finish();
+    boost::system_time const t2 = boost::get_system_time();
+
+    std::cerr << ((t2 - t1).total_microseconds()) << " us culling" << std::endl;
 }
 
 } // namespace CL
