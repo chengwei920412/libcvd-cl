@@ -58,7 +58,7 @@ void PreFastGrayStep::execute() {
     // Construct global, local and offset with a safety boundary.
     // 16x16 appears to give good performance on most devices.
     cl::NDRange const global (nx - 16, ny - 16);
-    cl::NDRange const local  (     16,      16);
+    cl::NDRange const local  (      8,       8);
     cl::NDRange const offset (      8,       8);
 
     // Queue kernel.
