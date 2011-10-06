@@ -33,7 +33,9 @@ namespace CVD {
 namespace CL  {
 
 cl::ImageFormat static const HipsFormat(CL_RGBA, CL_UNSIGNED_INT32);
-cl::ImageFormat static const MapsFormat(CL_R,    CL_UNSIGNED_INT16);
+cl::ImageFormat static const MapsFormat(CL_RGBA, CL_UNSIGNED_INT16);
+
+cl_ushort4 static const cl_ushort4_0 = {{0, 0, 0, 0}};
 
 HipsTreeState::HipsTreeState(Worker & worker, cl_uint nLeaves, cl_uint nKeepLevels) :
     WorkerState (worker),
@@ -84,8 +86,13 @@ void HipsTreeState::setMaps(std::vector<cl_ushort> const & list) {
     region[1] = shape.nLeaves;
     region[2] = 1;
 
+    // Extend to RGBA.
+    std::vector<cl_ushort4> list4(shape.nLeaves, cl_ushort4_0);
+    for (size_t i = 0; i < shape.nLeaves; i++)
+        list4.at(i).x = list.at(i);
+
     // Cast to non-const void due to error in cl.hpp.
-    cl_ushort * data = const_cast<cl_ushort *>(list.data());
+    cl_ushort4 * data = const_cast<cl_ushort4 *>(list4.data());
 
     worker.queue.enqueueWriteImage(maps, CL_TRUE, origin, region, 0, 0, data);
 }
