@@ -69,6 +69,27 @@ public:
         worker.queue.enqueueReadImage(this->image, CL_TRUE, origin, region, 0, 0, image->data());
     }
 
+    template<typename Pixel2>
+    void convertFrom(CVD::SubImage<Pixel2> const & image) {
+        assert(image.totalsize() == (int) pixels);
+
+        AsBasic self = asImage();
+
+        for (int y = 0; y < size.y; y++) {
+            for (int x = 0; x < size.x; x++) {
+                CVD::ImageRef const ref(x, y);
+                Pixel2 const value = image [ref];
+                Pixel      & cell  = self  [ref];
+                cell.red   = value;
+                cell.green = value;
+                cell.blue  = value;
+                cell.alpha = value;
+            }
+        }
+
+        copyToWorker();
+    }
+
     int64_t measure(AsSub const & image, int repeat=10) {
         assert(image.totalsize() == (int) pixels);
 
@@ -79,6 +100,25 @@ public:
 
         for (int i = 0; i < repeat; i++)
             set(image);
+
+        // Finish worker queue before stopping timing.
+        worker.finish();
+        boost::system_time const t2 = boost::get_system_time();
+        return ((t2 - t1).total_microseconds() / repeat);
+    }
+
+    template<typename Pixel2>
+    int64_t measureConvertFrom(CVD::SubImage<Pixel2> const & image, int repeat=10) {
+        assert(image.totalsize() == (int) pixels);
+
+        // Pre-load image before starting timing.
+        convertFrom(image);
+        worker.finish();
+
+        boost::system_time const t1 = boost::get_system_time();
+
+        for (int i = 0; i < repeat; i++)
+            copyToWorker();
 
         // Finish worker queue before stopping timing.
         worker.finish();
