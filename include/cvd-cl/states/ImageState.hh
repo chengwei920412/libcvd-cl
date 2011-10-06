@@ -127,7 +127,7 @@ public:
     }
 };
 
-typedef ImageState<CVD::byte            >  GrayImageState;
+typedef ImageState<CVD::Rgba<CVD::byte> >  GrayImageState;
 typedef ImageState<CVD::Rgba<CVD::byte> >  RichImageState;
 typedef ImageState<cl_float             > FloatImageState;
 

@@ -285,7 +285,7 @@ static void testStage1(
     camera.copyToWorker();
 
     // Write image 1 to device.
-    int64_t const timeCopy1 = imageNeat.measure(input.g1image);
+    int64_t const timeCopy1 = imageNeat.measureConvertFrom(input.g1image);
 
     // Zero FAST scores.
     scores.zero();
@@ -305,7 +305,7 @@ static void testStage1(
     int64_t const timeHips1 = runHips1.measure();
 
     // Write image 2 to device.
-    int64_t const timeCopy2 = imageNeat.measure(input.g2image);
+    int64_t const timeCopy2 = imageNeat.measureConvertFrom(input.g2image);
 
     // Zero FAST scores.
     scores.zero();
