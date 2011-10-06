@@ -33,7 +33,8 @@ Worker::Worker(cl::Device & device) :
     devices (1, device),
     context (devices),
     queue   (context, device),
-    defaultLocalSize (512),
+    maxLocalSize     (device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>()),
+    defaultLocalSize (std::min(size_t(512), maxLocalSize)),
     defaultLocal     (defaultLocalSize)
 {
     // Do nothing.

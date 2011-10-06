@@ -53,6 +53,7 @@ public:
     cl::Context              context;
     cl::CommandQueue         queue;
 
+    size_t      const        maxLocalSize;
     size_t      const        defaultLocalSize;
     cl::NDRange const        defaultLocal;
 
