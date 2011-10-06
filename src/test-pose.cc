@@ -221,17 +221,9 @@ struct stage1input {
     options     opts;
 };
 
-struct stage1output {
-    std::vector<cl_int2>   points1;
-    std::vector<cl_int2>   points2;
-    std::vector<cl_ulong4> hips1;
-    std::vector<cl_ulong4> hips2;
-};
-
-static void testStage1(
+static void testPipeline(
     cl::Device        & device,
-    stage1input const & input,
-    stage1output      & output
+    stage1input const & input
 ) {
     // Refer to inputs.
     options const & opts = input.opts;
@@ -339,57 +331,13 @@ static void testStage1(
     std::cerr << std::endl;
 
     // Read out final corner lists.
-    im1corners.get(&output.points1);
-    im2corners.get(&output.points2);
-
-    // Read out final HIPS descriptors.
-    im1hips.get(&output.hips1);
-    im2hips.get(&output.hips2);
-}
-
-static void testStage2(
-    cl::Device         & device,
-    stage1input  const & input,
-    stage1output const & stage1
-) {
-    // Refer to inputs.
-    options const & opts = input.opts;
-    std::vector<cl_int2> const & points1 = stage1.points1;
-    std::vector<cl_int2> const & points2 = stage1.points2;
-
-    // Extract image dimensions.
-    CVD::ImageRef const size = input.g1image.size();
-    int           const nx   = size.x;
-    int           const ny   = size.y;
-    int           const nxy  = nx * ny;
-
-    // Create OpenCL worker.
-    CVD::CL::Worker          worker      (device);
-
-    // Create camera translation states.
-    CVD::CL::CameraState     camera      (worker, size);
-
-    // Populate camera states.
-    Camera::Linear cvdcamera;
-    readCamera(&cvdcamera, "./etc/kinect.conf");
-    learnCamera(cvdcamera, camera.umap.asImage(), camera.vmap.asImage());
-    translateDepth(input.d1image, camera.qmap.asImage());
-    camera.copyToWorker();
-
-    // Create states to restore stage 1 data.
-    CVD::CL::PointListState  im1corners  (worker, ncorners);
-    CVD::CL::PointListState  im2corners  (worker, ncorners);
-    CVD::CL::HipsListState   im1hips     (worker, ncorners);
-    CVD::CL::HipsListState   im2hips     (worker, ncorners);
+    std::vector<cl_int2>   points1;
+    std::vector<cl_int2>   points2;
+    im1corners.get(&points1);
+    im2corners.get(&points2);
 
     // Create state for HIPS tree based on stage 1.
     CVD::CL::HipsTreeState   im1tree     (worker, opts.hips_leaves, opts.hips_levels);
-
-    // Restore stage 1 data.
-    im1corners.set(stage1.points1);
-    im2corners.set(stage1.points2);
-    im1hips.set(stage1.hips1);
-    im2hips.set(stage1.hips2);
 
     // Create states for RANSAC.
     // None of these require images, so they may be used on CPU.
@@ -664,10 +612,6 @@ int main(int argc, char **argv) {
     // Create structure for stage 1 input.
     stage1input const input = {g1image, g2image, d1image, opts};
 
-    // Create buffer for stage 1 output, that may be filled by any working stage 1 implementation.
-    stage1output stage1;
-    bool stage1done = false;
-
     try {
         // Prepare list for all OpenCL devices on all platforms.
         std::vector<cl::Device> devices;
@@ -714,34 +658,13 @@ int main(int argc, char **argv) {
 
         std::cerr << std::endl << std::endl;
 
-        // Try to run stage 1 on each device.
-
         for (size_t id = 0; id < devices.size(); id++) {
             cl::Device &dev = devices.at(id);
 
-            std::cerr << "Stage 1 for \"" << dev.getInfo<CL_DEVICE_NAME>() << "\"" << std::endl;
+            std::cerr << "Running pipeline for \"" << dev.getInfo<CL_DEVICE_NAME>() << "\"" << std::endl;
 
             try {
-                testStage1(dev, input, stage1);
-                stage1done = true;
-            } catch (cl::Error & err) {
-                std::cerr << err.what() << " (code " << err.err() << ")" << std::endl;
-            }
-        }
-
-        // Abort now if stage 1 failed for all devices.
-        if (stage1done == false)
-            return 1;
-
-        // Try to run stage 2 on each device.
-
-        for (size_t id = 0; id < devices.size(); id++) {
-            cl::Device &dev = devices.at(id);
-
-            std::cerr << "Stage 2 for \"" << dev.getInfo<CL_DEVICE_NAME>() << "\"" << std::endl;
-
-            try {
-                testStage2(dev, input, stage1);
+                testPipeline(dev, input);
             } catch (cl::Error & err) {
                 std::cerr << err.what() << " (code " << err.err() << ")" << std::endl;
             }
