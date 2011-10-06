@@ -24,6 +24,8 @@
 #include "cvd-cl/steps/HipsTreeFindStep.hh"
 #include "kernels/hips-tfind.hh"
 
+#include <algorithm>
+
 namespace CVD {
 namespace CL  {
 
@@ -65,9 +67,12 @@ void HipsTreeFindStep::execute() {
     // Set number of rotations by parameter.
     size_t const nr = (rotate ? 16 : 1);
 
-    // Create 1D work size (no rotation).
+    // Calculate local size in first dimension.
+    size_t const local1 = std::min((worker.defaultLocalSize / nr), size_t(nh_16));
+
+    // Create 1D work size.
     cl::NDRange const global(nh_16, nr);
-    cl::NDRange const local(16, nr);
+    cl::NDRange const local(local1, nr);
 
     // Assign kernel parameters.
     kernel.setArg(0, i_tree.tree);
