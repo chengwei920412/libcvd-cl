@@ -256,6 +256,23 @@ static void testPipeline(
     // Create camera translation states.
     CVD::CL::CameraState     camera      (worker, size);
 
+    // Create state for HIPS tree based on stage 1.
+    CVD::CL::HipsTreeState   im1tree     (worker, opts.hips_leaves, opts.hips_levels);
+
+    // Create states for RANSAC.
+    // None of these require images, so they may be used on CPU.
+    CVD::CL::PointListState  matches     (worker, ncorners);
+    CVD::CL::UvqUvState<1>     uvquv       (worker, ncorners);
+    CVD::CL::UvqUvState<3>     uvquv_mix   (worker, nhypos);
+    CVD::CL::MatrixState<4, 4> hypo_m      (worker, nhypos);
+    CVD::CL::MatrixState<6, 6> hypo_a      (worker, nhypos);
+    CVD::CL::MatrixState<6, 1> hypo_b      (worker, nhypos);
+    CVD::CL::MatrixState<6, 1> hypo_x      (worker, nhypos);
+    CVD::CL::MatrixState<4, 4> hypo_cam    (worker, nhypos);
+    CVD::CL::FloatListState  hypo_scores (worker, nhypos);
+    CVD::CL::CountState      hypo_best   (worker, nhypos);
+    CVD::CL::Float2ListState test_uvs    (worker, ncorners);
+
     // Create steps specific to image1.
     CVD::CL::PreFastGrayStep runPreFast1 (imageNeat, corners1, opts.fast_threshold);
     CVD::CL::ClipDepthStep   runClip1    (camera.qmap,  corners1, corners2);
@@ -268,6 +285,23 @@ static void testPipeline(
     CVD::CL::FastGrayStep    runFast2    (imageNeat, corners1, scores, im2corners, opts.fast_threshold, opts.fast_ring);
     CVD::CL::FastBestStep    runMaxFast2 (                     scores, corners2,                      im2corners);
     CVD::CL::HipsGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
+
+    // Create step for HIPS tree based on stage 1.
+    CVD::CL::HipsMakeTreeStep runTree1   (im1hips, im1tree);
+
+    // Create steps for RANSAC.
+    CVD::CL::HipsTreeFindStep runMatch    (im1tree, im2hips, matches, opts.hips_maxerr, opts.hips_rotate);
+    CVD::CL::ToUvqUvStep     runToUvqUv  (camera, im1corners, im2corners, matches, uvquv);
+    CVD::CL::MixUvqUvStep    runMix      (uvquv, uvquv_mix);
+    CVD::CL::MatIdentStep<4> runIdent    (hypo_m);
+    CVD::CL::PoseUvqWlsStep  runWls      (uvquv_mix, hypo_m, hypo_a, hypo_b);
+    CVD::CL::CholeskyStep<6> runCholesky (hypo_a, hypo_b, hypo_x);
+    CVD::CL::SE3ExpStep      runSe3Exp   (hypo_x, hypo_cam);
+    CVD::CL::MatMulStep<4>   runMul      (hypo_cam, hypo_m);
+    CVD::CL::SE3ScoreStep    runSe3Score (uvquv, hypo_cam, hypo_scores);
+    CVD::CL::SE3Run1Step     runSe3One   (uvquv, hypo_cam, hypo_best, test_uvs);
+
+
 
     // Populate camera states.
     Camera::Linear cvdcamera;
@@ -335,40 +369,6 @@ static void testPipeline(
     std::vector<cl_int2>   points2;
     im1corners.get(&points1);
     im2corners.get(&points2);
-
-    // Create state for HIPS tree based on stage 1.
-    CVD::CL::HipsTreeState   im1tree     (worker, opts.hips_leaves, opts.hips_levels);
-
-    // Create states for RANSAC.
-    // None of these require images, so they may be used on CPU.
-    CVD::CL::PointListState  matches     (worker, ncorners);
-    CVD::CL::UvqUvState<1>     uvquv       (worker, ncorners);
-    CVD::CL::UvqUvState<3>     uvquv_mix   (worker, nhypos);
-    CVD::CL::MatrixState<4, 4> hypo_m      (worker, nhypos);
-    CVD::CL::MatrixState<6, 6> hypo_a      (worker, nhypos);
-    CVD::CL::MatrixState<6, 1> hypo_b      (worker, nhypos);
-    CVD::CL::MatrixState<6, 1> hypo_x      (worker, nhypos);
-    CVD::CL::MatrixState<4, 4> hypo_cam    (worker, nhypos);
-    CVD::CL::FloatListState  hypo_scores (worker, nhypos);
-    CVD::CL::CountState      hypo_best   (worker, nhypos);
-    CVD::CL::Float2ListState test_uvs    (worker, ncorners);
-
-    // Create step for HIPS tree based on stage 1.
-    CVD::CL::HipsMakeTreeStep runTree1   (im1hips, im1tree);
-
-    // Create steps for RANSAC.
-    CVD::CL::HipsTreeFindStep runMatch    (im1tree, im2hips, matches, opts.hips_maxerr, opts.hips_rotate);
-    CVD::CL::ToUvqUvStep     runToUvqUv  (camera, im1corners, im2corners, matches, uvquv);
-    CVD::CL::MixUvqUvStep    runMix      (uvquv, uvquv_mix);
-    CVD::CL::MatIdentStep<4> runIdent    (hypo_m);
-    CVD::CL::PoseUvqWlsStep  runWls      (uvquv_mix, hypo_m, hypo_a, hypo_b);
-    CVD::CL::CholeskyStep<6> runCholesky (hypo_a, hypo_b, hypo_x);
-    CVD::CL::SE3ExpStep      runSe3Exp   (hypo_x, hypo_cam);
-    CVD::CL::MatMulStep<4>   runMul      (hypo_cam, hypo_m);
-    CVD::CL::SE3ScoreStep    runSe3Score (uvquv, hypo_cam, hypo_scores);
-    CVD::CL::SE3Run1Step     runSe3One   (uvquv, hypo_cam, hypo_best, test_uvs);
-
-
 
 
     boost::system_time const t1 = boost::get_system_time();
