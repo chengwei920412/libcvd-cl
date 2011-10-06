@@ -43,11 +43,6 @@ public:
 
     // Public OpenCL buffer for state access.
     cl::Buffer         count;
-
-protected:
-
-    // Pinned memory for fast IO.
-    cl_uint     *      stage;
 };
 
 } // namespace CL

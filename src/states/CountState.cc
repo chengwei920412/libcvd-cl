@@ -29,55 +29,37 @@ namespace CL  {
 
 CountState::CountState(Worker & worker, cl_uint size) :
     WorkerState (worker),
-    size        (size),
-    stage       (NULL)
+    size        (size)
 {
     expect("CountState::CountState() must have positive size",
         size > 0);
 
     // Allocate buffer (may throw a CL exception).
-    count = cl::Buffer(worker.context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(cl_uint));
-
-    // Map buffer memory.
-    void * data = worker.queue.enqueueMapBuffer(count, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, sizeof(cl_uint));
-
-    // Re-interpret memory pointer.
-    stage = reinterpret_cast<cl_uint *>(data);
+    count = cl::Buffer(worker.context, CL_MEM_READ_WRITE, sizeof(cl_uint));
 
     // Reset counter.
     setCount(0);
 }
 
 CountState::~CountState() {
-    if (stage != NULL) {
-        try {
-            worker.queue.enqueueUnmapMemObject(count, stage);
-            worker.finish();
-        } catch (...) {
-            // Ignore any unmapping error.
-        }
-
-        stage = NULL;
-    }
+    // Do nothing.
 }
 
 void CountState::setCount(cl_uint const ncount) {
     expect("CountState::setCount() must fit within size", (ncount <= size));
 
-    // Write from parameter to pinned memory.
-    stage[0] = ncount;
-
-    // Write from pinned memory to device buffer.
-    worker.queue.enqueueWriteBuffer(count, CL_TRUE, 0, sizeof(cl_uint), stage);
+    // Write from parameter to device buffer.
+    worker.queue.enqueueWriteBuffer(count, CL_TRUE, 0, sizeof(cl_uint), &ncount);
 }
 
 cl_uint CountState::getCount() {
-    // Read from device buffer into pinned memory.
-    worker.queue.enqueueReadBuffer(count, CL_TRUE, 0, sizeof(cl_uint), stage);
+    cl_uint ncount = 0;
 
-    // Read from pinned memory into local variable.
+    // Read from device buffer into variable.
+    worker.queue.enqueueReadBuffer(count, CL_TRUE, 0, sizeof(cl_uint), &ncount);
+
     // Crop against maximum size.
-    return std::min(stage[0], size);
+    return std::min(ncount, size);
 }
 
 } // namespace CL
