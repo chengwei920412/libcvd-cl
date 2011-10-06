@@ -68,7 +68,7 @@ void HipsTreeFindStep::execute() {
     size_t const nr = (rotate ? 16 : 1);
 
     // Calculate local size in first dimension.
-    size_t const local1 = std::min((worker.defaultLocalSize / nr), size_t(nh_16));
+    size_t const local1 = std::min((worker.defaultLocalSize / nr), size_t(16));
 
     // Create 1D work size.
     cl::NDRange const global(nh_16, nr);
