@@ -153,7 +153,9 @@ print "    );"
 print """
     if (yes) {
         // Atomically append to corner buffer.
-        filtered[atom_inc(icorner)] = xy;
+        int const icorn = atom_inc(icorner);
+        if (icorn < FAST_COUNT)
+            filtered[icorn] = xy;
     }
 }
 """

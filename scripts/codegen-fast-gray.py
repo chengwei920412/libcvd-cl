@@ -145,7 +145,9 @@ print
 print """
     if (mask_test9(sum)) {
         // Atomically append to corner buffer.
-        filtered[atom_inc(icorner)] = xy;
+        int const icorn = atom_inc(icorner);
+        if (icorn < FAST_COUNT)
+            filtered[icorn] = xy;
     }
 }
 """

@@ -37,7 +37,7 @@ FastRichStep::FastRichStep(RichImageState & i_image, PointListState & i_points, 
     ring       (ring)
 {
     char opt[256] = {0,};
-    snprintf(opt, sizeof(opt) - 1, "-DFAST_THRESH=%d -DFAST_RING=%d", int(threshold), int(ring));
+    snprintf(opt, sizeof(opt) - 1, "-DFAST_THRESH=%d -DFAST_RING=%d -DFAST_COUNT=%d", int(threshold), int(ring), int(o_points.size));
     worker.compile(&program, &kernel, OCL_FAST_RICH, "fast_rich", opt);
 }
 

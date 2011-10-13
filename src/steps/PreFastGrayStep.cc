@@ -34,7 +34,7 @@ PreFastGrayStep::PreFastGrayStep(GrayImageState & i_image, PointListState & o_po
     threshold  (threshold)
 {
     char opt[256] = {0,};
-    snprintf(opt, sizeof(opt) - 1, "-DFAST_THRESH=%d", int(threshold));
+    snprintf(opt, sizeof(opt) - 1, "-DFAST_THRESH=%d -DFAST_COUNT=%d", int(threshold), int(o_points.size));
     worker.compile(&program, &kernel, OCL_PRE_FAST_GRAY, "prefast_gray", opt);
 }
 
