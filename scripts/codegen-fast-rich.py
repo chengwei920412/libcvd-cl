@@ -70,9 +70,6 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // Enable OpenCL 32-bit integer atomic functions.
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 
-// Specify a threshold for pixel difference.
-#define THRESH  40
-
 // Calculate vector distance as a float.
 float dist4(uint4 a, uint4 b) {
     return distance(convert_float4(a), convert_float4(b));
@@ -138,7 +135,7 @@ print
 print "    // Threshold the absolute difference of each circle pixel."
 print "    int    const sum = ("
 print " |\n".join([
-    ("        ((d%02d > THRESH) << %2d)" % (shift + 1, shift))
+    ("        ((d%02d > FAST_THRESH) << %2d)" % (shift + 1, shift))
     for shift in range(0, 16)
 ])
 

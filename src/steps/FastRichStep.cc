@@ -27,14 +27,18 @@
 namespace CVD {
 namespace CL  {
 
-FastRichStep::FastRichStep(RichImageState & i_image, PointListState & i_points, GrayImageState & o_scores, PointListState & o_points) :
+FastRichStep::FastRichStep(RichImageState & i_image, PointListState & i_points, GrayImageState & o_scores, PointListState & o_points, cl_int threshold, cl_int ring) :
     WorkerStep (i_image.worker),
     i_image    (i_image),
     i_points   (i_points),
     o_scores   (o_scores),
-    o_points   (o_points)
+    o_points   (o_points),
+    threshold  (threshold),
+    ring       (ring)
 {
-    worker.compile(&program, &kernel, OCL_FAST_RICH, "fast_rich");
+    char opt[256] = {0,};
+    snprintf(opt, sizeof(opt) - 1, "-DFAST_THRESH=%d -DFAST_RING=%d", int(threshold), int(ring));
+    worker.compile(&program, &kernel, OCL_FAST_RICH, "fast_rich", opt);
 }
 
 FastRichStep::~FastRichStep() {

@@ -33,9 +33,9 @@
 #include <cvd/image_io.h>
 #include <cvd/videodisplay.h>
 
-#include <cvd-cl/steps/PreFastGrayStep.hh>
+#include <cvd-cl/steps/PreFastRichStep.hh>
 #include <cvd-cl/steps/ClipDepthStep.hh>
-#include <cvd-cl/steps/FastGrayStep.hh>
+#include <cvd-cl/steps/FastRichStep.hh>
 #include <cvd-cl/steps/FastBestStep.hh>
 #include <cvd-cl/steps/HipsGrayStep.hh>
 #include <cvd-cl/steps/HipsBlendGrayStep.hh>
@@ -238,7 +238,7 @@ static void testPipeline(
     CVD::CL::Worker          worker      (device);
 
     // Create FAST and HIPS states.
-    CVD::CL::GrayImageState  imageNeat   (worker, size);
+    CVD::CL::RichImageState  imageNeat   (worker, size);
     CVD::CL::GrayImageState  scores      (worker, size);
     CVD::CL::PointListState  corners1    (worker, nxy);
     CVD::CL::PointListState  corners2    (worker, nxy);
@@ -274,15 +274,15 @@ static void testPipeline(
     CVD::CL::Float2ListState test_uvs    (worker, ncorners);
 
     // Create steps specific to image1.
-    CVD::CL::PreFastGrayStep runPreFast1 (imageNeat, corners1, opts.fast_threshold);
+    CVD::CL::PreFastRichStep runPreFast1 (imageNeat, corners1, opts.fast_threshold);
     CVD::CL::ClipDepthStep   runClip1    (camera.qmap,  corners1, corners2);
-    CVD::CL::FastGrayStep    runFast1    (imageNeat, corners2, scores, im1corners, opts.fast_threshold, opts.fast_ring);
+    CVD::CL::FastRichStep    runFast1    (imageNeat, corners2, scores, im1corners, opts.fast_threshold, opts.fast_ring);
     CVD::CL::FastBestStep    runMaxFast1 (                     scores, corners3, im1corners);
     CVD::CL::HipsBlendGrayStep    runHips1    (imageNeat,                             im1corners, im1hips, opts.hips_blendsize);
 
     // Create steps specific to image2.
-    CVD::CL::PreFastGrayStep runPreFast2 (imageNeat, corners1, opts.fast_threshold);
-    CVD::CL::FastGrayStep    runFast2    (imageNeat, corners1, scores, im2corners, opts.fast_threshold, opts.fast_ring);
+    CVD::CL::PreFastRichStep runPreFast2 (imageNeat, corners1, opts.fast_threshold);
+    CVD::CL::FastRichStep    runFast2    (imageNeat, corners1, scores, im2corners, opts.fast_threshold, opts.fast_ring);
     CVD::CL::FastBestStep    runMaxFast2 (                     scores, corners2,                      im2corners);
     CVD::CL::HipsGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
 

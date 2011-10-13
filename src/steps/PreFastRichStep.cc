@@ -27,12 +27,15 @@
 namespace CVD {
 namespace CL  {
 
-PreFastRichStep::PreFastRichStep(RichImageState & i_image, PointListState & o_points) :
+PreFastRichStep::PreFastRichStep(RichImageState & i_image, PointListState & o_points, cl_int threshold) :
     WorkerStep (i_image.worker),
     i_image    (i_image),
-    o_points   (o_points)
+    o_points   (o_points),
+    threshold  (threshold)
 {
-    worker.compile(&program, &kernel, OCL_PRE_FAST_RICH, "prefast_rich");
+    char opt[256] = {0,};
+    snprintf(opt, sizeof(opt) - 1, "-DFAST_THRESH=%d", int(threshold));
+    worker.compile(&program, &kernel, OCL_PRE_FAST_RICH, "prefast_rich", opt);
 }
 
 PreFastRichStep::~PreFastRichStep() {
