@@ -70,22 +70,21 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // Enable OpenCL 32-bit integer atomic functions.
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 
-int mask_test9(uint x16) {
+int mask_test(uint x16) {
     // Duplicate bit pattern to simulate barrel shift.
     uint const x = (x16 | (x16 << 16));
 
-    // AND against 8 shifts.
-    return (
-        (x     ) &
-        (x >> 1) &
-        (x >> 2) &
-        (x >> 3) &
-        (x >> 4) &
-        (x >> 5) &
-        (x >> 6) &
-        (x >> 7) &
-        (x >> 8)
-    ) > 0;
+    // Accumulator.
+    uint x1 = x;
+
+    // AND against down-shifts.
+    #pragma unroll
+    for (uint i = 1; i < FAST_RING; i++)
+        x1 &= (x >> i);
+
+    // Return of 1 here proves that FAST_RING
+    // consecutive bits were 1.
+    return (x1 > 0);
 }
 
 kernel void fast_gray(
@@ -143,7 +142,7 @@ print "    );"
 print
 
 print """
-    if (mask_test9(sum)) {
+    if (mask_test(sum)) {
         // Atomically append to corner buffer.
         int const icorn = atom_inc(icorner);
         if (icorn < FAST_COUNT)
