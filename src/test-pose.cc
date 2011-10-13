@@ -37,8 +37,8 @@
 #include <cvd-cl/steps/ClipDepthStep.hh>
 #include <cvd-cl/steps/FastRichStep.hh>
 #include <cvd-cl/steps/FastBestStep.hh>
-#include <cvd-cl/steps/HipsGrayStep.hh>
-#include <cvd-cl/steps/HipsBlendGrayStep.hh>
+#include <cvd-cl/steps/HipsRichStep.hh>
+#include <cvd-cl/steps/HipsBlendRichStep.hh>
 #include <cvd-cl/steps/HipsMakeTreeStep.hh>
 #include <cvd-cl/steps/HipsTreeFindStep.hh>
 #include <cvd-cl/steps/HipsFindStep.hh>
@@ -278,13 +278,13 @@ static void testPipeline(
     CVD::CL::ClipDepthStep   runClip1    (camera.qmap,  corners1, corners2);
     CVD::CL::FastRichStep    runFast1    (imageNeat, corners2, scores, im1corners, opts.fast_threshold, opts.fast_ring);
     CVD::CL::FastBestStep    runMaxFast1 (                     scores, corners3, im1corners);
-    CVD::CL::HipsBlendGrayStep    runHips1    (imageNeat,                             im1corners, im1hips, opts.hips_blendsize);
+    CVD::CL::HipsBlendRichStep    runHips1    (imageNeat,                             im1corners, im1hips, opts.hips_blendsize);
 
     // Create steps specific to image2.
     CVD::CL::PreFastRichStep runPreFast2 (imageNeat, corners1, opts.fast_threshold);
     CVD::CL::FastRichStep    runFast2    (imageNeat, corners1, scores, im2corners, opts.fast_threshold, opts.fast_ring);
     CVD::CL::FastBestStep    runMaxFast2 (                     scores, corners2,                      im2corners);
-    CVD::CL::HipsGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
+    CVD::CL::HipsRichStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
 
     // Create step for HIPS tree based on stage 1.
     CVD::CL::HipsMakeTreeStep runTree1   (im1hips, im1tree);
