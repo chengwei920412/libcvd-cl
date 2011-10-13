@@ -46,24 +46,29 @@ FastRichStep::~FastRichStep() {
 }
 
 void FastRichStep::execute() {
+    // Read number of input points.
+    size_t const np = i_points.getCount();
+
     // Assign kernel parameters.
     kernel.setArg(0, i_image.image);
     kernel.setArg(1, o_scores.image);
     kernel.setArg(2, i_points.buffer);
     kernel.setArg(3, o_points.buffer);
     kernel.setArg(4, o_points.count);
-
-    // Read number of input points.
-    size_t const np = i_points.getCount();
+    kernel.setArg(5, (cl_uint) np);
 
     // Reset number of output points.
     o_points.setCount(0);
 
     // Zero scores buffer (may be slow).
-    // o_scores.zero();
+    o_scores.zero();
+
+    // Prepare global and local size.
+    cl::NDRange const global(worker.padGlobal(np));
+    cl::NDRange const local(worker.defaultLocal);
 
     // Queue kernel with global size set to number of input points.
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np), cl::NullRange);
+    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, local);
 }
 
 } // namespace CL
