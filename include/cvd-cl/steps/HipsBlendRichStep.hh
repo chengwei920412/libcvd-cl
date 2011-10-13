@@ -21,47 +21,53 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#include "cvd-cl/steps/HipsRichStep.hh"
-#include "kernels/hips-rich.hh"
+#ifndef __CVD_CL_HIPS_BLEND_RICH_STEP_HH__
+#define __CVD_CL_HIPS_BLEND_RICH_STEP_HH__
+
+#include <cvd-cl/states/ImageState.hh>
+#include <cvd-cl/states/ListState.hh>
+#include <cvd-cl/worker/WorkerStep.hh>
 
 namespace CVD {
 namespace CL  {
 
-// Create (0,0) offset.
-cl_int2 static const offset00 = {{0, 0}};
+// "Flags" to control blend selections.
+cl_int static const HipsBlend1 = 1;
+cl_int static const HipsBlend5 = 5;
+cl_int static const HipsBlend9 = 9;
 
-HipsRichStep::HipsRichStep(RichImageState & i_image, PointListState & i_points, HipsListState & o_hips) :
-    WorkerStep (i_image.worker),
-    i_image    (i_image),
-    i_points   (i_points),
-    o_hips     (o_hips)
-{
-    worker.compile(&program, &kernel, OCL_HIPS_RICH, "hips_rich");
-}
+class HipsBlendRichStep : public WorkerStep {
+public:
 
-HipsRichStep::~HipsRichStep() {
-    // Do nothing.
-}
+    explicit HipsBlendRichStep(RichImageState & i_image, PointListState & i_points, HipsListState & o_hips, cl_int blendSize = HipsBlend5);
+    virtual ~HipsBlendRichStep();
 
-void HipsRichStep::execute() {
-    // Assign kernel parameters.
-    kernel.setArg(0, i_image.image);
-    kernel.setArg(1, i_points.buffer);
-    kernel.setArg(2, o_hips.buffer);
-    kernel.setArg(3, offset00);
+    virtual void execute();
 
-    // Read number of input points.
-    size_t const np = i_points.getCount();
+protected:
 
-    // Round down number of input points.
-    size_t const np_64 = ((np / 64) * 64);
+    // Inputs.
+    RichImageState & i_image;
+    PointListState & i_points;
 
-    // Reset number of output points.
-    o_hips.setCount(np_64);
+    // Outputs.
+    HipsListState  & o_hips;
 
-    // Queue kernel with global size set to number of input points.
-    worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np_64), cl::NDRange(64));
-}
+    // Internal.
+    HipsListState    m_hips1;
+    HipsListState    m_hips2;
+
+    // Parameters.
+    cl_int const     blendSize;
+
+    cl::Program      program_hips;
+    cl::Kernel       kernel_hips;
+
+    cl::Program      program_blend;
+    cl::Kernel       kernel_blend;
+};
 
 } // namespace CL
 } // namespace CVD
+
+#endif /* __CVD_CL_HIPS_BLEND_RICH_STEP_HH__ */

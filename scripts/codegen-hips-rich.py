@@ -23,14 +23,28 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-# Generate indices from -7 to +7 by 2 (-7, -5, ..., 5, 7)
-I_16_2 = range(-7, 8, 2)
-
-# Generate a grid of 2D coordinates.
+# Grid of 2D coordinates, forming a circle.
+# Corresponds to lines 42-60 in featurepatch.cc
 OFFSETS = [
-    (x, y)
-    for y in I_16_2
-    for x in I_16_2
+  ( 3,  0), ( 6, -1), ( 8,  0), ( 9, -2),
+  ( 3, -1), ( 5, -3), ( 7, -3), ( 8, -5),
+  ( 2, -2), ( 3, -5), ( 5, -5), ( 5, -8),
+  ( 1, -3), ( 1, -6), ( 3, -7), ( 2, -9),
+
+  ( 0, -3), (-1, -6), ( 0, -8), (-2, -9),
+  (-1, -3), (-3, -5), (-3, -7), (-5, -8),
+  (-2, -2), (-5, -3), (-5, -5), (-8, -5),
+  (-3, -1), (-6, -1), (-7, -3), (-9, -2),
+
+  (-3,  0), (-6,  1), (-8,  0), (-9,  2),
+  (-3,  1), (-5,  3), (-7,  3), (-8,  5),
+  (-2,  2), (-3,  5), (-5,  5), (-5,  8),
+  (-1,  3), (-1,  6), (-3,  7), (-2,  9),
+
+  ( 0,  3), ( 1,  6), ( 0,  8), ( 2,  9),
+  ( 1,  3), ( 3,  5), ( 3,  7), ( 5,  8),
+  ( 2,  2), ( 5,  3), ( 5,  5), ( 8,  5),
+  ( 3,  1), ( 6,  1), ( 7,  3), ( 9,  2),
 ]
 
 COMPARISONS = [
@@ -81,7 +95,8 @@ uint4 sq(uint4 x) {
 kernel void hips_rich(
     read_only image2d_t   image,
     global    int2      * corners,
-    global    ulong4    * bins
+    global    ulong4    * bins,
+              int2        offset
 ) {
 
     // Prepare a suitable OpenCL image sampler.
@@ -131,7 +146,7 @@ print
 for (bin, (c1, c2)) in enumerate(CHOICES):
     print "    ulong const b%d  = (" % (bin + 1)
     print " |\n".join([
-        ("        (L((p%02d.x %s dev1.x) && (p%02d.y %s dev1.y)) << L(%2d))" % (shift + 1, c1, shift + 1, c2, shift))
+        ("        (L((p%02d.x %s dev1.x) && (p%02d.y %s dev2.y)) << L(%2d))" % (shift + 1, c1, shift + 1, c2, shift))
         for (shift, _) in enumerate(OFFSETS)
     ])
     print "    );"
