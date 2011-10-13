@@ -75,21 +75,22 @@ float dist4(uint4 a, uint4 b) {
     return distance(convert_float4(a), convert_float4(b));
 }
 
-// Generate bitwise mask of n bits.
-int mask(int n) {
-    return ((1 << n) - 1);
-}
+int mask_test9(uint x16) {
+    // Duplicate bit pattern to simulate barrel shift.
+    uint const x = (x16 | (x16 << 16));
 
-// Create a bitwise mask of n bits, rotated by r bits, in a ring of w bits.
-int mask_turn(int n, int w, int r) {
-    int const m = mask(n);
-    return (((m << r) | (m >> (w - r))) & mask(w));
-}
-
-// Test a value x against a bitwise mask of n bits, rotated by r bits, in a ring of w bits.
-int mask_test(int x, int n, int w, int r) {
-    int const m = mask_turn(n, w, r);
-    return ((x & m) == m);
+    // AND against 8 shifts.
+    return (
+        (x     ) &
+        (x >> 1) &
+        (x >> 2) &
+        (x >> 3) &
+        (x >> 4) &
+        (x >> 5) &
+        (x >> 6) &
+        (x >> 7) &
+        (x >> 8)
+    ) > 0;
 }
 
 kernel void fast_rich(
@@ -146,16 +147,8 @@ print " |\n".join([
 print "    );"
 print
 
-print "    // Check if at least one mask applies entirely."
-print "    int    const yes = ("
-print " ||\n".join([
-    ("        mask_test(sum, 9, 16, %2d)" % (shift))
-    for shift in range(0, 16)
-])
-print "    );"
-
 print """
-    if (yes) {
+    if (mask_test9(sum)) {
         // Atomically append to corner buffer.
         int const icorn = atom_inc(icorner);
         if (icorn < FAST_COUNT)
