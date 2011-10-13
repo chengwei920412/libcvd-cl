@@ -55,9 +55,9 @@
 #include <boost/program_options.hpp>
 
 // Typedefs for image format.
-typedef CVD::byte                 GrayPixel;
+typedef CVD::Rgba<CVD::byte>      RichPixel;
 typedef uint16_t                 DepthPixel;
-typedef CVD::Image<GrayPixel >    GrayImage;
+typedef CVD::Image<RichPixel >    RichImage;
 typedef CVD::Image<DepthPixel>   DepthImage;
 
 // Size constants.
@@ -157,7 +157,7 @@ static void translateDepth(
 }
 
 static void readRGBD(
-    GrayImage        & gray,
+    RichImage        & colour,
     DepthImage       & depth,
     char       const * path
 ) {
@@ -177,7 +177,7 @@ static void readRGBD(
 
     // Allocate images of given size.
     CVD::ImageRef const size(nx, ny);
-     gray.resize(size);
+    colour.resize(size);
     depth.resize(size);
 
     for (int y = 0; y < ny; y++) {
@@ -202,11 +202,8 @@ static void readRGBD(
             assert(b <= 0xFF);
             assert(d <= 0xFFFF);
 
-            // Mix colours to grayscale.
-            int const avg = ((r + g + b) / 3);
-
-            gray  [y][x] = avg;
-            depth [y][x] = d;
+            colour [y][x] = RichPixel(r, g, b, 0xFF);
+            depth  [y][x] = d;
         }
     }
 
@@ -215,8 +212,8 @@ static void readRGBD(
 }
 
 struct stage1input {
-    GrayImage   g1image;
-    GrayImage   g2image;
+    RichImage   g1image;
+    RichImage   g2image;
     DepthImage  d1image;
     options     opts;
 };
@@ -311,7 +308,7 @@ static void testPipeline(
     camera.copyToWorker();
 
     // Write image 1 to device.
-    int64_t const timeCopy1 = imageNeat.measureConvertFrom(input.g1image);
+    int64_t const timeCopy1 = imageNeat.measure(input.g1image);
 
     // Zero FAST scores.
     scores.zero();
@@ -331,7 +328,7 @@ static void testPipeline(
     int64_t const timeHips1 = runHips1.measure();
 
     // Write image 2 to device.
-    int64_t const timeCopy2 = imageNeat.measureConvertFrom(input.g2image);
+    int64_t const timeCopy2 = imageNeat.measure(input.g2image);
 
     // Zero FAST scores.
     scores.zero();
@@ -591,19 +588,19 @@ int main(int argc, char **argv) {
     CVD::ImageRef const ref1(1, 1);
 
     std::cerr << "Reading image 1 (" << path1 << ")" << std::endl;
-    GrayImage   g1image_full(ref1);
+    RichImage   g1image_full(ref1);
     DepthImage  d1image_full(ref1);
     readRGBD(g1image_full, d1image_full, path1.c_str());
 
     std::cerr << "Reading image 2 (" << path2 << ")" << std::endl;
-    GrayImage   g2image_full(ref1);
+    RichImage   g2image_full(ref1);
     DepthImage  d2image_full(ref1);
     readRGBD(g2image_full, d2image_full, path2.c_str());
 
-    GrayImage   g1image(ref512);
+    RichImage   g1image(ref512);
     g1image.copy_from(g1image_full.sub_image(ref0, ref512));
 
-    GrayImage   g2image(ref512);
+    RichImage   g2image(ref512);
     g2image.copy_from(g2image_full.sub_image(ref0, ref512));
 
     DepthImage  d1image(ref512);
