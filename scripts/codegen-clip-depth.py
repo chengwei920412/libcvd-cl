@@ -26,8 +26,8 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // Enable OpenCL 32-bit integer atomic functions.
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 
-#define MIN (1000.0f)
-#define MAX (7000.0f)
+#define MIN (50.0f)
+#define MAX (5000.0f)
 
 kernel void clip_depth(
     read_only  image2d_t   depth,
