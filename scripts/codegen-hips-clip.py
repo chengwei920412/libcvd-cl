@@ -51,17 +51,21 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 
 // Parallel bit counting magic adapted from
 // http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
-uint bitcount8(uint8 v) {
+uint bitcount16(uint16 v) {
     v = (v - ((v >> 1) & 0x55555555));
     v = ((v & 0x33333333) + ((v >> 2) & 0x33333333));
     v = ((((v + (v >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24);
-    return (v.s0 + v.s1 + v.s2 + v.s3 + v.s4 + v.s5 + v.s6 + v.s7);
+
+    // Fold together in halves.
+    uint8 v8 = (v.lo + v.hi);
+    uint4 v4 = (v8.lo + v8.hi);
+    return (v4.x + v4.y + v4.z + v4.w);
 }
 
 kernel void hips_clip(
-    // N.B.: These uint8 are actually ulong4.
-    global uint8  const * hashes1,  // T
-    global uint8        * hashes2,  // R
+    // N.B.: These uint16 are actually ulong8.
+    global uint16 const * hashes1,  // T
+    global uint16       * hashes2,  // R
     global uint         * cursor   // Output number of hashes.
 ) {
 
@@ -72,7 +76,7 @@ kernel void hips_clip(
     uint8  const hash   = hashes1[ihash];
 
     // Keep hash if lower than bit threshold.
-    if (bitcount8(hash) <= HIPS_MAX_BITS) {
+    if (bitcount16(hash) <= HIPS_MAX_BITS) {
         hashes2[atom_inc(cursor)] = hash;
     }
 }"""

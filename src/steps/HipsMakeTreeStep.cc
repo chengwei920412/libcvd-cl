@@ -42,16 +42,15 @@ static int bitcount (T v){
   return (T)(v * ((T)~(T)0/255)) >> (sizeof(T) - 1) * CHAR_BIT; // count
 }
 
-static int bitcount4(cl_ulong4 t, cl_ulong4 r) {
-    return
-        bitcount(t.x ^ r.x) +
-        bitcount(t.y ^ r.y) +
-        bitcount(t.z ^ r.z) +
-        bitcount(t.w ^ r.w);
+static cl_uint bitcount8(cl_ulong8 t, cl_ulong8 r) {
+    cl_uint total = 0;
+    for (cl_uint i = 0; i < 8; i++)
+        total += bitcount(t.s[i] ^ r.s[i]);
+    return total;
 }
 
 // "Zeroed" descriptor as filler. Actually non-zero to verify successful fill.
-cl_ulong4 static const HIPS_ZERO = {{0, 0, 0, 1}};
+cl_ulong8 static const HIPS_ZERO = {{0, 0, 0, 1}};
 
 HipsMakeTreeStep::HipsMakeTreeStep(HipsListState & i_hips, HipsTreeState & o_tree) :
     WorkerStep (i_hips.worker),
@@ -65,7 +64,7 @@ HipsMakeTreeStep::~HipsMakeTreeStep() {
     // Do nothing.
 }
 
-static void pairup(std::vector<cl_ulong4> const & hips, std::vector<cl_ushort2> & pairs) {
+static void pairup(std::vector<cl_ulong8> const & hips, std::vector<cl_ushort2> & pairs) {
     // Number of HIPS descriptors.
     size_t const nhips = hips.size();
 
@@ -82,14 +81,14 @@ static void pairup(std::vector<cl_ulong4> const & hips, std::vector<cl_ushort2> 
             continue;
 
         // Refer to descriptor 1.
-        cl_ulong4 const & d1 = hips.at(i1);
+        cl_ulong8 const & d1 = hips.at(i1);
 
         // Note if any unused descriptors exist.
         bool more = false;
 
         // Placeholder for the best matching index, and the error.
-        int    be2 = 10000;
-        size_t bi2 =     0;
+        cl_uint be2 = 10000;
+        size_t  bi2 =     0;
 
         for (size_t i2 = 0; i2 < nhips; i2++) {
             // Skip if already used.
@@ -104,10 +103,10 @@ static void pairup(std::vector<cl_ulong4> const & hips, std::vector<cl_ushort2> 
                 continue;
 
             // Refer to descriptor 2.
-            cl_ulong4 const & d2 = hips.at(i2);
+            cl_ulong8 const & d2 = hips.at(i2);
 
             // Calculate the error between the descriptors.
-            int const err = bitcount4(d1, d2);
+            cl_uint const err = bitcount8(d1, d2);
 
             // Update best.
             if (err < be2) {
@@ -135,12 +134,14 @@ static void pairup(std::vector<cl_ulong4> const & hips, std::vector<cl_ushort2> 
     }
 }
 
-static cl_ulong4 blend(cl_ulong4 const & d1, cl_ulong4 const & d2) {
-    cl_ulong4 const out = {{d1.x | d2.x, d1.y | d2.y, d1.z | d2.z, d1.w | d2.w}};
-    return out;
+static cl_ulong8 blend(cl_ulong8 const & d1, cl_ulong8 const & d2) {
+    cl_ulong8 total;
+    for (int i = 0; i < 8; i++)
+        total.s[i] = (d1.s[i] | d2.s[i]);
+    return total;
 }
 
-static void blend(std::vector<cl_ulong4> const & i_hips, std::vector<cl_ushort2> const & pairs, std::vector<cl_ulong4> & o_hips) {
+static void blend(std::vector<cl_ulong8> const & i_hips, std::vector<cl_ushort2> const & pairs, std::vector<cl_ulong8> & o_hips) {
     // Number of HIPS descriptor pairs.
     size_t const npairs = pairs.size();
 
@@ -150,11 +151,11 @@ static void blend(std::vector<cl_ulong4> const & i_hips, std::vector<cl_ushort2>
     for (size_t i = 0; i < npairs; i++) {
         // Refer to descriptor pairing and component descriptors.
         cl_ushort2 const & pair = pairs.at(i);
-        cl_ulong4  const & d1   = i_hips.at(pair.x);
-        cl_ulong4  const & d2   = i_hips.at(pair.y);
+        cl_ulong8  const & d1   = i_hips.at(pair.x);
+        cl_ulong8  const & d2   = i_hips.at(pair.y);
 
         // Calculate blended descriptor.
-        cl_ulong4  const   d3   = blend(d1, d2);
+        cl_ulong8  const   d3   = blend(d1, d2);
 
         // Store blended descriptor.
         o_hips.at(i) = d3;
@@ -162,14 +163,14 @@ static void blend(std::vector<cl_ulong4> const & i_hips, std::vector<cl_ushort2>
 }
 
 struct HipsTreeLevel {
-    std::vector<cl_ulong4 > hips;
+    std::vector<cl_ulong8 > hips;
     std::vector<cl_ushort2> pairs;
 };
 
 static void fillTree(
     HipsTreeShape              const & shape,
     std::vector<HipsTreeLevel> const & levels,
-    std::vector<cl_ulong4>           & tree,
+    std::vector<cl_ulong8>           & tree,
     std::vector<cl_ushort>           & maps,
     size_t                             ilevel,
     size_t                             inode,
@@ -180,7 +181,7 @@ static void fillTree(
     HipsTreeLevel const & level = levels.at(ilevel);
 
     // Refer to tree HIPS descriptor.
-    cl_ulong4 & cell = tree.at(icell);
+    cl_ulong8 & cell = tree.at(icell);
 
     // Check that the descriptor has not been filled.
     assert(::memcmp(&cell, &HIPS_ZERO, sizeof(cell)) == 0);
@@ -225,7 +226,7 @@ void HipsMakeTreeStep::execute() {
     HipsTreeShape const & shape = o_tree.shape;
 
     // Read descriptor list.
-    std::vector<cl_ulong4> hips;
+    std::vector<cl_ulong8> hips;
     i_hips.get(&hips);
 
 #ifdef CVD_CL_VERBOSE
@@ -282,7 +283,7 @@ void HipsMakeTreeStep::execute() {
     // Create vector representing final tree.
     // Only shape.nKeepNodes will actually be written out,
     // starting from shape.nDropNodes.
-    std::vector<cl_ulong4> tree(shape.nTreeNodes, HIPS_ZERO);
+    std::vector<cl_ulong8> tree(shape.nTreeNodes, HIPS_ZERO);
 
     // Create vector representing descriptor index maps.
     std::vector<cl_ushort> maps(shape.nLeaves, 0);
@@ -307,7 +308,7 @@ void HipsMakeTreeStep::execute() {
     // Check that every descriptor was filled.
     for (size_t icell = 0; icell < shape.nTreeNodes; icell++) {
         // Refer to tree HIPS descriptor.
-        cl_ulong4 const & cell = tree.at(icell);
+        cl_ulong8 const & cell = tree.at(icell);
 
         // Check that the descriptor has been filled.
         assert((cell.x | cell.y | cell.z | cell.w) > 0);

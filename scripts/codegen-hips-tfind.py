@@ -51,21 +51,25 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 
 // Parallel bit counting magic adapted from
 // http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
-uint bitcount8(uint8 v) {
+uint bitcount16(uint16 v) {
     v = (v - ((v >> 1) & 0x55555555));
     v = ((v & 0x33333333) + ((v >> 2) & 0x33333333));
     v = ((((v + (v >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24);
-    return (v.s0 + v.s1 + v.s2 + v.s3 + v.s4 + v.s5 + v.s6 + v.s7);
+
+    // Fold together in halves.
+    uint8 v8 = (v.lo + v.hi);
+    uint4 v4 = (v8.lo + v8.hi);
+    return (v4.x + v4.y + v4.z + v4.w);
 }
 
-uint error(uint8 t, uint8 r) {
-    return bitcount8(t & ~r);
+uint error(uint16 t, uint16 r) {
+    return bitcount16(t & ~r);
 }
 
 kernel void hips_tree_find(
     read_only image2d_t     hashesR,  // R (forest of descriptors, as above)
     read_only image2d_t     indices,  // Original index of each hash in R, defined only for leaves.
-    global   ulong4 const * hashesT,  // T (list of descriptors)
+    global   ulong8 const * hashesT,  // T (list of descriptors)
     global   uint2        * matches,  // Pairs of indices into hashes1 and hashes2.
     global   uint         * imatch,   // Output number of hash1 matches.
              uint           nmatch    // Maximum number of matches.
@@ -76,7 +80,7 @@ kernel void hips_tree_find(
 
     // Use global work item in dimension 0 for hashT index.
     uint   const ihashT  = get_global_id(0);
-    ulong4 const  hashT0 = hashesT[ihashT];
+    ulong8 const  hashT0 = hashesT[ihashT];
 
     // Use global work item in dimension 1 for rotation index.
     uint   const ishift  = get_global_id(1);
@@ -84,7 +88,7 @@ kernel void hips_tree_find(
     uint   const rshift  = (64 - lshift);
 
     // Rotate and cast descriptor.
-    uint8  const  hashT  = as_uint8((hashT0 >> rshift) | (hashT0 << lshift));
+    uint16 const  hashT  = as_uint16((hashT0 >> rshift) | (hashT0 << lshift));
 
     // Loop over pre-roots.
     #pragma unroll
@@ -106,12 +110,17 @@ kernel void hips_tree_find(
             uint const icell20 = (icell2 - TREE_DROP_NODES);
 
             // Read integers for both children.
-            uint8 hashR1;
-            uint8 hashR2;
-            hashR1.s0123 = read_imageui(hashesR, sampler, (int2)(0, icell10));
-            hashR1.s4567 = read_imageui(hashesR, sampler, (int2)(1, icell10));
-            hashR2.s0123 = read_imageui(hashesR, sampler, (int2)(0, icell20));
-            hashR2.s4567 = read_imageui(hashesR, sampler, (int2)(1, icell20));
+            uint16 hashR1;
+            hashR1.lo.lo = read_imageui(hashesR, sampler, (int2)(0, icell10));
+            hashR1.lo.hi = read_imageui(hashesR, sampler, (int2)(1, icell10));
+            hashR1.hi.lo = read_imageui(hashesR, sampler, (int2)(2, icell10));
+            hashR1.hi.hi = read_imageui(hashesR, sampler, (int2)(3, icell10));
+
+            uint16 hashR2;
+            hashR2.lo.lo = read_imageui(hashesR, sampler, (int2)(0, icell20));
+            hashR2.lo.hi = read_imageui(hashesR, sampler, (int2)(1, icell20));
+            hashR2.hi.lo = read_imageui(hashesR, sampler, (int2)(2, icell20));
+            hashR2.hi.hi = read_imageui(hashesR, sampler, (int2)(3, icell20));
 
             // Calculate errors for both children.
             uint const err1 = error(hashT, hashR1);

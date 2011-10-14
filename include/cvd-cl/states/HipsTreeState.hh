@@ -36,7 +36,7 @@ public:
     explicit HipsTreeState(Worker & worker, cl_uint nLeaves = 512, cl_uint nKeepLevels = 5);
     virtual ~HipsTreeState();
 
-    void setTree(std::vector<cl_ulong4> const & list);
+    void setTree(std::vector<cl_ulong8> const & list);
     void setMaps(std::vector<cl_ushort> const & list);
 
 
@@ -47,19 +47,19 @@ public:
      * OpenCL image object for HIPS descriptor forest.
      *
      * Each pixel is an RGBA of 32-bit unsigned integers, 128 bits in total.
-     * Each row is a 256 bit HIPS descriptor, contiguous in host-side memory.
+     * Each row is a 512 bit HIPS descriptor, contiguous in host-side memory.
      *
      * height = nKeepNodes
-     * width  = 2
+     * width  = 4
      *
-     * This order is used to keep cl_ulong4 halves adjacent.
+     * This order is used to keep cl_ulong8 elements adjacent.
      */
     cl::Image2D    tree;
 
     /**
      * OpenCL image object for the original index of each tree leaf.
      *
-     * Each pixel is a 16-bit unsigned integer.
+     * Each pixel is an RGBA of 16-bit unsigned integers, only .x of which is used.
      *
      * height = nLeaves
      * width  = 1

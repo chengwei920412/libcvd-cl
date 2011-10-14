@@ -95,7 +95,7 @@ uint4 sq(uint4 x) {
 kernel void hips_rich(
     read_only image2d_t   image,
     global    int2      * corners,
-    global    ulong4    * bins,
+    global    ulong8    * bins,
               int2        offset
 ) {
 
@@ -154,6 +154,6 @@ for (bin, (c1, c2)) in enumerate(CHOICES):
 
 print """
     // Record in output buffer.
-    bins[ic] = (ulong4)(b1, b2, b3, b4);
+    bins[ic] = (ulong8)(b1, b2, b3, b4, 0, 0, 0, 0);
 }
 """

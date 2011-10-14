@@ -51,17 +51,21 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 
 // Parallel bit counting magic adapted from
 // http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
-uint bitcount8(uint8 v) {
+uint bitcount16(uint16 v) {
     v = (v - ((v >> 1) & 0x55555555));
     v = ((v & 0x33333333) + ((v >> 2) & 0x33333333));
     v = ((((v + (v >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24);
-    return (v.s0 + v.s1 + v.s2 + v.s3 + v.s4 + v.s5 + v.s6 + v.s7);
+
+    // Fold together in halves.
+    uint8 v8 = (v.lo + v.hi);
+    uint4 v4 = (v8.lo + v8.hi);
+    return (v4.x + v4.y + v4.z + v4.w);
 }
 
 kernel void hips_find(
-    // N.B.: These uint8 are actually ulong4.
-    global uint8  const * hashes1,  // T
-    global uint8  const * hashes2,  // R
+    // N.B.: These uint16 are actually ulong8.
+    global uint16 const * hashes1,  // T
+    global uint16 const * hashes2,  // R
     global uint2        * matches,  // Pairs of indices into hashes1 and hashes2.
     global uint         * imatch,   // Output number of hash1 matches.
            uint           nmatch    // Maximum number of matches.
@@ -72,11 +76,11 @@ kernel void hips_find(
     uint   const ihash2  = get_global_id(1);
 
     // Read hashes.
-    uint8  const hash1   = hashes1[ihash1];
-    uint8  const hash2   = hashes2[ihash2];
+    uint16 const hash1   = hashes1[ihash1];
+    uint16 const hash2   = hashes2[ihash2];
 
     // Calculate error.
-    uint   const error   = bitcount8(hash1 & ~hash2);
+    uint   const error   = bitcount16(hash1 & ~hash2);
 
     // Record match if within error threshold.
     if (error <= HIPS_MAX_ERROR) {

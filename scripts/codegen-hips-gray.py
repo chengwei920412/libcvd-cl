@@ -86,7 +86,7 @@ int sq(int x) {
 kernel void hips_gray(
     read_only image2d_t   image,
     global    int2      * corners,
-    global    ulong4    * bins,
+    global    ulong8    * bins,
               int2        offset
 ) {
 
@@ -173,6 +173,6 @@ print "    );"
 print """
     // Record in output buffer.
     // Use and-not to exclude known overlaps.
-    bins[ic] = (ulong4)(b1, b2 & ~b1, b3 & ~b4, b4);
+    bins[ic] = (ulong8)(b1, b2 & ~b1, b3 & ~b4, b4, 0, 0, 0, 0);
 }
 """
