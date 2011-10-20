@@ -47,19 +47,12 @@ OFFSETS = [
   ( 3,  1), ( 6,  1), ( 7,  3), ( 9,  2),
 ]
 
-COMPARISONS = [
-    "<",
-    ">",
-]
-
-CHOICES = [
-    (c1, c2)
-    for c1 in COMPARISONS
-    for c2 in COMPARISONS
-]
-
 # Expect exactly 64 coordinates.
 assert (len(OFFSETS) == 64)
+
+IS_NOT = [" ", "~"]
+
+CHOICES = [(XI, YI, ZI) for XI in IS_NOT for YI in IS_NOT for ZI in IS_NOT]
 
 print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 //
@@ -84,11 +77,6 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-// Square an integer vector, for standard deviation calculation.
-uint4 sq(uint4 x) {
-    return (x * x);
-}
-
 // Shorthand for ulong cast.
 #define L(x) ((ulong)(x))
 
@@ -108,52 +96,46 @@ kernel void hips_rich(
 
     // Read pixels in a grid around the corner pixel."""
 
-for (shift, (x, y)) in enumerate(OFFSETS):
-    print ("    uint4  const p%02d = read_imageui(image, sampler, xy + (int2)(%2d, %2d));" % (shift + 1, x, y))
+for (shift, (x, y)) in enumerate(OFFSETS, 1):
+    print ("    uint4  const p%02d = read_imageui(image, sampler, xy + (int2)(%2d, %2d));" % (shift, x, y))
 
 print
 
 print "    // Calculate the sum of the pixel values."
-print "    uint4  const sum1 = ("
+print "    uint4  const sum  = ("
 print " +\n".join([
-    ("        p%02d" % (shift + 1))
-    for (shift, _) in enumerate(OFFSETS)
+    ("        p%02d" % shift)
+    for (shift, _) in enumerate(OFFSETS, 1)
 ])
 print "    );"
 print
 
 print "    // Calculate the mean of the pixel values."
-print "    uint4  const mean = (sum1 / %d);" % len(OFFSETS)
-
-print "    // Calculate the sum of squares of differences of the pixel values."
-print "    uint4  const sum2 = ("
-print " +\n".join([
-    ("        sq(p%02d - mean)" % (shift + 1))
-    for (shift, _) in enumerate(OFFSETS)
-])
-print "    );"
+print "    uint4  const mean = (sum / %d);" % len(OFFSETS)
 print
 
-print "    // Calculate the standard deviation of the pixel values."
-print "    uint4  const dev  = convert_uint4(sqrt(convert_float4(sum2 / %d)));" % len(OFFSETS)
-print
-print "    // Calculate thresholds for standard deviation bins."
-print "    // TODO: Size factors."
-print "    uint4  const dev1 = (mean - dev);"
-print "    uint4  const dev2 = (mean + dev);"
+print "    // Calculate the 'greaterness' of the elements of the pixel values."
+for (shift, _) in enumerate(OFFSETS, 1):
+    print "    int4  const g%02d = (p%02d > mean);" % (shift, shift)
 print
 
-for (bin, (c1, c2)) in enumerate(CHOICES):
-    print "    ulong const b%d  = (" % (bin + 1)
+print "    // Pack a 'greaterness' row per colour element."
+for colour in ("x", "y", "z"):
+    print "    ulong g%s = (" % colour
     print " |\n".join([
-        ("        (L((p%02d.x %s dev1.x) && (p%02d.y %s dev2.y)) << L(%2d))" % (shift + 1, c1, shift + 1, c2, shift))
-        for (shift, _) in enumerate(OFFSETS)
+        ("        (L(g%02d.%s & 1) << L(%2d))" % (shift, colour, shift - 1))
+        for (shift, _) in enumerate(OFFSETS, 1)
     ])
     print "    );"
     print
 
+print "    // Populate elements of the output descriptor from the 8 (g.x, g.y, g.z) combinations."
+print "    ulong8 hash;"
+for (bin, (xi, yi, zi)) in enumerate(CHOICES):
+    print "    hash.s%d = ((%sgx) & (%sgy) & (%sgz));" % (bin, xi, yi, zi)
+
 print """
     // Record in output buffer.
-    bins[ic] = (ulong8)(b1, b2, b3, b4, 0, 0, 0, 0);
+    bins[ic] = hash;
 }
 """
