@@ -26,6 +26,7 @@
 
 #include <boost/cstdint.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/static_assert.hpp>
 
 // Include official OpenCL C++ wrapper, with exceptions enabled.
 #define __CL_ENABLE_EXCEPTIONS

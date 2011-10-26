@@ -35,7 +35,7 @@ BlurGrayStep::BlurGrayStep(GrayImageState & i_image, GrayImageState & o_image) :
 {
     // Expect identical image dimensions.
     expect("BlurGrayStep::BlurGrayStep() must have identical image sizes",
-        i_image.size == o_image.size);
+        (i_image.nx == o_image.nx) && (i_image.ny == o_image.ny));
 
     worker.compile(&program, &kernel, OCL_BLUR_GRAY, "blur_gray");
 }
@@ -50,8 +50,8 @@ void BlurGrayStep::execute() {
     kernel.setArg(1, o_image.image);
 
     // Read image dimensions.
-    size_t const nx = i_image.size.x;
-    size_t const ny = i_image.size.y;
+    size_t const nx = i_image.nx;
+    size_t const ny = i_image.ny;
 
     // Queue kernel with square local size.
     // 16x16 appears to give good performance on most devices.

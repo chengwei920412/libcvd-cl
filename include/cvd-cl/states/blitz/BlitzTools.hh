@@ -21,41 +21,39 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_BASE_IMAGE_STATE_HH__
-#define __CVD_CL_BASE_IMAGE_STATE_HH__
+#ifndef __CVD_CL_BLITZ_TOOLS_HH__
+#define __CVD_CL_BLITZ_TOOLS_HH__
 
-#include <cvd-cl/worker/WorkerState.hh>
+#include <cvd-cl/states/ImageState.hh>
 
-#include <cvd/image_ref.h>
+#include <blitz/array.h>
+
+#include <cassert>
 
 namespace CVD {
 namespace CL  {
 
-class BaseImageState : public WorkerState {
-public:
+template<class Pixel, cl_uint channels>
+void setImage(ImageState<Pixel, channels> & image, blitz::Array<Pixel, 3> const & array) {
+    assert(image.ny == (cl_uint) array.length(0));
+    assert(image.nx == (cl_uint) array.length(1));
+    assert(channels == (cl_uint) array.length(2));
 
-    explicit BaseImageState(Worker & worker, CVD::ImageRef const & size,
-            ::cl_channel_order order, ::cl_channel_type type, size_t pbytes);
-    virtual ~BaseImageState();
+    image.set(array.data());
+}
 
-    void copyToWorker();
-    void copyFromWorker();
-    void zero();
+template<class Pixel, cl_uint channels>
+void getImage(ImageState<Pixel, channels> & image, blitz::Array<Pixel, 3> & array) {
+    assert(image.ny == (cl_uint) array.length(0));
+    assert(image.nx == (cl_uint) array.length(1));
+    assert(channels == (cl_uint) array.length(2));
 
-    // Public immutable members.
-    CVD::ImageRef const   size;
-    size_t        const   pixels;
-    size_t        const   pbytes;
-    size_t        const   nbytes;
+    image.get(array.data());
+}
 
-    // Members left public for WorkerStep access.
-    cl::Image2D           image;
-    cl::size_t<3>         origin;
-    cl::size_t<3>         region;
-    void                * mapping;
-};
+void glDrawPixelsRGBA(blitz::Array<cl_uchar, 3> const & array);
 
 } // namespace CL
 } // namespace CVD
 
-#endif /* __CVD_CL_BASE_IMAGE_STATE_HH__ */
+#endif /* __CVD_CL_BLITZ_TOOLS_HH__ */

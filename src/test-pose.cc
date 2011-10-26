@@ -54,19 +54,13 @@
 
 #include <boost/program_options.hpp>
 
-// Typedefs for image format.
-typedef CVD::Rgba<CVD::byte>      RichPixel;
-typedef uint16_t                 DepthPixel;
-typedef CVD::Image<RichPixel >    RichImage;
-typedef CVD::Image<DepthPixel>   DepthImage;
+// Typedefs for Blitz-based image format.
+typedef blitz::Array<cl_uchar, 3>  RichImage;
+typedef blitz::Array<cl_float, 3> DepthImage;
 
 // Size constants.
 size_t const static KiB = 1024;
 size_t const static MiB = KiB * KiB;
-
-// Cropped image size.
-CVD::ImageRef const static   ref0(  0, 80);
-CVD::ImageRef const static ref512(512, 256);
 
 // Maximum corners processed.
 size_t const static ncorners = 2048;
@@ -92,75 +86,36 @@ static void readCamera(Camera::Linear * camera, char const * path) {
 
     // Consume parameters.
     camera->load(file);
+
+    // Close file.
+    file.close();
 }
 
-static void learnCamera(
-    Camera::Linear const      & camera,
-    CVD::BasicImage<cl_float>   uimage,
-    CVD::BasicImage<cl_float>   vimage
-) {
-
-    // Extract image dimensions.
-    CVD::ImageRef const size = uimage.size();
-    int           const nx   = size.x;
-    int           const ny   = size.y;
-
+static void learnCamera(Camera::Linear const & cvd_camera, CVD::CL::CameraState & camera) {
     // Loop over all coordinates.
-    for (int x = 0; x < nx; x++) {
-        for (int y = 0; y < ny; y++) {
-            // Construct image reference.
-            CVD::ImageRef const ref(x, y);
-
+    for (int y = 0; y < camera.ny; y++) {
+        for (int x = 0; x < camera.nx; x++) {
             // Construct (x, y) vector.
             // NB: The camera size does not match the image size,
             // however, the offset is 0, so use (x, y) directly.
             TooN::Vector<2> const xy = TooN::makeVector(x, y);
 
             // Translate from (x, y) to (u, v).
-            TooN::Vector<2> const uv = camera.unproject(xy);
-
-//            TooN::Vector<2> const xy2 = camera.project(uv);
-//            std::cerr << "x = " << xy[0] << " -> " << uv[0] << " -> " << xy2[0] << std::endl;
-//            std::cerr << "y = " << xy[1] << " -> " << uv[1] << " -> " << xy2[1] << std::endl;
+            TooN::Vector<2> const uv = cvd_camera.unproject(xy);
 
             // Record (u, v) pair.
-            uimage[ref] = uv[0];
-            vimage[ref] = uv[1];
-        }
-    }
-}
-
-static void translateDepth(
-    DepthImage const          & idimage,
-    CVD::BasicImage<cl_float>   fdimage
-) {
-
-    // Extract image dimensions.
-    CVD::ImageRef const size = idimage.size();
-    int           const nx   = size.x;
-    int           const ny   = size.y;
-
-    // Loop over all coordinates.
-    for (int x = 0; x < nx; x++) {
-        for (int y = 0; y < ny; y++) {
-            // Construct image reference.
-            CVD::ImageRef const ref(x, y);
-
-            // Extract integer depth.
-            DepthPixel const depth = idimage[ref];
-
-            // Record as corrected depth.
-            // TODO: Work out actual translation.
-            fdimage[ref] = depth;
+            camera.udata(y, x, 0) = uv[0];
+            camera.vdata(y, x, 0) = uv[1];
         }
     }
 }
 
 static void readRGBD(
-    RichImage        & colour,
-    DepthImage       & depth,
-    char       const * path
+     RichImage & colour,
+    DepthImage & depth,
+    char const * path
 ) {
+
     // Open file, enabling exceptions.
     std::ifstream file;
     file.exceptions(~std::ios_base::goodbit);
@@ -169,6 +124,7 @@ static void readRGBD(
     int nx = 0;
     int ny = 0;
 
+    // Read image size.
     file >> nx;
     file >> ny;
 
@@ -176,34 +132,35 @@ static void readRGBD(
     assert(ny > 0);
 
     // Allocate images of given size.
-    CVD::ImageRef const size(nx, ny);
-    colour.resize(size);
-    depth.resize(size);
+    colour.resize(ny, nx, 4);
+     depth.resize(ny, nx, 1);
+
+    // Reset image data.
+    colour = 0;
+     depth = 0;
 
     for (int y = 0; y < ny; y++) {
         for (int x = 0; x < nx; x++) {
-            int r = 0;
-            int g = 0;
-            int b = 0;
-            int d = 0;
+            cl_uint r = 0;
+            cl_uint g = 0;
+            cl_uint b = 0;
+            cl_uint d = 0;
 
             file >> r;
             file >> g;
             file >> b;
             file >> d;
 
-            assert(r >= 0);
-            assert(g >= 0);
-            assert(b >= 0);
-            assert(d >= 0);
-
             assert(r <= 0xFF);
             assert(g <= 0xFF);
             assert(b <= 0xFF);
             assert(d <= 0xFFFF);
 
-            colour [y][x] = RichPixel(r, g, b, 0xFF);
-            depth  [y][x] = d;
+            colour(y, x, 0) = r;
+            colour(y, x, 1) = g;
+            colour(y, x, 2) = b;
+
+             depth(y, x, 0) = d;
         }
     }
 
@@ -226,17 +183,16 @@ static void testPipeline(
     options const & opts = input.opts;
 
     // Extract image dimensions.
-    CVD::ImageRef const size = input.g1image.size();
-    int           const nx   = size.x;
-    int           const ny   = size.y;
-    int           const nxy  = nx * ny;
+    int const ny  = input.g1image.length(0);
+    int const nx  = input.g1image.length(1);
+    int const nxy = nx * ny;
 
     // Create OpenCL worker.
     CVD::CL::Worker          worker      (device);
 
     // Create FAST and HIPS states.
-    CVD::CL::RichImageState  imageNeat   (worker, size);
-    CVD::CL::GrayImageState  scores      (worker, size);
+    CVD::CL::RichImageState  imageNeat   (worker, ny, nx);
+    CVD::CL::GrayImageState  scores      (worker, ny, nx);
     CVD::CL::PointListState  corners1    (worker, nxy);
     CVD::CL::PointListState  corners2    (worker, nxy);
     CVD::CL::PointListState  corners3    (worker, nxy);
@@ -244,14 +200,14 @@ static void testPipeline(
     // Create states specific to image1 (colour + depth).
     CVD::CL::PointListState  im1corners  (worker, ncorners);
     CVD::CL::HipsListState   im1hips     (worker, ncorners);
-    CVD::CL::GrayImageState  im1depth    (worker, size);
+    CVD::CL::GrayImageState  im1depth    (worker, ny, nx);
 
     // Create states specific to image2 (colour only).
     CVD::CL::PointListState  im2corners  (worker, ncorners);
     CVD::CL::HipsListState   im2hips     (worker, ncorners);
 
     // Create camera translation states.
-    CVD::CL::CameraState     camera      (worker, size);
+    CVD::CL::CameraState     camera      (worker, ny, nx);
 
     // Create state for HIPS tree based on stage 1.
     CVD::CL::HipsTreeState   im1tree     (worker, opts.hips_leaves, opts.hips_levels);
@@ -303,12 +259,13 @@ static void testPipeline(
     // Populate camera states.
     Camera::Linear cvdcamera;
     readCamera(&cvdcamera, "./etc/kinect.conf");
-    learnCamera(cvdcamera, camera.umap.asImage(), camera.vmap.asImage());
-    translateDepth(input.d1image, camera.qmap.asImage());
+    learnCamera(cvdcamera, camera);
+    camera.qdata = input.d1image;
     camera.copyToWorker();
 
     // Write image 1 to device.
-    int64_t const timeCopy1 = imageNeat.measure(input.g1image);
+    int64_t const timeCopy1 = 0;
+    CVD::CL::setImage(imageNeat, input.g1image);
 
     // Zero FAST scores.
     scores.zero();
@@ -328,7 +285,8 @@ static void testPipeline(
     int64_t const timeHips1 = runHips1.measure();
 
     // Write image 2 to device.
-    int64_t const timeCopy2 = imageNeat.measure(input.g2image);
+    int64_t const timeCopy2 = 0;
+    CVD::CL::setImage(imageNeat, input.g2image);
 
     // Zero FAST scores.
     scores.zero();
@@ -366,7 +324,6 @@ static void testPipeline(
     std::vector<cl_int2>   points2;
     im1corners.get(&points1);
     im2corners.get(&points2);
-
 
     boost::system_time const t1 = boost::get_system_time();
 
@@ -468,13 +425,14 @@ static void testPipeline(
 
     CVD::ImageRef const size2(nx * 2, ny * 2);
     CVD::VideoDisplay window(size2);
-    CVD::glDrawPixels(input.g1image);
-    CVD::glRasterPos(CVD::ImageRef(nx,  0));
-    CVD::glDrawPixels(input.g2image);
-    CVD::glRasterPos(CVD::ImageRef( 0, ny));
-    CVD::glDrawPixels(input.g1image);
-    CVD::glRasterPos(CVD::ImageRef(nx, ny));
-    CVD::glDrawPixels(input.g2image);
+
+    CVD::CL::glDrawPixelsRGBA(input.g1image);
+    ::glRasterPos2i(nx,  0);
+    CVD::CL::glDrawPixelsRGBA(input.g2image);
+    ::glRasterPos2i( 0, ny);
+    CVD::CL::glDrawPixelsRGBA(input.g1image);
+    ::glRasterPos2i(nx, ny);
+    CVD::CL::glDrawPixelsRGBA(input.g2image);
 
     glBegin(GL_LINES);
     for (size_t ip = 0; ip < pairs.size(); ip++) {
@@ -585,26 +543,24 @@ int main(int argc, char **argv) {
     // Read booleans.
     opts.hips_rotate = (vm.count("no-rotate") < 1);
 
-    CVD::ImageRef const ref1(1, 1);
-
     std::cerr << "Reading image 1 (" << path1 << ")" << std::endl;
-    RichImage   g1image_full(ref1);
-    DepthImage  d1image_full(ref1);
+    RichImage   g1image_full;
+    DepthImage  d1image_full;
     readRGBD(g1image_full, d1image_full, path1.c_str());
 
     std::cerr << "Reading image 2 (" << path2 << ")" << std::endl;
-    RichImage   g2image_full(ref1);
-    DepthImage  d2image_full(ref1);
+    RichImage   g2image_full;
+    DepthImage  d2image_full;
     readRGBD(g2image_full, d2image_full, path2.c_str());
 
-    RichImage   g1image(ref512);
-    g1image.copy_from(g1image_full.sub_image(ref0, ref512));
+    RichImage   g1image(256, 512, 4);
+    g1image = g1image_full(blitz::Range(0, 255), blitz::Range(80, 80 + 511), blitz::Range::all());
 
-    RichImage   g2image(ref512);
-    g2image.copy_from(g2image_full.sub_image(ref0, ref512));
+    RichImage   g2image(256, 512, 4);
+    g2image = g2image_full(blitz::Range(0, 255), blitz::Range(80, 80 + 511), blitz::Range::all());
 
-    DepthImage  d1image(ref512);
-    d1image.copy_from(d1image_full.sub_image(ref0, ref512));
+    DepthImage  d1image(256, 512, 1);
+    d1image = d1image_full(blitz::Range(0, 255), blitz::Range(80, 80 + 511), blitz::Range::all());
 
     // Create structure for stage 1 input.
     stage1input const input = {g1image, g2image, d1image, opts};

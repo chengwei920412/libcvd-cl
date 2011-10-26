@@ -21,50 +21,26 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_IMAGE_FORMATS_HH__
-#define __CVD_CL_IMAGE_FORMATS_HH__
+#include "cvd-cl/states/blitz/BlitzTools.hh"
 
-#include <cvd-cl/worker/Worker.hh>
-
-#include <cvd/byte.h>
-#include <cvd/image.h>
-#include <cvd/rgba.h>
-#include <cvd/rgb.h>
+#include <GL/gl.h>
 
 namespace CVD {
 namespace CL  {
 
-template<class Pixel>
-struct CVD2CL {
-    // Invalid by default.
-    // Only overrides will work.
-};
+void glDrawPixelsRGBA(blitz::Array<cl_uchar, 3> const & array) {
+    int const ny = array.length(0);
+    int const nx = array.length(1);
+    int const nc = array.length(2);
 
-template<>
-struct CVD2CL<CVD::byte> {
-    ::cl_channel_order const static order = CL_INTENSITY;
-    ::cl_channel_type  const static type  = CL_UNSIGNED_INT8;
-};
+    // For RGBA images only.
+    assert(nc == 4);
 
-template<>
-struct CVD2CL<cl_float> {
-    ::cl_channel_order const static order = CL_INTENSITY;
-    ::cl_channel_type  const static type  = CL_FLOAT;
-};
-
-template<>
-struct CVD2CL<CVD::Rgba<CVD::byte> > {
-    ::cl_channel_order const static order = CL_RGBA;
-    ::cl_channel_type  const static type  = CL_UNSIGNED_INT8;
-};
-
-template<>
-struct CVD2CL<CVD::Rgb<CVD::byte> > {
-    ::cl_channel_order const static order = CL_RGB;
-    ::cl_channel_type  const static type  = CL_UNSIGNED_INT8;
-};
+    ::glPixelStorei(GL_UNPACK_ALIGNMENT, 0);
+    ::glPixelStorei(GL_UNPACK_ROW_LENGTH, nx);
+    ::glDrawPixels(nx, ny, GL_RGBA, GL_BYTE, array.data());
+    ::glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+}
 
 } // namespace CL
 } // namespace CVD
-
-#endif /* __CVD_CL_IMAGE_FORMATS_HH__ */

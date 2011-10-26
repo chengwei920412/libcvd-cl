@@ -21,7 +21,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#include "cvd-cl/states/BaseImageState.hh"
+#include "cvd-cl/states/cvd/CvdBaseImageState.hh"
 #include "cvd-cl/core/Expect.hh"
 
 #include <boost/date_time.hpp>
@@ -30,7 +30,7 @@
 namespace CVD {
 namespace CL  {
 
-BaseImageState::BaseImageState(Worker & worker, CVD::ImageRef const & size,
+CvdBaseImageState::CvdBaseImageState(Worker & worker, CVD::ImageRef const & size,
         ::cl_channel_order order, ::cl_channel_type type, size_t pbytes) :
     WorkerState(worker),
     size(size),
@@ -66,7 +66,7 @@ BaseImageState::BaseImageState(Worker & worker, CVD::ImageRef const & size,
     expect("Image memory must be mapped", mapping != NULL);
 }
 
-BaseImageState::~BaseImageState() {
+CvdBaseImageState::~CvdBaseImageState() {
     if (mapping != NULL) {
         try {
             ::free(mapping);
@@ -78,15 +78,15 @@ BaseImageState::~BaseImageState() {
     }
 }
 
-void BaseImageState::copyToWorker() {
+void CvdBaseImageState::copyToWorker() {
     worker.queue.enqueueWriteImage(image, CL_TRUE, origin, region, 0, 0, mapping);
 }
 
-void BaseImageState::copyFromWorker() {
+void CvdBaseImageState::copyFromWorker() {
     worker.queue.enqueueReadImage(image, CL_TRUE, origin, region, 0, 0, mapping);
 }
 
-void BaseImageState::zero() {
+void CvdBaseImageState::zero() {
     ::memset(mapping, 0, nbytes);
     copyToWorker();
 }

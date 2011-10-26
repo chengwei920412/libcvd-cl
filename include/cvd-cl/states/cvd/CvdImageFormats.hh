@@ -21,40 +21,50 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#include "cvd-cl/states/CameraState.hh"
+#ifndef __CVD_CL_CVD_IMAGE_FORMATS_HH__
+#define __CVD_CL_CVD_IMAGE_FORMATS_HH__
+
+#include <cvd-cl/worker/Worker.hh>
+
+#include <cvd/byte.h>
+#include <cvd/image.h>
+#include <cvd/rgba.h>
+#include <cvd/rgb.h>
 
 namespace CVD {
 namespace CL  {
 
-CameraState::CameraState(Worker & worker, cl_uint ny, cl_uint nx) :
-    WorkerState (worker),
-    ny          (ny),
-    nx          (nx),
-    udata       (ny, nx, 1),
-    vdata       (ny, nx, 1),
-    qdata       (ny, nx, 1),
-    umap        (worker, ny, nx, CL_MEM_READ_WRITE),
-    vmap        (worker, ny, nx, CL_MEM_READ_WRITE),
-    qmap        (worker, ny, nx, CL_MEM_READ_WRITE)
-{
-    // Do nothing.
-}
+template<class Pixel>
+struct CVD2CL {
+    // Invalid by default.
+    // Only overrides will work.
+};
 
-CameraState::~CameraState() {
-    // Do nothing.
-}
+template<>
+struct CVD2CL<CVD::byte> {
+    ::cl_channel_order const static order = CL_INTENSITY;
+    ::cl_channel_type  const static type  = CL_UNSIGNED_INT8;
+};
 
-void CameraState::copyFromWorker() {
-    getImage(umap, udata);
-    getImage(vmap, vdata);
-    getImage(qmap, qdata);
-}
+template<>
+struct CVD2CL<cl_float> {
+    ::cl_channel_order const static order = CL_INTENSITY;
+    ::cl_channel_type  const static type  = CL_FLOAT;
+};
 
-void CameraState::copyToWorker() {
-    setImage(umap, udata);
-    setImage(vmap, vdata);
-    setImage(qmap, qdata);
-}
+template<>
+struct CVD2CL<CVD::Rgba<CVD::byte> > {
+    ::cl_channel_order const static order = CL_RGBA;
+    ::cl_channel_type  const static type  = CL_UNSIGNED_INT8;
+};
+
+template<>
+struct CVD2CL<CVD::Rgb<CVD::byte> > {
+    ::cl_channel_order const static order = CL_RGB;
+    ::cl_channel_type  const static type  = CL_UNSIGNED_INT8;
+};
 
 } // namespace CL
 } // namespace CVD
+
+#endif /* __CVD_CL_CVD_IMAGE_FORMATS_HH__ */

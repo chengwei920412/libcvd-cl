@@ -21,40 +21,41 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#include "cvd-cl/states/CameraState.hh"
+#ifndef __CVD_CL_CVD_BASE_IMAGE_STATE_HH__
+#define __CVD_CL_CVD_BASE_IMAGE_STATE_HH__
+
+#include <cvd-cl/worker/WorkerState.hh>
+
+#include <cvd/image_ref.h>
 
 namespace CVD {
 namespace CL  {
 
-CameraState::CameraState(Worker & worker, cl_uint ny, cl_uint nx) :
-    WorkerState (worker),
-    ny          (ny),
-    nx          (nx),
-    udata       (ny, nx, 1),
-    vdata       (ny, nx, 1),
-    qdata       (ny, nx, 1),
-    umap        (worker, ny, nx, CL_MEM_READ_WRITE),
-    vmap        (worker, ny, nx, CL_MEM_READ_WRITE),
-    qmap        (worker, ny, nx, CL_MEM_READ_WRITE)
-{
-    // Do nothing.
-}
+class CvdBaseImageState : public WorkerState {
+public:
 
-CameraState::~CameraState() {
-    // Do nothing.
-}
+    explicit CvdBaseImageState(Worker & worker, CVD::ImageRef const & size,
+            ::cl_channel_order order, ::cl_channel_type type, size_t pbytes);
+    virtual ~CvdBaseImageState();
 
-void CameraState::copyFromWorker() {
-    getImage(umap, udata);
-    getImage(vmap, vdata);
-    getImage(qmap, qdata);
-}
+    void copyToWorker();
+    void copyFromWorker();
+    void zero();
 
-void CameraState::copyToWorker() {
-    setImage(umap, udata);
-    setImage(vmap, vdata);
-    setImage(qmap, qdata);
-}
+    // Public immutable members.
+    CVD::ImageRef const   size;
+    size_t        const   pixels;
+    size_t        const   pbytes;
+    size_t        const   nbytes;
+
+    // Members left public for WorkerStep access.
+    cl::Image2D           image;
+    cl::size_t<3>         origin;
+    cl::size_t<3>         region;
+    void                * mapping;
+};
 
 } // namespace CL
 } // namespace CVD
+
+#endif /* __CVD_CL_CVD_BASE_IMAGE_STATE_HH__ */

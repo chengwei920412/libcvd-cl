@@ -25,6 +25,7 @@
 #define __CVD_CL_CAMERA_STATE_HH__
 
 #include <cvd-cl/states/ImageState.hh>
+#include <cvd-cl/states/blitz/BlitzTools.hh>
 
 namespace CVD {
 namespace CL  {
@@ -32,19 +33,28 @@ namespace CL  {
 class CameraState : public WorkerState {
 public:
 
-    explicit CameraState(Worker & worker, CVD::ImageRef const & size);
+    typedef blitz::Array<cl_float, 3> BlitzArray;
+
+    explicit CameraState(Worker & worker, cl_uint ny, cl_uint nx);
     virtual ~CameraState();
 
-    void copyFromWorker();
-    void copyToWorker();
+    // Public immutable members.
+    cl_uint      const  ny;
+    cl_uint      const  nx;
 
-    // Public immutable member.
-    CVD::ImageRef const size;
+    // Public arrays.
+    BlitzArray          udata;
+    BlitzArray          vdata;
+    BlitzArray          qdata;
 
     // Public sub-states.
     FloatImageState     umap;
     FloatImageState     vmap;
     FloatImageState     qmap;
+
+    // Public methods.
+    void copyFromWorker();
+    void copyToWorker();
 };
 
 } // namespace CL

@@ -52,8 +52,8 @@ void PreFastRichStep::execute() {
     kernel.setArg(2, o_points.count);
 
     // Read image dimensions.
-    size_t const nx = i_image.size.x - 16;
-    size_t const ny = i_image.size.y - 16;
+    size_t const nx = i_image.nx - 16;
+    size_t const ny = i_image.ny - 16;
 
     // Construct global, local and offset with a safety boundary.
     // 16x16 appears to give good performance on most devices.

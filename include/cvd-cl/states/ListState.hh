@@ -47,11 +47,16 @@ public:
     }
 
     void set(std::vector<Item> const & items) {
+        size_t const ncount = items.size();
+
         // Write new count to device.
-        setCount(items.size());
+        setCount(ncount);
+
+        if (ncount < 1)
+            return;
 
         // Write item data directly to device.
-        size_t const pnbytes = items.size() * sizeof(Item);
+        size_t const pnbytes = ncount * sizeof(Item);
         worker.queue.enqueueWriteBuffer(buffer, CL_TRUE, 0, pnbytes, items.data());
     }
 
@@ -61,6 +66,9 @@ public:
 
         // Allocate memory for item data.
         items->resize(ncount);
+
+        if (ncount < 1)
+            return;
 
         // Read item data directly from device.
         size_t const pnbytes = ncount * sizeof(Item);
