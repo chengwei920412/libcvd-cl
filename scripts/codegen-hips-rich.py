@@ -114,16 +114,11 @@ print "    // Calculate the mean of the pixel values."
 print "    uint4  const mean = (sum / %d);" % len(OFFSETS)
 print
 
-print "    // Calculate the 'greaterness' of the elements of the pixel values."
-for (shift, _) in enumerate(OFFSETS, 1):
-    print "    int4  const g%02d = (p%02d > mean);" % (shift, shift)
-print
-
 print "    // Pack a 'greaterness' row per colour element."
 for colour in ("x", "y", "z"):
     print "    ulong g%s = (" % colour
     print " |\n".join([
-        ("        (L(g%02d.%s & 1) << L(%2d))" % (shift, colour, shift - 1))
+        ("        (L(p%02d.%s > mean.%s) << L(%2d))" % (shift, colour, colour, shift - 1))
         for (shift, _) in enumerate(OFFSETS, 1)
     ])
     print "    );"
