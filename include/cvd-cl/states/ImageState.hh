@@ -113,7 +113,7 @@ private:
     cl::size_t<3>       region;
 };
 
-typedef ImageState<cl_uchar, 1>  GrayImageState;
+typedef ImageState<cl_uchar, 4>  GrayImageState;
 typedef ImageState<cl_uchar, 4>  RichImageState;
 typedef ImageState<cl_float, 1> FloatImageState;
 
