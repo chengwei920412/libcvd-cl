@@ -7,7 +7,7 @@ CFLAGS  += -g3 -DCVD_IMAGE_DEBUG -O0
 #CFLAGS  += -DNDEBUG
 CFLAGS  += -DBZ_DEBUG
 
-LIBS     = -lOpenCL -lcvd -lm -lblitz -lboost_program_options-mt
+LIBS     = -lOpenCL -lGL -lcvd -lm -lblitz -lboost_program_options-mt
 
 SOURCES  = $(shell ls src/*/*.cc src/*/*/*.cc)
 
@@ -54,11 +54,11 @@ all:
 	scripts/codegen-fmix.py          | tee opencl/fmix.cl          | scripts/embed.py OCL_FMIX           > src/kernels/fmix.hh
 	scripts/codegen-random-int.py    | tee opencl/random-int.cl    | scripts/embed.py OCL_RANDOM_INT     > src/kernels/random-int.hh
 
-	g++ -shared -fPIC -o bin/libcvdcl.so $(CFLAGS) $(LIBS) $(SOURCES)
+	g++ -shared -fPIC -o bin/libcvdcl.so $(CFLAGS) $(SOURCES) $(LIBS)
 
-	g++ -o bin/test-cholesky $(CFLAGS) $(LIBS) bin/libcvdcl.so src/cholesky.cc
-	g++ -o bin/test-se3-exp $(CFLAGS) $(LIBS) bin/libcvdcl.so src/test-se3.cc
-	g++ -o bin/test-pose $(CFLAGS) $(LIBS) bin/libcvdcl.so src/test-pose.cc
+	g++ -o bin/test-cholesky $(CFLAGS) src/cholesky.cc bin/libcvdcl.so $(LIBS)
+	g++ -o bin/test-se3-exp $(CFLAGS) src/test-se3.cc bin/libcvdcl.so $(LIBS)
+	g++ -o bin/test-pose $(CFLAGS) src/test-pose.cc bin/libcvdcl.so $(LIBS)
 
 clean:
 	rm -rfv obj bin src/kernels/*.hh opencl/*.cl
