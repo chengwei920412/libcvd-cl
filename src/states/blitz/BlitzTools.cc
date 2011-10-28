@@ -38,7 +38,7 @@ void glDrawPixelsRGBA(blitz::Array<cl_uchar, 3> const & array) {
 
     ::glPixelStorei(GL_UNPACK_ALIGNMENT, 0);
     ::glPixelStorei(GL_UNPACK_ROW_LENGTH, nx);
-    ::glDrawPixels(nx, ny, GL_RGBA, GL_BYTE, array.data());
+    ::glDrawPixels(nx, ny, GL_RGBA, GL_UNSIGNED_BYTE, array.data());
     ::glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 }
 
