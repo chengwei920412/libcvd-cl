@@ -221,9 +221,6 @@ static void cufast(uchar1 const * data, int nx, int ny) {
 int main(int argc, char **argv) {
     cudaSetDevice(0);
 
-    // Full width of text image.
-    int const fnx = 2897;
-
     // Image size to keep for computation.
     int const  nx = 2048;
     int const  ny = 2048;
@@ -236,6 +233,12 @@ int main(int argc, char **argv) {
     std::ifstream file;
     file.exceptions(~std::ios_base::goodbit);
     file.open("../images/shuttle.txt", std::ios::in | std::ios::binary);
+
+    // Read image size.
+    int fnx = 0;
+    int fny = 0;
+    file >> fnx;
+    file >> fny;
 
     // Read sub-image.
     for (int y = 0, p = 0; y < ny; y++) {
