@@ -36,7 +36,6 @@
 #include <cvd-cl/steps/PreFastRichStep.hh>
 #include <cvd-cl/steps/ClipDepthStep.hh>
 #include <cvd-cl/steps/FastRichStep.hh>
-#include <cvd-cl/steps/FastBestStep.hh>
 #include <cvd-cl/steps/HipsRichStep.hh>
 #include <cvd-cl/steps/HipsBlendRichStep.hh>
 #include <cvd-cl/steps/HipsMakeTreeStep.hh>
@@ -192,7 +191,6 @@ static void testPipeline(
 
     // Create FAST and HIPS states.
     CVD::CL::RichImageState  imageNeat   (worker, ny, nx);
-    CVD::CL::GrayImageState  scores      (worker, ny, nx);
     CVD::CL::PointListState  corners1    (worker, nxy);
     CVD::CL::PointListState  corners2    (worker, nxy);
     CVD::CL::PointListState  corners3    (worker, nxy);
@@ -229,14 +227,12 @@ static void testPipeline(
     // Create steps specific to image1.
     CVD::CL::PreFastRichStep runPreFast1 (imageNeat, corners1, opts.fast_threshold);
     CVD::CL::ClipDepthStep   runClip1    (camera.qmap,  corners1, corners2);
-    CVD::CL::FastRichStep    runFast1    (imageNeat, corners2, scores, im1corners, opts.fast_threshold, opts.fast_ring);
-    CVD::CL::FastBestStep    runMaxFast1 (                     scores, corners3, im1corners);
+    CVD::CL::FastRichStep    runFast1    (imageNeat, corners2, im1corners, opts.fast_threshold, opts.fast_ring);
     CVD::CL::HipsBlendRichStep    runHips1    (imageNeat,                             im1corners, im1hips, opts.hips_blendsize);
 
     // Create steps specific to image2.
     CVD::CL::PreFastRichStep runPreFast2 (imageNeat, corners1, opts.fast_threshold);
-    CVD::CL::FastRichStep    runFast2    (imageNeat, corners1, scores, im2corners, opts.fast_threshold, opts.fast_ring);
-    CVD::CL::FastBestStep    runMaxFast2 (                     scores, corners2,                      im2corners);
+    CVD::CL::FastRichStep    runFast2    (imageNeat, corners1, im2corners, opts.fast_threshold, opts.fast_ring);
     CVD::CL::HipsRichStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
 
     // Create step for HIPS tree based on stage 1.
@@ -267,12 +263,6 @@ static void testPipeline(
     int64_t const timeCopy1 = 0;
     CVD::CL::setImage(imageNeat, input.g1image);
 
-    // Zero FAST scores.
-    scores.zero();
-    corners1.zero();
-    corners2.zero();
-    corners3.zero();
-
     // Run image 1 pipeline.
     int64_t const timePreFast1 = runPreFast1.measure();
     size_t const ncull1 = corners1.getCount();
@@ -280,7 +270,6 @@ static void testPipeline(
     size_t const nclip1 = corners2.getCount();
     int64_t const timeFast1 = runFast1.measure();
     size_t const nfast1 = im1corners.getCount();
-    // runMaxFast1.measure();
     size_t const nbest1 = im1corners.getCount();
     int64_t const timeHips1 = runHips1.measure();
 
@@ -288,17 +277,11 @@ static void testPipeline(
     int64_t const timeCopy2 = 0;
     CVD::CL::setImage(imageNeat, input.g2image);
 
-    // Zero FAST scores.
-    scores.zero();
-    corners1.zero();
-    corners2.zero();
-
     // Run image 2 pipeline.
     int64_t const timePreFast2 = runPreFast2.measure();
     size_t const ncull2 = corners1.getCount();
     int64_t const timeFast2 = runFast2.measure();
     size_t const nfast2 = im2corners.getCount();
-    // runMaxFast2.measure();
     size_t const nbest2 = im2corners.getCount();
     int64_t const timeHips2 = runHips2.measure();
 
@@ -310,7 +293,6 @@ static void testPipeline(
     std::cerr << std::setw(8) << ncull1 << std::setw(8) << ncull2 << " corners after culling" << std::endl;
     std::cerr << std::setw(8) << nclip1 << std::setw(8) << ncull2 << " corners after depth" << std::endl;
     std::cerr << std::setw(8) << nfast1 << std::setw(8) << nfast2 << " corners after FAST" << std::endl;
-    // std::cerr << std::setw(8) << nbest1 << std::setw(8) << nbest2 << " corners after filtering" << std::endl;
     std::cerr << std::endl;
     std::cerr << std::setw(8) << timeCopy1       << std::setw(8) << timeCopy2      << " us writing image" << std::endl;
     std::cerr << std::setw(8) << timePreFast1    << std::setw(8) << timePreFast2   << " us culling corners" << std::endl;

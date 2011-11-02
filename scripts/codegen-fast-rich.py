@@ -94,7 +94,6 @@ int mask_test(uint x16) {
 
 kernel void fast_rich(
     read_only  image2d_t   image,
-    write_only image2d_t   scores,
     global     int2      * corners,
     global     int2      * filtered,
     global     int       * icorner,
@@ -126,18 +125,8 @@ for (shift, _) in enumerate(OFFSETS):
     print ("    float  const d%02d = dist4(p%02d, p00);" % (shift + 1, shift + 1))
 print
 
-print "    // Select the maximum difference."
-print "    float        sco = 0;"
-for (shift, _) in enumerate(OFFSETS):
-    print "                 sco = max(sco, d%02d);" % (shift + 1)
-print
-
-print "    // Record maximum difference as score."
-print "    write_imageui(scores, xy, (uint4)((uint) sco, 0, 0, 0));"
-print
-
 print "    // Threshold the absolute difference of each circle pixel."
-print "    int    const sum = ("
+print "    uint const pattern = ("
 print " |\n".join([
     ("        ((d%02d > FAST_THRESH) << %2d)" % (shift + 1, shift))
     for shift in range(0, 16)
@@ -147,7 +136,7 @@ print "    );"
 print
 
 print """
-    if (mask_test(sum)) {
+    if (mask_test(pattern)) {
         // Atomically append to corner buffer.
         int const icorn = atom_inc(icorner);
         if (icorn < FAST_COUNT)

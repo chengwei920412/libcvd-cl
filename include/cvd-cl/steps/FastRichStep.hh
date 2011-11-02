@@ -34,7 +34,7 @@ namespace CL  {
 class FastRichStep : public WorkerStep {
 public:
 
-    explicit FastRichStep(RichImageState & i_image, PointListState & i_points, GrayImageState & o_scores, PointListState & o_points, cl_int threshold=40, cl_int ring=9);
+    explicit FastRichStep(RichImageState & i_image, PointListState & i_points, PointListState & o_points, cl_int threshold=40, cl_int ring=9);
     virtual ~FastRichStep();
 
     virtual void execute();
@@ -46,7 +46,6 @@ protected:
     PointListState & i_points;
 
     // Outputs.
-    GrayImageState & o_scores;
     PointListState & o_points;
 
     // Parameters.
