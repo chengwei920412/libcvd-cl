@@ -26,6 +26,7 @@
 #undef isfinite
 #undef isnan
 
+#include <cvd/fast_corner.h>
 #include <cvd/image_io.h>
 
 #include <cuda.h>
@@ -126,7 +127,10 @@ __global__ void fast2_kernel(
     }
 }
 
-static void cufast(uchar1 const * data, int nx, int ny) {
+static void cufast(CVD::Image<CVD::byte> const & image, int nx, int ny) {
+    // Re-interpret image pointer.
+    uchar1 const * const data = reinterpret_cast<uchar1 const *>(image.data());
+
     // Configure texture object.
     testImage.addressMode[0] = cudaAddressModeClamp;
     testImage.addressMode[1] = cudaAddressModeClamp;
@@ -222,6 +226,29 @@ static void cufast(uchar1 const * data, int nx, int ny) {
     std::cerr << std::setw(8) << ncorners2 << " corners 2" << std::endl;
     std::cerr << std::setw(8) << us1 << " microseconds 1" << std::endl;
     std::cerr << std::setw(8) << us2 << " microseconds 2" << std::endl;
+
+    // Prepare corner buffer.
+    std::vector<CVD::ImageRef> cvd_corners;
+    cvd_corners.reserve(FAST_COUNT);
+
+    long const time4 = time(NULL);
+
+    for (int i = 0; i < REPEAT; i++) {
+        cvd_corners.clear();
+        CVD::fast_corner_detect_9(image, cvd_corners, FAST_THRESH);
+    }
+
+    long const time5 = time(NULL);
+
+    // Read number of corners.
+    int const ncorners3 = cvd_corners.size();
+
+    // Calculate microseconds per kernel.
+    int const us3 = (((time5 - time4) * 1000000) / REPEAT);
+
+    // Report timing and number of corners.
+    std::cerr << std::setw(8) << ncorners3 << " corners 3" << std::endl;
+    std::cerr << std::setw(8) << us3 << " microseconds 3" << std::endl;
 }
 
 int main(int argc, char **argv) {
@@ -237,11 +264,8 @@ int main(int argc, char **argv) {
     CVD::Image<CVD::byte> keepImage(keepSize);
     keepImage.copy_from(fullImage.sub_image(CVD::ImageRef(0, 0), keepSize));
 
-    // Re-interpret image pointer.
-    uchar1 const * const data = reinterpret_cast<uchar1 const *>(keepImage.data());
-
     // Test and benchmark CUFAST.
-    cufast(data, nx, ny);
+    cufast(keepImage, nx, ny);
 
     return 0;
 }
