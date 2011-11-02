@@ -22,6 +22,12 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
+// Undo namespace damage done by CUDA's nvcc.
+#undef isfinite
+#undef isnan
+
+#include <cvd/image_io.h>
+
 #include <cuda.h>
 
 #include <fstream>
@@ -219,43 +225,23 @@ static void cufast(uchar1 const * data, int nx, int ny) {
 }
 
 int main(int argc, char **argv) {
-    cudaSetDevice(0);
+    CVD::Image<CVD::byte> const fullImage = CVD::img_load("../images/shuttle.jpg");
+    CVD::ImageRef const fullSize = fullImage.size();
 
     // Image size to keep for computation.
-    int const  nx = 2048;
-    int const  ny = 2048;
+    int const nx = 2048;
+    int const ny = 2048;
+    CVD::ImageRef const keepSize(nx, ny);
 
-    // Empty image data vector.
-    uchar1 const zero = {0};
-    std::vector<uchar1> data(nx * ny, zero);
+    // Crop to sub-image.
+    CVD::Image<CVD::byte> keepImage(keepSize);
+    keepImage.copy_from(fullImage.sub_image(CVD::ImageRef(0, 0), keepSize));
 
-    // Open image file.
-    std::ifstream file;
-    file.exceptions(~std::ios_base::goodbit);
-    file.open("../images/shuttle.txt", std::ios::in | std::ios::binary);
-
-    // Read image size.
-    int fnx = 0;
-    int fny = 0;
-    file >> fnx;
-    file >> fny;
-
-    // Read sub-image.
-    for (int y = 0, p = 0; y < ny; y++) {
-        for (int x = 0; x < fnx; x++) {
-            int pix = 0;
-            file >> pix;
-
-            if (x < nx)
-                data.at(p++).x = pix;
-        }
-    }
-
-    // Close file.
-    file.close();
+    // Re-interpret image pointer.
+    uchar1 const * const data = reinterpret_cast<uchar1 const *>(keepImage.data());
 
     // Test and benchmark CUFAST.
-    cufast(data.data(), nx, ny);
+    cufast(data, nx, ny);
 
     return 0;
 }
