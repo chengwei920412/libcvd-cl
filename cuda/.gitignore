@@ -1,4 +1,5 @@
 /bin-test
 /fast1_gen.cu
 /fast2_gen.cu
+/libfastcl.so
 

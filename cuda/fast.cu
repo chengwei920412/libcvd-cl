@@ -26,30 +26,15 @@
 #undef isfinite
 #undef isnan
 
-#include <cvd/fast_corner.h>
-#include <cvd/image_io.h>
-
 #include <cuda.h>
 
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <vector>
-
-// Use time() because nvcc isn't compatible with boost.
-#include <ctime>
-
-#define X_OFF            8
-#define Y_OFF            8
-#define FAST_RING        9
-#define FAST_THRESH     40
-#define REPEAT       10000
-
-// Maximum number of corners.
-#define FAST_COUNT (1 << 18)
+#include "common.h"
 
 // Number of threads per 1D group.
 #define NTHREADS 512
+
+// Prototype for external OpenCL FAST
+void clfast(CVD::Image<CVD::byte> const & image);
 
 // Declare 1-byte read-only texture object.
 texture<uchar1, 2, cudaReadModeElementType> static testImage;
@@ -183,10 +168,6 @@ static void cufast(CVD::Image<CVD::byte> const & image) {
     cudaMemcpy(icorner1, &zero, sizeof(zero), cudaMemcpyHostToDevice);
     cudaMemcpy(icorner2, &zero, sizeof(zero), cudaMemcpyHostToDevice);
 
-    // Read number of corners.
-    int ncorners1 = 0;
-    int ncorners2 = 0;
-
     // Run kernels for time.
 
     long const time1 = time(NULL);
@@ -205,6 +186,9 @@ static void cufast(CVD::Image<CVD::byte> const & image) {
 
     long const time3 = time(NULL);
 
+    // Read number of corners.
+    int ncorners1 = 0;
+    int ncorners2 = 0;
     cudaMemcpy(&ncorners1, icorner1, sizeof(ncorners1), cudaMemcpyDeviceToHost);
     cudaMemcpy(&ncorners2, icorner2, sizeof(ncorners2), cudaMemcpyDeviceToHost);
 
@@ -270,6 +254,7 @@ int main(int argc, char **argv) {
 
     // Benchmark all implementations.
     cufast(keepImage);
+    clfast(keepImage);
     cxxfast(keepImage);
 
     return 0;
