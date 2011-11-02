@@ -60,5 +60,8 @@ all:
 	g++ -o bin/test-se3-exp $(CFLAGS) src/test-se3.cc bin/libcvdcl.so $(LIBS)
 	g++ -o bin/test-pose $(CFLAGS) src/test-pose.cc bin/libcvdcl.so $(LIBS)
 
+	# Utilities
+	g++ -o bin/img-to-txt $(CFLAGS) src/img-to-txt.cc -lcvd
+
 clean:
 	rm -rfv obj bin src/kernels/*.hh opencl/*.cl
