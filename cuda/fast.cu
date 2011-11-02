@@ -127,9 +127,11 @@ __global__ void fast2_kernel(
     }
 }
 
-static void cufast(CVD::Image<CVD::byte> const & image, int nx, int ny) {
+static void cufast(CVD::Image<CVD::byte> const & image) {
     // Re-interpret image pointer.
     uchar1 const * const data = reinterpret_cast<uchar1 const *>(image.data());
+    int const nx = image.size().x;
+    int const ny = image.size().y;
 
     // Configure texture object.
     testImage.addressMode[0] = cudaAddressModeClamp;
@@ -222,33 +224,39 @@ static void cufast(CVD::Image<CVD::byte> const & image, int nx, int ny) {
     int const us2 = (((time3 - time2) * 1000000) / REPEAT);
 
     // Report timing and number of corners.
-    std::cerr << std::setw(8) << ncorners1 << " corners 1" << std::endl;
-    std::cerr << std::setw(8) << ncorners2 << " corners 2" << std::endl;
-    std::cerr << std::setw(8) << us1 << " microseconds 1" << std::endl;
-    std::cerr << std::setw(8) << us2 << " microseconds 2" << std::endl;
+    std::cerr << "CUDA" << std::endl;
+    std::cerr << std::setw(12) << ncorners1 << " corners 1" << std::endl;
+    std::cerr << std::setw(12) << ncorners2 << " corners 2" << std::endl;
+    std::cerr << std::setw(12) << us1 << " microseconds 1" << std::endl;
+    std::cerr << std::setw(12) << us2 << " microseconds 2" << std::endl;
+    std::cerr << std::endl;
+}
 
+static void cxxfast(CVD::Image<CVD::byte> const & image) {
     // Prepare corner buffer.
     std::vector<CVD::ImageRef> cvd_corners;
     cvd_corners.reserve(FAST_COUNT);
 
-    long const time4 = time(NULL);
+    long const time1 = time(NULL);
 
     for (int i = 0; i < REPEAT; i++) {
         cvd_corners.clear();
         CVD::fast_corner_detect_9(image, cvd_corners, FAST_THRESH);
     }
 
-    long const time5 = time(NULL);
+    long const time2 = time(NULL);
 
     // Read number of corners.
     int const ncorners3 = cvd_corners.size();
 
     // Calculate microseconds per kernel.
-    int const us3 = (((time5 - time4) * 1000000) / REPEAT);
+    int const us3 = (((time2 - time1) * 1000000) / REPEAT);
 
     // Report timing and number of corners.
-    std::cerr << std::setw(8) << ncorners3 << " corners 3" << std::endl;
-    std::cerr << std::setw(8) << us3 << " microseconds 3" << std::endl;
+    std::cerr << "C++" << std::endl;
+    std::cerr << std::setw(12) << ncorners3 << " corners 2" << std::endl;
+    std::cerr << std::setw(12) << us3 << " microseconds 1+2" << std::endl;
+    std::cerr << std::endl;
 }
 
 int main(int argc, char **argv) {
@@ -264,8 +272,9 @@ int main(int argc, char **argv) {
     CVD::Image<CVD::byte> keepImage(keepSize);
     keepImage.copy_from(fullImage.sub_image(CVD::ImageRef(0, 0), keepSize));
 
-    // Test and benchmark CUFAST.
-    cufast(keepImage, nx, ny);
+    // Benchmark all implementations.
+    cufast(keepImage);
+    cxxfast(keepImage);
 
     return 0;
 }
