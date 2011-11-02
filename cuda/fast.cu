@@ -40,7 +40,7 @@
 #include <ctime>
 
 #define X_OFF            8
-#define Y_OFF            7
+#define Y_OFF            8
 #define FAST_RING        9
 #define FAST_THRESH     40
 #define REPEAT       10000
