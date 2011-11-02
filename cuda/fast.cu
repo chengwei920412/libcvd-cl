@@ -193,18 +193,14 @@ static void cufast(CVD::Image<CVD::byte> const & image) {
 
     for (int i = 0; i < REPEAT; i++) {
         cudaMemcpy(icorner1, &zero, sizeof(zero), cudaMemcpyHostToDevice);
-        cudaThreadSynchronize();
         fast1_kernel<<<dimGrid1, dimBlock1, 0>>>(corners1, icorner1);
-        cudaThreadSynchronize();
     }
 
     long const time2 = time(NULL);
 
     for (int i = 0; i < REPEAT; i++) {
         cudaMemcpy(icorner2, &zero, sizeof(zero), cudaMemcpyHostToDevice);
-        cudaThreadSynchronize();
         fast2_kernel<<<FAST_COUNT / NTHREADS, NTHREADS>>>(corners1, icorner1, corners2, icorner2);
-        cudaThreadSynchronize();
     }
 
     long const time3 = time(NULL);
