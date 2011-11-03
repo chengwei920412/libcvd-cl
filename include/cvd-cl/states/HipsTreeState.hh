@@ -39,6 +39,9 @@ public:
     void setTree(std::vector<cl_ulong8> const & list);
     void setMaps(std::vector<cl_ushort> const & list);
 
+    std::vector<cl_ulong8> lastTree;
+    std::vector<cl_ushort> lastMaps;
+
 
     /** Virtual and actual shape of the HIPS descriptor forest. */
     HipsTreeShape const shape;

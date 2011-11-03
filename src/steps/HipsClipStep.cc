@@ -49,10 +49,9 @@ void HipsClipStep::execute() {
     // Assign kernel parameters.
     kernel.setArg(0, i_hips.buffer);
     kernel.setArg(1, o_hips.buffer);
-    kernel.setArg(2, o_hips.count);
 
     // Reset number of output descriptors.
-    o_hips.setCount(0);
+    o_hips.setCount(np);
 
     // Queue kernel with global size set to number of input points.
     worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np), cl::NullRange);

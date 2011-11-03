@@ -26,10 +26,15 @@
 
 #include <algorithm>
 
+#ifdef CVD_CL_VERBOSE
+#include <iomanip>
+#include <iostream>
+#endif
+
 namespace CVD {
 namespace CL  {
 
-HipsTreeFindStep::HipsTreeFindStep(HipsTreeState & i_tree, HipsListState & i_hips, PointListState & o_matches, cl_int maxerr, bool rotate) :
+HipsTreeFindStep::HipsTreeFindStep(HipsTreeState & i_tree, HipsListState & i_hips, PointListState & o_matches, cl_uint maxerr, bool rotate) :
     WorkerStep (i_tree.worker),
     i_tree     (i_tree),
     i_hips     (i_hips),
@@ -57,7 +62,124 @@ HipsTreeFindStep::~HipsTreeFindStep() {
     // Do nothing.
 }
 
+template <typename T>
+static int bitcount (T v){
+  v = v - ((v >> 1) & (T)~(T)0/3);                           // temp
+  v = (v & (T)~(T)0/15*3) + ((v >> 2) & (T)~(T)0/15*3);      // temp
+  v = (v + (v >> 4)) & (T)~(T)0/255*15;                      // temp
+  return (T)(v * ((T)~(T)0/255)) >> (sizeof(T) - 1) * CHAR_BIT; // count
+}
+
+static cl_uint bitcount8(cl_ulong8 const & t, cl_ulong8 const & r) {
+    cl_uint total = 0;
+    for (cl_uint i = 0; i < 8; i++)
+        total += bitcount(t.s[i] & ~r.s[i]);
+    return total;
+}
+
+static cl_ulong8 rotate8(cl_ulong8 const & t, cl_ulong lshift) {
+    cl_ulong const rshift = (64 - lshift);
+    cl_ulong8 out;
+    for (cl_uint i = 0; i < 8; i++)
+        out.s[i] = ((t.s[i] << lshift) | (t.s[i] >> lshift));
+    return out;
+}
+
+void HipsTreeFindStep::findByQueue() {
+    // Refer to tree shape.
+    HipsTreeShape const & shape = i_tree.shape;
+
+    // Refer to saved tree data.
+    std::vector<cl_ulong8> const & tree = i_tree.lastTree;
+    std::vector<cl_ushort> const & maps = i_tree.lastMaps;
+
+    // Read test descriptors from worker.
+    std::vector<cl_ulong8> tests;
+    i_hips.get(&tests);
+    cl_uint const ntests = tests.size();
+
+    // Prepare pair vector.
+    std::vector<cl_int2> pairs;
+    pairs.reserve(ntests * 4);
+
+    // Prepare node stack.
+    std::vector<cl_ushort> stack;
+    stack.reserve(shape.nKeepNodes);
+
+    // Set number of rotations by parameter.
+    cl_uint const nrot = (rotate ? 16 : 1);
+
+    // Attempt each test descriptor.
+    for (cl_uint itest = 0; itest < ntests; itest++) {
+        // Refer to test descriptor.
+        cl_ulong8 const & test0 = tests.at(itest);
+
+        // Try all rotations.
+        for (cl_uint irot = 0; irot < nrot; irot++) {
+            cl_ulong8 const test = rotate8(test0, irot * 4);
+
+            // Seed stack with single tree root.
+            stack.push_back(0);
+
+            // Perform selective depth-first search of the tree.
+            while (stack.empty() == false) {
+                // Pop last element in the stack.
+                cl_uint const inode = stack.back();
+                stack.pop_back();
+
+                // Refer to descriptor node.
+                cl_ulong8 const & node = tree.at(inode);
+
+                // Calculate error.
+                cl_uint const error = bitcount8(test, node);
+
+                // Check error.
+                if (error <= maxerr) {
+                    // If this is a leaf, record match and bail out.
+                    if (inode >= shape.iKeepLeaf0) {
+                        cl_uint const ileaf = maps.at(inode - shape.iKeepLeaf0);
+                        cl_int2 const pair = {{ileaf, itest}};
+                        pairs.push_back(pair);
+                        stack.clear();
+                        break;
+                    }
+
+                    // This is an internal node, so add its children to the stack.
+                    cl_uint const inext0 = (inode  * 2);
+                    cl_uint const inext1 = (inext0 + 1);
+                    cl_uint const inext2 = (inext0 + 2);
+                    stack.push_back(inext2);
+                    stack.push_back(inext1);
+                }
+            }
+
+            if (pairs.size() >= o_matches.size)
+                break;
+        }
+
+        if (pairs.size() >= o_matches.size)
+            break;
+    }
+
+    // Write matched pairs to worker.
+    o_matches.set(pairs);
+}
+
 void HipsTreeFindStep::execute() {
+#ifdef CVD_CL_VERBOSE
+        boost::system_time t1 = boost::get_system_time();
+        findByQueue();
+        boost::system_time t2 = boost::get_system_time();
+
+        int64_t const t_cfind = (t2 - t1).total_microseconds();
+        cl_uint const ncmatches = o_matches.getCount();
+
+        std::cerr << "C++ tree search in " << std::setw(9) << t_cfind << " us" << std::endl;
+        std::cerr << "  Found            " << std::setw(9) << ncmatches << " matches" << std::endl;
+
+        worker.finish();
+#endif
+
     // Read number of descriptors.
     size_t const nh = i_hips.getCount();
 
@@ -87,6 +209,17 @@ void HipsTreeFindStep::execute() {
 
     // Queue kernel with global size set to number of input points in the test list.
     worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, local);
+
+#ifdef CVD_CL_VERBOSE
+        worker.finish();
+        boost::system_time t3 = boost::get_system_time();
+
+        int64_t const t_dfind = (t3 - t2).total_microseconds();
+        cl_uint const ndmatches = o_matches.getCount();
+
+        std::cerr << "OCL tree search in " << std::setw(9) << t_dfind << " us" << std::endl;
+        std::cerr << "  Found            " << std::setw(9) << ndmatches << " matches" << std::endl;
+#endif
 }
 
 } // namespace CL

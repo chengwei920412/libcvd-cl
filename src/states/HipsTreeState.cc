@@ -54,6 +54,8 @@ HipsTreeState::~HipsTreeState() {
 void HipsTreeState::setTree(std::vector<cl_ulong8> const & list) {
     assert(list.size() == shape.nTreeNodes);
 
+    lastTree = list;
+
     cl::size_t<3> origin;
     origin[0] = 0;
     origin[1] = 0;
@@ -75,6 +77,8 @@ void HipsTreeState::setTree(std::vector<cl_ulong8> const & list) {
 
 void HipsTreeState::setMaps(std::vector<cl_ushort> const & list) {
     assert(list.size() == shape.nLeaves);
+
+    lastMaps = list;
 
     cl::size_t<3> origin;
     origin[0] = 0;
