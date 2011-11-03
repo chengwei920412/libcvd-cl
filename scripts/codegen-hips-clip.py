@@ -62,21 +62,11 @@ uint bitcount16(uint16 v) {
     return (v4.x + v4.y + v4.z + v4.w);
 }
 
-kernel void hips_clip(
-    // N.B.: These uint16 are actually ulong8.
-    global uint16 const * hashes1,  // T
-    global uint16       * hashes2,  // R
-    global uint         * cursor   // Output number of hashes.
-) {
-
+kernel void hips_clip(global uint16 * hashes) {
     // Use global work item for hash index.
-    uint   const ihash  = get_global_id(0);
+    uint const ihash = get_global_id(0);
 
-    // Read hash.
-    uint8  const hash   = hashes1[ihash];
-
-    // Keep hash if lower than bit threshold.
-    if (bitcount16(hash) <= HIPS_MAX_BITS) {
-        hashes2[atom_inc(cursor)] = hash;
-    }
+    // Clip hash if above bit threshold.
+    if (bitcount16(hashes[ihash]) > HIPS_MAX_BITS)
+        hashes[ihash] &= 0;
 }"""

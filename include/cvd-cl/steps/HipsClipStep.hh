@@ -33,18 +33,15 @@ namespace CL  {
 class HipsClipStep : public WorkerStep {
 public:
 
-    explicit HipsClipStep(HipsListState & i_hips, HipsListState & o_hips, cl_int maxbits=150);
+    explicit HipsClipStep(HipsListState & io_hips, cl_int maxbits=150);
     virtual ~HipsClipStep();
 
     virtual void execute();
 
 protected:
 
-    // Inputs.
-    HipsListState  & i_hips;
-
-    // Outputs.
-    HipsListState  & o_hips;
+    // Inputs-outputs.
+    HipsListState  & io_hips;
 
     // Parameters.
     cl_int const     maxbits;

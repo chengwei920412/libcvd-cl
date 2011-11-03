@@ -27,10 +27,9 @@
 namespace CVD {
 namespace CL  {
 
-HipsClipStep::HipsClipStep(HipsListState & i_hips, HipsListState & o_hips, cl_int maxbits) :
-    WorkerStep (i_hips.worker),
-    i_hips     (i_hips),
-    o_hips     (o_hips),
+HipsClipStep::HipsClipStep(HipsListState & io_hips, cl_int maxbits) :
+    WorkerStep (io_hips.worker),
+    io_hips    (io_hips),
     maxbits    (maxbits)
 {
     char opt[256] = {0,};
@@ -44,14 +43,10 @@ HipsClipStep::~HipsClipStep() {
 
 void HipsClipStep::execute() {
     // Read number of descriptors.
-    size_t const np = i_hips.getCount();
+    size_t const np = io_hips.getCount();
 
     // Assign kernel parameters.
-    kernel.setArg(0, i_hips.buffer);
-    kernel.setArg(1, o_hips.buffer);
-
-    // Reset number of output descriptors.
-    o_hips.setCount(np);
+    kernel.setArg(0, io_hips.buffer);
 
     // Queue kernel with global size set to number of input points.
     worker.queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(np), cl::NullRange);

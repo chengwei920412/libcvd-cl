@@ -41,6 +41,7 @@
 #include <cvd-cl/steps/HipsMakeTreeStep.hh>
 #include <cvd-cl/steps/HipsTreeFindStep.hh>
 #include <cvd-cl/steps/HipsFindStep.hh>
+#include <cvd-cl/steps/HipsClipStep.hh>
 #include <cvd-cl/steps/ToUvqUvStep.hh>
 #include <cvd-cl/steps/MixUvqUvStep.hh>
 #include <cvd-cl/steps/PoseUvqWlsStep.hh>
@@ -229,11 +230,13 @@ static void testPipeline(
     CVD::CL::ClipDepthStep   runClip1    (camera.qmap,  corners1, corners2);
     CVD::CL::FastRichStep    runFast1    (imageNeat, corners2, im1corners, opts.fast_threshold, opts.fast_ring);
     CVD::CL::HipsBlendRichStep    runHips1    (imageNeat,                             im1corners, im1hips, opts.hips_blendsize);
+    CVD::CL::HipsClipStep    runHipsClip1(im1hips, opts.hips_maxbits);
 
     // Create steps specific to image2.
     CVD::CL::PreFastRichStep runPreFast2 (imageNeat, corners1, opts.fast_threshold);
     CVD::CL::FastRichStep    runFast2    (imageNeat, corners1, im2corners, opts.fast_threshold, opts.fast_ring);
     CVD::CL::HipsRichStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
+    CVD::CL::HipsClipStep    runHipsClip2(im2hips, opts.hips_maxbits);
 
     // Create step for HIPS tree based on stage 1.
     CVD::CL::HipsMakeTreeStep runTree1   (im1hips, im1tree);
@@ -272,6 +275,7 @@ static void testPipeline(
     size_t const nfast1 = im1corners.getCount();
     size_t const nbest1 = im1corners.getCount();
     int64_t const timeHips1 = runHips1.measure();
+    int64_t const timeHClip1 = runHipsClip1.measure();
 
     // Write image 2 to device.
     int64_t const timeCopy2 = 0;
@@ -284,6 +288,7 @@ static void testPipeline(
     size_t const nfast2 = im2corners.getCount();
     size_t const nbest2 = im2corners.getCount();
     int64_t const timeHips2 = runHips2.measure();
+    int64_t const timeHClip2 = runHipsClip2.measure();
 
     // Finish any outstanding work.
     worker.finish();
@@ -299,6 +304,7 @@ static void testPipeline(
     std::cerr << std::setw(8) << timeClip1       << std::setw(8) << 0              << " us filtering by depth" << std::endl;
     std::cerr << std::setw(8) << timeFast1       << std::setw(8) << timeFast2      << " us running FAST" << std::endl;
     std::cerr << std::setw(8) << timeHips1       << std::setw(8) << timeHips2      << " us making HIPS" << std::endl;
+    std::cerr << std::setw(8) << timeHClip1      << std::setw(8) << timeHClip2     << " us clipping HIPS" << std::endl;
     std::cerr << std::endl;
 
     // Read out final corner lists.
