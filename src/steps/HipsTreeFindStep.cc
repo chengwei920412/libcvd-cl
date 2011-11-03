@@ -102,64 +102,80 @@ void HipsTreeFindStep::findByQueue() {
     std::vector<cl_int2> pairs;
     pairs.reserve(ntests * 4);
 
-    // Prepare node stack.
-    std::vector<cl_ushort> stack;
-    stack.reserve(shape.nKeepNodes);
-
     // Set number of rotations by parameter.
     cl_uint const nrot = (rotate ? 16 : 1);
 
-    // Attempt each test descriptor.
-    for (cl_uint itest = 0; itest < ntests; itest++) {
-        // Refer to test descriptor.
-        cl_ulong8 const & test0 = tests.at(itest);
+    // Prepare integer for atomic counter.
+    cl_uint atom_itest = 0;
 
-        // Try all rotations.
-        for (cl_uint irot = 0; irot < nrot; irot++) {
-            cl_ulong8 const test = rotate8(test0, irot * 4);
+    #pragma omp parallel default(shared)
+    {
+        // Prepare node stack.
+        std::vector<cl_ushort> stack;
+        stack.reserve(shape.nKeepNodes);
 
-            // Seed stack with single tree root.
-            stack.push_back(0);
+        // Prepare pair vector.
+        std::vector<cl_int2> mypairs;
+        mypairs.reserve(ntests * 4);
 
-            // Perform selective depth-first search of the tree.
-            while (stack.empty() == false) {
-                // Pop last element in the stack.
-                cl_uint const inode = stack.back();
-                stack.pop_back();
+        while (true) {
+            // Atomically retrieve test descriptor index.
+            cl_uint const itest = __sync_fetch_and_add(&atom_itest, 1);
+            if (itest >= ntests)
+                break;
 
-                // Refer to descriptor node.
-                cl_ulong8 const & node = tree.at(inode);
+            // Refer to test descriptor.
+            cl_ulong8 const & test0 = tests.at(itest);
 
-                // Calculate error.
-                cl_uint const error = bitcount8(test, node);
+            // Try all rotations.
+            for (cl_uint irot = 0; irot < nrot; irot++) {
+                cl_ulong8 const test = rotate8(test0, irot * 4);
 
-                // Check error.
-                if (error <= maxerr) {
-                    // If this is a leaf, record match and bail out.
-                    if (inode >= shape.iKeepLeaf0) {
-                        cl_uint const ileaf = maps.at(inode - shape.iKeepLeaf0);
-                        cl_int2 const pair = {{ileaf, itest}};
-                        pairs.push_back(pair);
-                        stack.clear();
-                        break;
+                // Seed stack with single tree root.
+                stack.push_back(0);
+
+                // Perform selective depth-first search of the tree.
+                while (stack.empty() == false) {
+                    // Pop last element in the stack.
+                    cl_uint const inode = stack.back();
+                    stack.pop_back();
+
+                    // Refer to descriptor node.
+                    cl_ulong8 const & node = tree.at(inode);
+
+                    // Calculate descriptor pair error.
+                    cl_uint const error = bitcount8(test, node);
+
+                    // Check error against threshold.
+                    if (error <= maxerr) {
+                        if (inode >= shape.iKeepLeaf0) {
+                            // This is a leaf, record the match.
+                            cl_uint const ileaf = maps.at(inode - shape.iKeepLeaf0);
+                            cl_int2 const pair = {{ileaf, itest}};
+                            mypairs.push_back(pair);
+                        } else {
+                            // This is an internal node, add its children to the stack.
+                            cl_uint const inext0 = (inode  * 2);
+                            cl_uint const inext1 = (inext0 + 1);
+                            cl_uint const inext2 = (inext0 + 2);
+                            stack.push_back(inext2);
+                            stack.push_back(inext1);
+                        }
                     }
-
-                    // This is an internal node, so add its children to the stack.
-                    cl_uint const inext0 = (inode  * 2);
-                    cl_uint const inext1 = (inext0 + 1);
-                    cl_uint const inext2 = (inext0 + 2);
-                    stack.push_back(inext2);
-                    stack.push_back(inext1);
                 }
             }
-
-            if (pairs.size() >= o_matches.size)
-                break;
         }
 
-        if (pairs.size() >= o_matches.size)
-            break;
+        // Synchronously accumulate pairs.
+        #pragma omp critical
+        {
+            pairs.insert(pairs.end(), mypairs.begin(), mypairs.end());
+        }
     }
+
+    // Crop pair list.
+    if (pairs.size() > o_matches.size)
+        pairs.resize(o_matches.size);
 
     // Write matched pairs to worker.
     o_matches.set(pairs);
