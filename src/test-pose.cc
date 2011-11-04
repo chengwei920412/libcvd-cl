@@ -33,11 +33,11 @@
 #include <cvd/image_io.h>
 #include <cvd/videodisplay.h>
 
-#include <cvd-cl/steps/PreFastRichStep.hh>
+#include <cvd-cl/steps/PreFastGrayStep.hh>
 #include <cvd-cl/steps/ClipDepthStep.hh>
-#include <cvd-cl/steps/FastRichStep.hh>
-#include <cvd-cl/steps/HipsRichStep.hh>
-#include <cvd-cl/steps/HipsBlendRichStep.hh>
+#include <cvd-cl/steps/FastGrayStep.hh>
+#include <cvd-cl/steps/HipsGrayStep.hh>
+#include <cvd-cl/steps/HipsBlendGrayStep.hh>
 #include <cvd-cl/steps/HipsMakeTreeStep.hh>
 #include <cvd-cl/steps/HipsTreeFindStep.hh>
 #include <cvd-cl/steps/HipsFindStep.hh>
@@ -55,7 +55,7 @@
 #include <boost/program_options.hpp>
 
 // Typedefs for Blitz-based image format.
-typedef blitz::Array<cl_uchar, 3>  RichImage;
+typedef blitz::Array<cl_uchar, 3>  GrayImage;
 typedef blitz::Array<cl_float, 3> DepthImage;
 
 // Size constants.
@@ -111,7 +111,7 @@ static void learnCamera(Camera::Linear const & cvd_camera, CVD::CL::CameraState 
 }
 
 static void readRGBD(
-     RichImage & colour,
+     GrayImage & colour,
     DepthImage & depth,
     char const * path
 ) {
@@ -156,11 +156,9 @@ static void readRGBD(
             assert(b <= 0xFF);
             assert(d <= 0xFFFF);
 
-            colour(y, x, 0) = r;
-            colour(y, x, 1) = g;
-            colour(y, x, 2) = b;
+            colour(y, x, blitz::Range::all()) = ((r + g + b) / 3);
 
-             depth(y, x, 0) = d;
+             depth(y, x, blitz::Range::all()) = d;
         }
     }
 
@@ -169,8 +167,8 @@ static void readRGBD(
 }
 
 struct stage1input {
-    RichImage   g1image;
-    RichImage   g2image;
+    GrayImage   g1image;
+    GrayImage   g2image;
     DepthImage  d1image;
     options     opts;
 };
@@ -226,16 +224,16 @@ static void testPipeline(
     CVD::CL::Float2ListState test_uvs    (worker, ncorners);
 
     // Create steps specific to image1.
-    CVD::CL::PreFastRichStep runPreFast1 (imageNeat, corners1, opts.fast_threshold);
+    CVD::CL::PreFastGrayStep runPreFast1 (imageNeat, corners1, opts.fast_threshold);
     CVD::CL::ClipDepthStep   runClip1    (camera.qmap,  corners1, corners2);
-    CVD::CL::FastRichStep    runFast1    (imageNeat, corners2, im1corners, opts.fast_threshold, opts.fast_ring);
-    CVD::CL::HipsBlendRichStep    runHips1    (imageNeat,                             im1corners, im1hips, opts.hips_blendsize);
+    CVD::CL::FastGrayStep    runFast1    (imageNeat, corners2, im1corners, opts.fast_threshold, opts.fast_ring);
+    CVD::CL::HipsBlendGrayStep    runHips1    (imageNeat,                             im1corners, im1hips, opts.hips_blendsize);
     CVD::CL::HipsClipStep    runHipsClip1(im1hips, opts.hips_maxbits);
 
     // Create steps specific to image2.
-    CVD::CL::PreFastRichStep runPreFast2 (imageNeat, corners1, opts.fast_threshold);
-    CVD::CL::FastRichStep    runFast2    (imageNeat, corners1, im2corners, opts.fast_threshold, opts.fast_ring);
-    CVD::CL::HipsRichStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
+    CVD::CL::PreFastGrayStep runPreFast2 (imageNeat, corners1, opts.fast_threshold);
+    CVD::CL::FastGrayStep    runFast2    (imageNeat, corners1, im2corners, opts.fast_threshold, opts.fast_ring);
+    CVD::CL::HipsGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
     CVD::CL::HipsClipStep    runHipsClip2(im2hips, opts.hips_maxbits);
 
     // Create step for HIPS tree based on stage 1.
@@ -532,19 +530,19 @@ int main(int argc, char **argv) {
     opts.hips_rotate = (vm.count("no-rotate") < 1);
 
     std::cerr << "Reading image 1 (" << path1 << ")" << std::endl;
-    RichImage   g1image_full;
+    GrayImage   g1image_full;
     DepthImage  d1image_full;
     readRGBD(g1image_full, d1image_full, path1.c_str());
 
     std::cerr << "Reading image 2 (" << path2 << ")" << std::endl;
-    RichImage   g2image_full;
+    GrayImage   g2image_full;
     DepthImage  d2image_full;
     readRGBD(g2image_full, d2image_full, path2.c_str());
 
-    RichImage   g1image(256, 512, 4);
+    GrayImage   g1image(256, 512, 4);
     g1image = g1image_full(blitz::Range(0, 255), blitz::Range(80, 80 + 511), blitz::Range::all());
 
-    RichImage   g2image(256, 512, 4);
+    GrayImage   g2image(256, 512, 4);
     g2image = g2image_full(blitz::Range(0, 255), blitz::Range(80, 80 + 511), blitz::Range::all());
 
     DepthImage  d1image(256, 512, 1);
