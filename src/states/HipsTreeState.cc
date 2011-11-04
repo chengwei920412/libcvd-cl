@@ -41,7 +41,7 @@ HipsTreeState::HipsTreeState(Worker & worker, cl_uint nLeaves, cl_uint nKeepLeve
     WorkerState (worker),
     shape       (nLeaves, nKeepLevels),
     // Allocate image objects.
-    tree        (worker.context, CL_MEM_READ_ONLY, HipsFormat, 4, shape.nFullNodes),
+    tree        (worker.context, CL_MEM_READ_ONLY, HipsFormat, 2, shape.nFullNodes),
     maps        (worker.context, CL_MEM_READ_ONLY, MapsFormat, 1, shape.nLeaves)
 {
     // Do nothing.
@@ -51,7 +51,7 @@ HipsTreeState::~HipsTreeState() {
     // Do nothing.
 }
 
-void HipsTreeState::setTree(std::vector<cl_ulong8> const & list) {
+void HipsTreeState::setTree(std::vector<cl_ulong4> const & list) {
     assert(list.size() == shape.nTreeNodes);
 
     lastTree = list;
@@ -62,15 +62,15 @@ void HipsTreeState::setTree(std::vector<cl_ulong8> const & list) {
     origin[2] = 0;
 
     cl::size_t<3> region;
-    region[0] = 4;
+    region[0] = 2;
     region[1] = shape.nKeepNodes;
     region[2] = 1;
 
     // Cast to non-const void due to error in cl.hpp.
-    cl_ulong8 * data = const_cast<cl_ulong8 *>(list.data());
+    cl_ulong4 * data = const_cast<cl_ulong4 *>(list.data());
 
     // Offset to avoid skipped nodes.
-    cl_ulong8 * start = (data + shape.nDropNodes);
+    cl_ulong4 * start = (data + shape.nDropNodes);
 
     worker.queue.enqueueWriteImage(tree, CL_TRUE, origin, region, 0, 0, start);
 }

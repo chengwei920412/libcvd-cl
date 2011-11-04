@@ -70,17 +70,17 @@ static int bitcount (T v){
   return (T)(v * ((T)~(T)0/255)) >> (sizeof(T) - 1) * CHAR_BIT; // count
 }
 
-static cl_uint bitcount8(cl_ulong8 const & t, cl_ulong8 const & r) {
+static cl_uint bitcount4(cl_ulong4 const & t, cl_ulong4 const & r) {
     cl_uint total = 0;
-    for (cl_uint i = 0; i < 8; i++)
+    for (cl_uint i = 0; i < 4; i++)
         total += bitcount(t.s[i] & ~r.s[i]);
     return total;
 }
 
-static cl_ulong8 rotate8(cl_ulong8 const & t, cl_ulong lshift) {
+static cl_ulong4 rotate4(cl_ulong4 const & t, cl_ulong lshift) {
     cl_ulong const rshift = (64 - lshift);
-    cl_ulong8 out;
-    for (cl_uint i = 0; i < 8; i++)
+    cl_ulong4 out;
+    for (cl_uint i = 0; i < 4; i++)
         out.s[i] = ((t.s[i] << lshift) | (t.s[i] >> rshift));
     return out;
 }
@@ -90,11 +90,11 @@ void HipsTreeFindStep::findByQueue() {
     HipsTreeShape const & shape = i_tree.shape;
 
     // Refer to saved tree data.
-    std::vector<cl_ulong8> const & tree = i_tree.lastTree;
+    std::vector<cl_ulong4> const & tree = i_tree.lastTree;
     std::vector<cl_ushort> const & maps = i_tree.lastMaps;
 
     // Read test descriptors from worker.
-    std::vector<cl_ulong8> tests;
+    std::vector<cl_ulong4> tests;
     i_hips.get(&tests);
     cl_uint const ntests = tests.size();
 
@@ -125,11 +125,11 @@ void HipsTreeFindStep::findByQueue() {
                 break;
 
             // Refer to test descriptor.
-            cl_ulong8 const & test0 = tests.at(itest);
+            cl_ulong4 const & test0 = tests.at(itest);
 
             // Try all rotations.
             for (cl_uint irot = 0; irot < nrot; irot++) {
-                cl_ulong8 const test = rotate8(test0, irot * 4);
+                cl_ulong4 const test = rotate4(test0, irot * 4);
 
                 // Seed stack with single tree root.
                 stack.push_back(0);
@@ -141,10 +141,10 @@ void HipsTreeFindStep::findByQueue() {
                     stack.pop_back();
 
                     // Refer to descriptor node.
-                    cl_ulong8 const & node = tree.at(inode);
+                    cl_ulong4 const & node = tree.at(inode);
 
                     // Calculate descriptor pair error.
-                    cl_uint const error = bitcount8(test, node);
+                    cl_uint const error = bitcount4(test, node);
 
                     // Check error against threshold.
                     if (error <= maxerr) {

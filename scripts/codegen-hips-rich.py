@@ -83,7 +83,7 @@ print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
 kernel void hips_rich(
     read_only image2d_t   image,
     global    int2      * corners,
-    global    ulong8    * bins,
+    global    ulong4    * bins,
               int2        offset
 ) {
 
@@ -125,8 +125,8 @@ for colour in ("x", "y", "z"):
     print
 
 print "    // Populate elements of the output descriptor from the 8 (g.x, g.y, g.z) combinations."
-print "    ulong8 hash;"
-for (bin, (xi, yi, zi)) in enumerate(CHOICES):
+print "    ulong4 hash;"
+for (bin, (xi, yi, zi)) in enumerate(CHOICES[:4]):
     print "    hash.s%d = ((%sgx) & (%sgy) & (%sgz));" % (bin, xi, yi, zi)
 
 print """
