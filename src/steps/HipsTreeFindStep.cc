@@ -148,9 +148,9 @@ void HipsTreeFindStep::findByQueue() {
 
                     // Check error against threshold.
                     if (error <= maxerr) {
-                        if (inode >= shape.iKeepLeaf0) {
+                        if (inode >= shape.iTreeLeaf0) {
                             // This is a leaf, record the match.
-                            cl_uint const ileaf = maps.at(inode - shape.iKeepLeaf0);
+                            cl_uint const ileaf = maps.at(inode - shape.iTreeLeaf0);
                             cl_int2 const pair = {{ileaf, itest}};
                             mypairs.push_back(pair);
                         } else {
