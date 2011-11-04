@@ -81,7 +81,7 @@ static cl_ulong8 rotate8(cl_ulong8 const & t, cl_ulong lshift) {
     cl_ulong const rshift = (64 - lshift);
     cl_ulong8 out;
     for (cl_uint i = 0; i < 8; i++)
-        out.s[i] = ((t.s[i] << lshift) | (t.s[i] >> lshift));
+        out.s[i] = ((t.s[i] << lshift) | (t.s[i] >> rshift));
     return out;
 }
 
