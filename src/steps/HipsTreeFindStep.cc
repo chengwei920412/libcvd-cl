@@ -111,7 +111,7 @@ void HipsTreeFindStep::findByQueue() {
     #pragma omp parallel default(shared)
     {
         // Prepare node stack.
-        std::vector<cl_ushort> stack;
+        std::vector<cl_uint> stack;
         stack.reserve(shape.nKeepNodes);
 
         // Prepare pair vector.
