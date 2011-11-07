@@ -7,12 +7,7 @@ CFLAGS  += -g3 -DCVD_IMAGE_DEBUG -O0
 #CFLAGS  += -DNDEBUG
 CFLAGS  += -DBZ_DEBUG
 
-C99FLAGS  = -std=gnu99 -fopenmp -pthread -O2 -march=native
-C99FLAGS += -Wall -Wextra -Wno-unused -Wno-ignored-qualifiers -fmessage-length=0
-
 LIBS     = -lOpenCL -lGL -lcvd -lm -lblitz -lboost_program_options-mt
-
-CSOURCES = $(shell ls src/*/*.c src/*/*/*.c)
 
 SOURCES  = $(shell ls src/*/*.cc src/*/*/*.cc)
 
@@ -59,12 +54,11 @@ all:
 	scripts/codegen-fmix.py          | tee opencl/fmix.cl          | scripts/embed.py OCL_FMIX           > src/kernels/fmix.hh
 	scripts/codegen-random-int.py    | tee opencl/random-int.cl    | scripts/embed.py OCL_RANDOM_INT     > src/kernels/random-int.hh
 
-	gcc -shared -fPIC -o bin/libcvdcl99.so $(C99FLAGS) $(CSOURCES) $(LIBS)
 	g++ -shared -fPIC -o bin/libcvdcl.so $(CFLAGS) $(SOURCES) $(LIBS)
 
-	g++ -o bin/test-cholesky $(CFLAGS) src/cholesky.cc bin/libcvdcl.so bin/libcvdcl99.so $(LIBS)
-	g++ -o bin/test-se3-exp $(CFLAGS) src/test-se3.cc bin/libcvdcl.so bin/libcvdcl99.so $(LIBS)
-	g++ -o bin/test-pose $(CFLAGS) src/test-pose.cc bin/libcvdcl.so bin/libcvdcl99.so $(LIBS)
+	g++ -o bin/test-cholesky $(CFLAGS) src/cholesky.cc bin/libcvdcl.so $(LIBS)
+	g++ -o bin/test-se3-exp $(CFLAGS) src/test-se3.cc bin/libcvdcl.so $(LIBS)
+	g++ -o bin/test-pose $(CFLAGS) src/test-pose.cc bin/libcvdcl.so $(LIBS)
 
 	# Utilities
 	g++ -o bin/img-to-txt $(CFLAGS) src/img-to-txt.cc -lcvd
