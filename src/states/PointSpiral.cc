@@ -93,21 +93,8 @@ void makePointSpiral(SpiralPoints & spiral, std::vector<cl_int2> const & positio
     std::sort(spiral.begin(), spiral.end());
 }
 
-cl_int2 mki2(cl_int x, cl_int y) {
-    cl_int2 out = {{x, y}};
-    return out;
-}
-
-cl_int cost(SpiralPoint const & p1, SpiralPoint const & p2) {
+static cl_int cost(SpiralPoint const & p1, SpiralPoint const & p2) {
     return ((p1.score == p2.score) ? 1 : 0);
-}
-
-double averageAngle(SpiralPoints const & spiral) {
-    cl_int const npoints = spiral.size();
-    double total = 0;
-    for (cl_int i = 0; i < npoints; i++)
-        total += spiral.at(i).angle;
-    return (total / npoints);
 }
 
 void matchPointSpirals(std::vector<cl_int2> & pairs, SpiralPoints const & spiral1, SpiralPoints const & spiral2) {
