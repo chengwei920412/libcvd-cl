@@ -38,6 +38,9 @@
 
 #include <cvd-cl/states/PointSpiral.hh>
 
+#include <boost/date_time.hpp>
+#include <boost/thread.hpp>
+
 static void recorner(std::vector<cl_int2> & vecs, std::vector<CVD::ImageRef> const & refs) {
     size_t const nrefs = refs.size();
     vecs.resize(nrefs);
@@ -120,14 +123,23 @@ int main(int argc, char **argv) {
     ::fprintf(stderr, "Image 1 has %8d corners\n", ncorners1);
     ::fprintf(stderr, "Image 2 has %8d corners\n", ncorners2);
 
+    boost::system_time const t1 = boost::get_system_time();
     CVD::CL::makePointSpiral(spiral1, positions1, scores1);
+    boost::system_time const t2 = boost::get_system_time();
     CVD::CL::makePointSpiral(spiral2, positions2, scores2);
+    boost::system_time const t3 = boost::get_system_time();
 
     std::vector<cl_int2> matches;
     CVD::CL::matchPointSpirals(matches, spiral1, spiral2);
     int const nmatches = matches.size();
 
+    boost::system_time const t4 = boost::get_system_time();
+
     ::fprintf(stderr, "Match found %8d corner pairs\n", nmatches);
+
+    ::fprintf(stderr, "%9ld us making spiral 1\n",  long((t2 - t1).total_microseconds()));
+    ::fprintf(stderr, "%9ld us making spiral 2\n",  long((t3 - t2).total_microseconds()));
+    ::fprintf(stderr, "%9ld us matching spirals\n", long((t4 - t3).total_microseconds()));
 
     CVD::ImageRef const sizeF(size1.x + size2.x, std::max(size1.y, size2.y));
 
