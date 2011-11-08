@@ -34,9 +34,10 @@ struct SpiralPoint {
     cl_int2 position;
     cl_int  distance;
     cl_int  score;
+    double  angle;
 
     inline bool operator <(SpiralPoint const & b) const {
-        return (distance < b.distance);
+        return (angle < b.angle);
     }
 };
 
