@@ -59,9 +59,9 @@ void makePointSpiral(SpiralPoints & spiral, std::vector<cl_int2> const & positio
         cl_int2 const & position = positions.at(i);
         int const score = scores.at(i);
 
-        // Record spiral point position and score.
+        // Record spiral point position and quantized score.
         point.position = position;
-        point.score = score;
+        point.score = ((score + 10) / 20);
 
         // Count towards total x and y.
         center.x += position.x;
@@ -90,8 +90,7 @@ cl_int2 mki2(cl_int x, cl_int y) {
 }
 
 cl_int cost(SpiralPoint const & p1, SpiralPoint const & p2) {
-    // Cost function to compare difference in score, with a cutoff at 30.
-    return std::max(cl_int(0), (cl_int(30) - std::abs(p1.score - p2.score)));
+    return ((p1.score == p2.score) ? 1 : 0);
 }
 
 void matchPointSpirals(std::vector<cl_int2> & pairs, SpiralPoints const & spiral1, SpiralPoints const & spiral2) {
