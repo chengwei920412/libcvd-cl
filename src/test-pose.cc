@@ -170,6 +170,7 @@ struct stage1input {
     GrayImage   g1image;
     GrayImage   g2image;
     DepthImage  d1image;
+    DepthImage  d2image;
     options     opts;
 };
 
@@ -232,7 +233,8 @@ static void testPipeline(
 
     // Create steps specific to image2.
     CVD::CL::PreFastGrayStep runPreFast2 (imageNeat, corners1, opts.fast_threshold);
-    CVD::CL::FastGrayStep    runFast2    (imageNeat, corners1, im2corners, opts.fast_threshold, opts.fast_ring);
+    CVD::CL::ClipDepthStep   runClip2    (camera.qmap,  corners1, corners2);
+    CVD::CL::FastGrayStep    runFast2    (imageNeat, corners2, im2corners, opts.fast_threshold, opts.fast_ring);
     CVD::CL::HipsGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
     CVD::CL::HipsClipStep    runHipsClip2(im2hips, opts.hips_maxbits);
 
@@ -257,12 +259,13 @@ static void testPipeline(
     Camera::Linear cvdcamera;
     readCamera(&cvdcamera, "./etc/kinect.conf");
     learnCamera(cvdcamera, camera);
-    camera.qdata = input.d1image;
-    camera.copyToWorker();
 
     // Write image 1 to device.
     int64_t const timeCopy1 = 0;
     CVD::CL::setImage(imageNeat, input.g1image);
+    camera.qdata = input.d1image;
+    camera.copyToWorker();
+    worker.finish();
 
     // Run image 1 pipeline.
     int64_t const timePreFast1 = runPreFast1.measure();
@@ -278,10 +281,15 @@ static void testPipeline(
     // Write image 2 to device.
     int64_t const timeCopy2 = 0;
     CVD::CL::setImage(imageNeat, input.g2image);
+    camera.qdata = input.d2image;
+    camera.copyToWorker();
+    worker.finish();
 
     // Run image 2 pipeline.
     int64_t const timePreFast2 = runPreFast2.measure();
     size_t const ncull2 = corners1.getCount();
+    int64_t const timeClip2 = runClip2.measure();
+    size_t const nclip2 = corners2.getCount();
     int64_t const timeFast2 = runFast2.measure();
     size_t const nfast2 = im2corners.getCount();
     size_t const nbest2 = im2corners.getCount();
@@ -294,12 +302,12 @@ static void testPipeline(
     std::cerr << std::endl;
     std::cerr << std::setw(8) << nxy    << std::setw(8) << nxy    << " corner candidates in image" << std::endl;
     std::cerr << std::setw(8) << ncull1 << std::setw(8) << ncull2 << " corners after culling" << std::endl;
-    std::cerr << std::setw(8) << nclip1 << std::setw(8) << ncull2 << " corners after depth" << std::endl;
+    std::cerr << std::setw(8) << nclip1 << std::setw(8) << nclip2 << " corners after depth" << std::endl;
     std::cerr << std::setw(8) << nfast1 << std::setw(8) << nfast2 << " corners after FAST" << std::endl;
     std::cerr << std::endl;
     std::cerr << std::setw(8) << timeCopy1       << std::setw(8) << timeCopy2      << " us writing image" << std::endl;
     std::cerr << std::setw(8) << timePreFast1    << std::setw(8) << timePreFast2   << " us culling corners" << std::endl;
-    std::cerr << std::setw(8) << timeClip1       << std::setw(8) << 0              << " us filtering by depth" << std::endl;
+    std::cerr << std::setw(8) << timeClip1       << std::setw(8) << timeClip2      << " us filtering by depth" << std::endl;
     std::cerr << std::setw(8) << timeFast1       << std::setw(8) << timeFast2      << " us running FAST" << std::endl;
     std::cerr << std::setw(8) << timeHips1       << std::setw(8) << timeHips2      << " us making HIPS" << std::endl;
     std::cerr << std::setw(8) << timeHClip1      << std::setw(8) << timeHClip2     << " us clipping HIPS" << std::endl;
@@ -548,8 +556,11 @@ int main(int argc, char **argv) {
     DepthImage  d1image(256, 512, 1);
     d1image = d1image_full(blitz::Range(0, 255), blitz::Range(80, 80 + 511), blitz::Range::all());
 
+    DepthImage  d2image(256, 512, 1);
+    d2image = d2image_full(blitz::Range(0, 255), blitz::Range(80, 80 + 511), blitz::Range::all());
+
     // Create structure for stage 1 input.
-    stage1input const input = {g1image, g2image, d1image, opts};
+    stage1input const input = {g1image, g2image, d1image, d2image, opts};
 
     try {
         // Prepare list for all OpenCL devices on all platforms.
