@@ -53,6 +53,12 @@ void getImage(ImageState<Pixel, channels> & image, blitz::Array<Pixel, 3> & arra
 
 void glDrawPixelsRGBA(blitz::Array<cl_uchar, 3> const & array);
 
+void readTextRGBD(
+    blitz::Array<cl_uchar, 3> & colour,
+    blitz::Array<cl_float, 3> & depth,
+    char const * path
+);
+
 } // namespace CL
 } // namespace CVD
 

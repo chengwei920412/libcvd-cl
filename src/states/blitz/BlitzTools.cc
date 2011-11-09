@@ -25,6 +25,8 @@
 
 #include <GL/gl.h>
 
+#include <fstream>
+
 namespace CVD {
 namespace CL  {
 
@@ -40,6 +42,63 @@ void glDrawPixelsRGBA(blitz::Array<cl_uchar, 3> const & array) {
     ::glPixelStorei(GL_UNPACK_ROW_LENGTH, nx);
     ::glDrawPixels(nx, ny, GL_RGBA, GL_UNSIGNED_BYTE, array.data());
     ::glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+}
+
+void readTextRGBD(
+    blitz::Array<cl_uchar, 3> & colour,
+    blitz::Array<cl_float, 3> & depth,
+    char const * path
+) {
+
+    // Open file, enabling exceptions.
+    std::ifstream file;
+    file.exceptions(~std::ios_base::goodbit);
+    file.open(path, std::ios::in | std::ios::binary);
+
+    int nx = 0;
+    int ny = 0;
+
+    // Read image size.
+    file >> nx;
+    file >> ny;
+
+    assert(nx > 0);
+    assert(ny > 0);
+
+    // Allocate images of given size.
+    colour.resize(ny, nx, 4);
+     depth.resize(ny, nx, 1);
+
+    // Reset image data.
+    colour = 0;
+     depth = 0;
+
+    for (int y = 0; y < ny; y++) {
+        for (int x = 0; x < nx; x++) {
+            cl_uint r = 0;
+            cl_uint g = 0;
+            cl_uint b = 0;
+            cl_uint d = 0;
+
+            file >> r;
+            file >> g;
+            file >> b;
+            file >> d;
+
+            assert(r <= 0xFF);
+            assert(g <= 0xFF);
+            assert(b <= 0xFF);
+            assert(d <= 0xFFFF);
+
+            colour(y, x, 0) = r;
+            colour(y, x, 1) = g;
+            colour(y, x, 2) = b;
+             depth(y, x, 0) = d;
+        }
+    }
+
+    // Close file.
+    file.close();
 }
 
 } // namespace CL
