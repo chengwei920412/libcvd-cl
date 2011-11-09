@@ -168,7 +168,7 @@ int main(int argc, char **argv) {
     // Red for matches.
     glColor3f(1, 0, 0);
 
-    for (int imatch = 0; imatch < nmatches && imatch < 200; imatch++) {
+    for (int imatch = 0; imatch < nmatches; imatch++) {
         cl_int2 const pair = matches.at(imatch);
         cl_int2 const xy1  = spiral1.at(pair.x).position;
         cl_int2 const xy2  = spiral2.at(pair.y).position;
