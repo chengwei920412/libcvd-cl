@@ -61,7 +61,7 @@ void makePointSpiral(SpiralPoints & spiral, std::vector<cl_int2> const & positio
 
         // Record spiral point position and quantized score.
         point.position = position;
-        point.score = ((score + 10) / 20);
+        point.score = (score / 10);
 
         // Count towards total x and y.
         center.x += position.x;
@@ -98,7 +98,7 @@ static cl_int cost(SpiralPoint const & p1, SpiralPoint const & p2) {
 }
 
 void matchPointSpirals(std::vector<cl_int2> & pairs, SpiralPoints const & spiral1, SpiralPoints const & spiral2) {
-    // Calculates longest common subsequence by matching the 'stepback' in each 'Point'.
+    // Calculates longest common subsequence by matching each 'Point'.
 
     pairs.clear();
 
@@ -109,6 +109,8 @@ void matchPointSpirals(std::vector<cl_int2> & pairs, SpiralPoints const & spiral
     espiral1.insert(espiral1.end(), spiral1.begin(), spiral1.end());
     espiral2.insert(espiral2.end(), spiral2.begin(), spiral2.end());
     espiral2.insert(espiral2.end(), spiral2.begin(), spiral2.end());
+    assert(espiral1.size() == (2 * spiral1.size()));
+    assert(espiral2.size() == (2 * spiral2.size()));
 
     cl_int const n1 = espiral1.size();
     cl_int const n2 = espiral2.size();
@@ -162,8 +164,12 @@ void matchPointSpirals(std::vector<cl_int2> & pairs, SpiralPoints const & spiral
             i1--;
             i2--;
         } else if (gridPlan == gridTake) {
+            // Modulo indices back into original point list.
+            cl_int  const i1b = ((i1 - 1) % spiral1.size());
+            cl_int  const i2b = ((i2 - 1) % spiral2.size());
+
             // Record the match.
-            cl_int2 const pair = {{(i1 - 1) % spiral1.size(), (i2 - 1) % spiral2.size()}};
+            cl_int2 const pair = {{i1b, i2b}};
             pairs.push_back(pair);
 
             // Back-track one spot in each list.
