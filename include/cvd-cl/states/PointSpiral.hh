@@ -32,8 +32,8 @@ namespace CL  {
 
 struct SpiralPoint {
     cl_int2 position;
-    cl_int  distance;
     cl_int  score;
+    double  distance;
     double  angle;
 
     inline bool operator <(SpiralPoint const & b) const {

@@ -79,7 +79,7 @@ void makePointSpiral(SpiralPoints & spiral, std::vector<cl_int2> const & positio
         SpiralPoint & point = spiral.at(i);
 
         // Calculate Euclidian distance.
-        point.distance = cl_int(std::ceil(dist(point.position, center)));
+        point.distance = dist(point.position, center);
 
         // Calculate signed (x,y) difference.
         double const dx = (point.position.x - center.x);
@@ -94,7 +94,7 @@ void makePointSpiral(SpiralPoints & spiral, std::vector<cl_int2> const & positio
 }
 
 static cl_int cost(SpiralPoint const & p1, SpiralPoint const & p2) {
-    return ((p1.score == p2.score) ? 1 : 0);
+    return (std::abs(p1.distance - p2.distance) < 20);
 }
 
 void matchPointSpirals(std::vector<cl_int2> & pairs, SpiralPoints const & spiral1, SpiralPoints const & spiral2) {
