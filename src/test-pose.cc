@@ -33,6 +33,8 @@
 #include <cvd/image_io.h>
 #include <cvd/videodisplay.h>
 
+#include <cvd-cl/states/PointGalaxy.hh>
+
 #include <cvd-cl/steps/PreFastGrayStep.hh>
 #include <cvd-cl/steps/ClipDepthStep.hh>
 #include <cvd-cl/steps/FastGrayStep.hh>
@@ -173,6 +175,46 @@ struct stage1input {
     DepthImage  d2image;
     options     opts;
 };
+
+static void makePointStars(
+    CVD::CL::PointGalaxy & galaxy,
+    std::vector<cl_int2> const & points,
+    CVD::CL::CameraState const & camera
+) {
+
+    size_t const npoints = points.size();
+
+    galaxy.clear();
+    galaxy.resize(npoints);
+
+    for (size_t ipoint = 0; ipoint < npoints; ipoint++) {
+        cl_int2 const point = points.at(ipoint);
+        CVD::CL::PointStar & star = galaxy.at(ipoint);
+
+        // Take (u,v,q) coordinates at this point.
+        double const u = camera.udata(point.y, point.x);
+        double const v = camera.vdata(point.y, point.x);
+        double const q = camera.qdata(point.y, point.x);
+
+        // Check depth.
+        assert(q > 0);
+
+        // Convert to (x,y,z) coordinates.
+        double const z = (1.0 / q);
+        double const x = (u * z);
+        double const y = (v * z);
+
+        // Record in star.
+        star.index = ipoint;
+        star.mass  = 1;
+        star.position(0) = x;
+        star.position(1) = y;
+        star.position(2) = z;
+    }
+
+    // Construct galaxy.
+    CVD::CL::makePointGalaxy(galaxy);
+}
 
 static void testPipeline(
     cl::Device        & device,
@@ -319,6 +361,18 @@ static void testPipeline(
     im1corners.get(&points1);
     im2corners.get(&points2);
 
+    CVD::CL::PointGalaxy galaxy1;
+    CVD::CL::PointGalaxy galaxy2;
+
+    camera.qdata = input.d1image;
+    makePointStars(galaxy1, points1, camera);
+    camera.qdata = input.d2image;
+    makePointStars(galaxy2, points2, camera);
+
+    std::vector<cl_int2> galaxyMatches;
+    CVD::CL::matchPointGalaxies(galaxyMatches, galaxy1, galaxy2);
+
+
     boost::system_time const t1 = boost::get_system_time();
 
 
@@ -429,6 +483,25 @@ static void testPipeline(
     CVD::CL::glDrawPixelsRGBA(input.g2image);
 
     glBegin(GL_LINES);
+    for (size_t ip = 0; ip < galaxyMatches.size(); ip++) {
+        try {
+            cl_int2         const pair = galaxyMatches.at(ip);
+
+            cl_int2         const xy1  = points1.at(galaxy1.at(pair.x).index);
+            cl_int2         const xy2  = points2.at(galaxy2.at(pair.y).index);
+
+            // Blue: HIPS match.
+            glColor3f(0, 0, 1);
+            glVertex2i(xy1.x,      xy1.y);
+            glVertex2i(xy2.x + nx, xy2.y);
+        } catch (...) {
+            std::cerr << "Bad pair " << ip << " of " << galaxyMatches.size() << std::endl;
+        }
+    }
+    glEnd();
+    glFlush();
+
+    glBegin(GL_LINES);
     for (size_t ip = 0; ip < pairs.size(); ip++) {
         try {
             cl_int2         const pair = pairs.at(ip);
@@ -440,11 +513,6 @@ static void testPipeline(
             TooN::Vector<2> const uv3t = TooN::makeVector(uv3.x, uv3.y);
             TooN::Vector<2> const xy3t = cvdcamera.project(uv3t);
             cl_int2         const xy3  = {{cl_int(xy3t[0]), cl_int(xy3t[1])}};
-
-            // Blue: HIPS match.
-            glColor3f(0, 0, 1);
-            glVertex2i(xy1.x,      xy1.y);
-            glVertex2i(xy2.x + nx, xy2.y);
 
             // Red: RANSAC match.
             glColor3f(1, 0, 0);
