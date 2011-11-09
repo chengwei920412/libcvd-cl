@@ -144,6 +144,12 @@ void matchPointSpirals(std::vector<cl_int2> & pairs, SpiralPoints const & spiral
             // Back-track one spot in each list.
             i1--;
             i2--;
+        } else if (gridPlan == gridHit1) {
+            // Back-track one spot in second list.
+            i2--;
+        } else if (gridPlan == gridHit2) {
+            // Back-track one spot in first list.
+            i1--;
         } else if (gridPlan == gridTake) {
             // Modulo indices back into original point list.
             cl_int  const i1b = ((i1 - 1) % spiral1.size());
@@ -156,12 +162,6 @@ void matchPointSpirals(std::vector<cl_int2> & pairs, SpiralPoints const & spiral
             // Back-track one spot in each list.
             i1--;
             i2--;
-        } else if (gridPlan == gridHit1) {
-            // Back-track one spot in second list.
-            i2--;
-        } else if (gridPlan == gridHit2) {
-            // Back-track one spot in first list.
-            i1--;
         } else {
             // Weird, abort.
             assert(false);
