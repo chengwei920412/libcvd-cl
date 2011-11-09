@@ -148,21 +148,21 @@ int main(int argc, char **argv) {
     CVD::glRasterPos(CVD::ImageRef(size1.x, 0));
     CVD::glDrawPixels(image2);
 
-    glBegin(GL_LINE_STRIP);
-
     // Blue for spirals.
     glColor3f(0, 0, 1);
 
+    glBegin(GL_LINE_STRIP);
     for (int ipoint = 0; ipoint < ncorners1; ipoint++) {
         CVD::CL::SpiralPoint const & point = spiral1.at(ipoint);
         glVertex2i(point.position.x, point.position.y);
     }
+    glEnd();
 
+    glBegin(GL_LINE_STRIP);
     for (int ipoint = 0; ipoint < ncorners2; ipoint++) {
         CVD::CL::SpiralPoint const & point = spiral2.at(ipoint);
         glVertex2i(point.position.x + size1.x, point.position.y);
     }
-
     glEnd();
 
     // Red for matches.
@@ -185,6 +185,7 @@ int main(int argc, char **argv) {
     cl_int2 const center1 = findCenter(positions1);
     cl_int2 const center2 = findCenter(positions2);
 
+    glBegin(GL_LINES);
     glVertex2i(          center1.x - 10, center1.y     );
     glVertex2i(          center1.x + 10, center1.y     );
     glVertex2i(          center1.x     , center1.y - 10);
@@ -193,6 +194,7 @@ int main(int argc, char **argv) {
     glVertex2i(size1.x + center2.x + 10, center2.y     );
     glVertex2i(size1.x + center2.x     , center2.y - 10);
     glVertex2i(size1.x + center2.x     , center2.y + 10);
+    glEnd();
 
     glFlush();
 
