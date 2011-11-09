@@ -34,7 +34,7 @@
 #include <cvd/fast_corner.h>
 #include <cvd/gl_helpers.h>
 #include <cvd/image_io.h>
-#include <cvd/videodisplay.h>
+#include <cvd/glwindow.h>
 
 #include <cvd-cl/states/PointSpiral.hh>
 
@@ -102,14 +102,17 @@ int main(int argc, char **argv) {
     CVD::fast_corner_detect_9(image1, corners1, 150);
     CVD::fast_corner_detect_9(image2, corners2, 150);
 
+    int const ncorners1 = corners1.size();
+    int const ncorners2 = corners2.size();
+
+    ::fprintf(stderr, "Image 1 has %8d corners\n", ncorners1);
+    ::fprintf(stderr, "Image 2 has %8d corners\n", ncorners2);
+
     std::vector<int> scores1;
     std::vector<int> scores2;
 
     CVD::fast_corner_score_9(image1, corners1, 0, scores1);
     CVD::fast_corner_score_9(image2, corners2, 0, scores2);
-
-    int const ncorners1 = corners1.size();
-    int const ncorners2 = corners2.size();
 
     std::vector<cl_int2> positions1;
     std::vector<cl_int2> positions2;
@@ -117,88 +120,136 @@ int main(int argc, char **argv) {
     recorner(positions1, corners1);
     recorner(positions2, corners2);
 
-    CVD::CL::SpiralPoints spiral1;
-    CVD::CL::SpiralPoints spiral2;
-
-    ::fprintf(stderr, "Image 1 has %8d corners\n", ncorners1);
-    ::fprintf(stderr, "Image 2 has %8d corners\n", ncorners2);
-
-    boost::system_time const t1 = boost::get_system_time();
-    CVD::CL::makePointSpiral(spiral1, positions1, scores1);
-    boost::system_time const t2 = boost::get_system_time();
-    CVD::CL::makePointSpiral(spiral2, positions2, scores2);
-    boost::system_time const t3 = boost::get_system_time();
-
-    std::vector<cl_int2> matches;
-    CVD::CL::matchPointSpirals(matches, spiral1, spiral2);
-    int const nmatches = matches.size();
-
-    boost::system_time const t4 = boost::get_system_time();
-
-    ::fprintf(stderr, "Match found %8d corner pairs\n", nmatches);
-
-    ::fprintf(stderr, "%9ld us making spiral 1\n",  long((t2 - t1).total_microseconds()));
-    ::fprintf(stderr, "%9ld us making spiral 2\n",  long((t3 - t2).total_microseconds()));
-    ::fprintf(stderr, "%9ld us matching spirals\n", long((t4 - t3).total_microseconds()));
+    // Image centers, which may be adjusted by clicking.
+    cl_int2 center1 = findCenter(positions1);
+    cl_int2 center2 = findCenter(positions2);
 
     CVD::ImageRef const sizeF(size1.x + size2.x, std::max(size1.y, size2.y));
 
-    CVD::VideoDisplay window(sizeF);
-    CVD::glDrawPixels(image1);
-    CVD::glRasterPos(CVD::ImageRef(size1.x, 0));
-    CVD::glDrawPixels(image2);
+    CVD::GLWindow window(sizeF);
 
-    // Blue for spirals.
-    glColor3f(0, 0, 1);
+    window.make_current();
 
-    glBegin(GL_LINE_STRIP);
-    for (int ipoint = 0; ipoint < ncorners1; ipoint++) {
-        CVD::CL::SpiralPoint const & point = spiral1.at(ipoint);
-        glVertex2i(point.position.x, point.position.y);
-    }
-    glEnd();
+    while (true) {
+        CVD::CL::SpiralPoints spiral1;
+        CVD::CL::SpiralPoints spiral2;
 
-    glBegin(GL_LINE_STRIP);
-    for (int ipoint = 0; ipoint < ncorners2; ipoint++) {
-        CVD::CL::SpiralPoint const & point = spiral2.at(ipoint);
-        glVertex2i(point.position.x + size1.x, point.position.y);
-    }
-    glEnd();
+        boost::system_time const t1 = boost::get_system_time();
+        CVD::CL::makePointSpiral(spiral1, positions1, scores1, center1);
+        boost::system_time const t2 = boost::get_system_time();
+        CVD::CL::makePointSpiral(spiral2, positions2, scores2, center2);
+        boost::system_time const t3 = boost::get_system_time();
 
-    // Red for matches.
-    glColor3f(1, 0, 0);
+        std::vector<cl_int2> matches;
+        CVD::CL::matchPointSpirals(matches, spiral1, spiral2);
+        int const nmatches = matches.size();
 
-    for (int imatch = 0; imatch < nmatches; imatch++) {
-        cl_int2 const pair = matches.at(imatch);
-        cl_int2 const xy1  = spiral1.at(pair.x).position;
-        cl_int2 const xy2  = spiral2.at(pair.y).position;
+        boost::system_time const t4 = boost::get_system_time();
+
+        ::fprintf(stderr, "Match found %8d corner pairs\n", nmatches);
+
+        ::fprintf(stderr, "%9ld us making spiral 1\n",  long((t2 - t1).total_microseconds()));
+        ::fprintf(stderr, "%9ld us making spiral 2\n",  long((t3 - t2).total_microseconds()));
+        ::fprintf(stderr, "%9ld us matching spirals\n", long((t4 - t3).total_microseconds()));
+
+        CVD::glRasterPos(CVD::ImageRef(0, 0));
+        CVD::glDrawPixels(image1);
+        CVD::glRasterPos(CVD::ImageRef(size1.x, 0));
+        CVD::glDrawPixels(image2);
+
+        // Blue for spirals.
+        glColor3f(0, 0, 1);
+
+        glBegin(GL_LINE_STRIP);
+        for (int ipoint = 0; ipoint < ncorners1; ipoint++) {
+            CVD::CL::SpiralPoint const & point = spiral1.at(ipoint);
+            glVertex2i(point.position.x, point.position.y);
+        }
+        glEnd();
+
+        glBegin(GL_LINE_STRIP);
+        for (int ipoint = 0; ipoint < ncorners2; ipoint++) {
+            CVD::CL::SpiralPoint const & point = spiral2.at(ipoint);
+            glVertex2i(point.position.x + size1.x, point.position.y);
+        }
+        glEnd();
+
+        // Red for matches.
+        glColor3f(1, 0, 0);
+
+        for (int imatch = 0; imatch < nmatches; imatch++) {
+            cl_int2 const pair = matches.at(imatch);
+            cl_int2 const xy1  = spiral1.at(pair.x).position;
+            cl_int2 const xy2  = spiral2.at(pair.y).position;
+
+            glBegin(GL_LINES);
+            glVertex2i(xy1.x,           xy1.y);
+            glVertex2i(xy2.x + size1.x, xy2.y);
+            glEnd();
+        }
+
+        // Green for centers.
+        glColor3f(0, 1, 0);
 
         glBegin(GL_LINES);
-        glVertex2i(xy1.x,           xy1.y);
-        glVertex2i(xy2.x + size1.x, xy2.y);
+        glVertex2i(          center1.x - 10, center1.y     );
+        glVertex2i(          center1.x + 10, center1.y     );
+        glVertex2i(          center1.x     , center1.y - 10);
+        glVertex2i(          center1.x     , center1.y + 10);
+        glVertex2i(size1.x + center2.x - 10, center2.y     );
+        glVertex2i(size1.x + center2.x + 10, center2.y     );
+        glVertex2i(size1.x + center2.x     , center2.y - 10);
+        glVertex2i(size1.x + center2.x     , center2.y + 10);
         glEnd();
+
+        glFlush();
+
+        window.swap_buffers();
+
+        ::sleep(1);
+
+        // Get all window events.
+        std::vector<CVD::GLWindow::Event> events;
+        window.get_events(events);
+
+        for (size_t ievent = 0; ievent < events.size(); ievent++) {
+            CVD::GLWindow::Event const & event = events.at(ievent);
+
+            switch (event.type) {
+                case CVD::GLWindow::Event::MOUSE_DOWN: {
+                    switch (event.which) {
+                        case CVD::GLWindow::BUTTON_LEFT: {
+                            // Find mouse coordinate.
+                            int const mx = event.where.x;
+                            int const my = event.where.y;
+
+                            if (mx >= size1.x) {
+                                // Click in right image.
+                                center2.x = (mx - size1.x);
+                                center2.y = my;
+                            } else {
+                                // Click in left image.
+                                center1.x = mx;
+                                center1.y = my;
+                            }
+
+                            break;
+                        }
+
+                        default: {
+                            break;
+                        }
+                    }
+
+                    break;
+                }
+
+                default: {
+                    break;
+                }
+            }
+        }
     }
-
-    // Green for centers.
-    glColor3f(0, 1, 0);
-
-    cl_int2 const center1 = findCenter(positions1);
-    cl_int2 const center2 = findCenter(positions2);
-
-    glBegin(GL_LINES);
-    glVertex2i(          center1.x - 10, center1.y     );
-    glVertex2i(          center1.x + 10, center1.y     );
-    glVertex2i(          center1.x     , center1.y - 10);
-    glVertex2i(          center1.x     , center1.y + 10);
-    glVertex2i(size1.x + center2.x - 10, center2.y     );
-    glVertex2i(size1.x + center2.x + 10, center2.y     );
-    glVertex2i(size1.x + center2.x     , center2.y - 10);
-    glVertex2i(size1.x + center2.x     , center2.y + 10);
-    glEnd();
-
-    glFlush();
-
-    ::sleep(30);
 
     return 0;
 }

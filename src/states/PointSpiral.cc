@@ -46,37 +46,18 @@ static double dist(cl_int2 const p1, cl_int2 const p2) {
     return std::sqrt(dx + dy);
 }
 
-void makePointSpiral(SpiralPoints & spiral, std::vector<cl_int2> const & positions, std::vector<int> const & scores) {
+void makePointSpiral(SpiralPoints & spiral, std::vector<cl_int2> const & positions, std::vector<int> const & scores, cl_int2 const center) {
     // Allocate spiral points for each position.
     cl_int const npoints = positions.size();
     spiral.resize(npoints);
 
-    // Start with center estimate at (0,0).
-    cl_int2 center = {{0, 0}};
-
-    for (cl_int i = 0; i < npoints; i++) {
-        SpiralPoint & point = spiral.at(i);
-        cl_int2 const & position = positions.at(i);
-        int const score = scores.at(i);
-
-        // Record spiral point position and quantized score.
-        point.position = position;
-        point.score = (score / 10);
-
-        // Count towards total x and y.
-        center.x += position.x;
-        center.y += position.y;
-    }
-
-    // Estimate center as average of x and y.
-    if (npoints > 0) {
-        center.x /= npoints;
-        center.y /= npoints;
-    }
-
     // Calculate distance and angle from center for each spiral point.
     for (cl_int i = 0; i < npoints; i++) {
         SpiralPoint & point = spiral.at(i);
+
+        // Copy position vector and quantised score.
+        point.position = positions.at(i);
+        point.score    = (scores.at(i) / 5);
 
         // Calculate Euclidian distance.
         point.distance = dist(point.position, center);

@@ -43,7 +43,7 @@ struct SpiralPoint {
 
 typedef std::vector<SpiralPoint> SpiralPoints;
 
-void makePointSpiral(SpiralPoints & spiral, std::vector<cl_int2> const & positions, std::vector<int> const & scores);
+void makePointSpiral(SpiralPoints & spiral, std::vector<cl_int2> const & positions, std::vector<int> const & scores, cl_int2 const center);
 void matchPointSpirals(std::vector<cl_int2> & pairs, SpiralPoints const & spiral1, SpiralPoints const & spiral2);
 
 } // namespace CL
