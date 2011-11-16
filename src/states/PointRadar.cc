@@ -22,7 +22,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#include "cvd-cl/states/PointSpiral.hh"
+#include "cvd-cl/states/PointRadar.hh"
 
 #include <cmath>
 #include <cstdio>
@@ -46,14 +46,14 @@ static double dist(cl_int2 const p1, cl_int2 const p2) {
     return std::sqrt(dx + dy);
 }
 
-void makePointSpiral(SpiralPoints & spiral, std::vector<cl_int2> const & positions, std::vector<int> const & scores, cl_int2 const center) {
-    // Allocate spiral points for each position.
+void makePointRadar(RadarPoints & radar, std::vector<cl_int2> const & positions, std::vector<int> const & scores, cl_int2 const center) {
+    // Allocate radar points for each position.
     cl_int const npoints = positions.size();
-    spiral.resize(npoints);
+    radar.resize(npoints);
 
-    // Calculate distance and angle from center for each spiral point.
+    // Calculate distance and angle from center for each radar point.
     for (cl_int i = 0; i < npoints; i++) {
-        SpiralPoint & point = spiral.at(i);
+        RadarPoint & point = radar.at(i);
 
         // Copy position vector and quantised score.
         point.position = positions.at(i);
@@ -70,41 +70,41 @@ void makePointSpiral(SpiralPoints & spiral, std::vector<cl_int2> const & positio
         point.angle = std::atan2(dy, dx);
     }
 
-    // Order spiral points by angle.
-    std::sort(spiral.begin(), spiral.end());
+    // Order radar points by angle.
+    std::sort(radar.begin(), radar.end());
 }
 
-static cl_int cost(SpiralPoint const & p1, SpiralPoint const & p2) {
+static cl_int cost(RadarPoint const & p1, RadarPoint const & p2) {
     return (std::abs(p1.distance - p2.distance) < 20);
 }
 
-void matchPointSpirals(std::vector<cl_int2> & pairs, SpiralPoints const & spiral1, SpiralPoints const & spiral2) {
+void matchPointRadars(std::vector<cl_int2> & pairs, RadarPoints const & radar1, RadarPoints const & radar2) {
     // Calculates longest common subsequence by matching each 'Point'.
 
     pairs.clear();
 
-    // Extend each spiral with a duplicate of itself.
-    SpiralPoints espiral1;
-    SpiralPoints espiral2;
-    espiral1.insert(espiral1.end(), spiral1.begin(), spiral1.end());
-    espiral1.insert(espiral1.end(), spiral1.begin(), spiral1.end());
-    espiral2.insert(espiral2.end(), spiral2.begin(), spiral2.end());
-    espiral2.insert(espiral2.end(), spiral2.begin(), spiral2.end());
-    assert(espiral1.size() == (2 * spiral1.size()));
-    assert(espiral2.size() == (2 * spiral2.size()));
+    // Extend each radar with a duplicate of itself.
+    RadarPoints eradar1;
+    RadarPoints eradar2;
+    eradar1.insert(eradar1.end(), radar1.begin(), radar1.end());
+    eradar1.insert(eradar1.end(), radar1.begin(), radar1.end());
+    eradar2.insert(eradar2.end(), radar2.begin(), radar2.end());
+    eradar2.insert(eradar2.end(), radar2.begin(), radar2.end());
+    assert(eradar1.size() == (2 * radar1.size()));
+    assert(eradar2.size() == (2 * radar2.size()));
 
-    cl_int const n1 = espiral1.size();
-    cl_int const n2 = espiral2.size();
+    cl_int const n1 = eradar1.size();
+    cl_int const n2 = eradar2.size();
 
     // Create longest common subsequence grid.
     blitz::Array<cl_int, 2> grid(n1 + 1, n2 + 1);
     grid = 0;
 
     for (cl_int i1 = 1; i1 <= n1; i1++) {
-        SpiralPoint const & p1 = espiral1.at(i1 - 1);
+        RadarPoint const & p1 = eradar1.at(i1 - 1);
 
         for (cl_int i2 = 1; i2 <= n2; i2++) {
-            SpiralPoint const & p2 = espiral2.at(i2 - 1);
+            RadarPoint const & p2 = eradar2.at(i2 - 1);
 
             // Start with no length.
             cl_int length = 0;
@@ -127,8 +127,8 @@ void matchPointSpirals(std::vector<cl_int2> & pairs, SpiralPoints const & spiral
     cl_int i2 = n2;
 
     while ((i1 > 0) && (i2 > 0)) {
-        SpiralPoint const & p1 = espiral1.at(i1 - 1);
-        SpiralPoint const & p2 = espiral2.at(i2 - 1);
+        RadarPoint const & p1 = eradar1.at(i1 - 1);
+        RadarPoint const & p2 = eradar2.at(i2 - 1);
 
         // Recall all grid possibilities.
         cl_int const gridSkip = grid(i1 - 1, i2 - 1);
@@ -152,8 +152,8 @@ void matchPointSpirals(std::vector<cl_int2> & pairs, SpiralPoints const & spiral
             i1--;
         } else if (gridPlan == gridTake) {
             // Modulo indices back into original point list.
-            cl_int  const i1b = ((i1 - 1) % spiral1.size());
-            cl_int  const i2b = ((i2 - 1) % spiral2.size());
+            cl_int  const i1b = ((i1 - 1) % radar1.size());
+            cl_int  const i2b = ((i2 - 1) % radar2.size());
 
             // Record the match.
             cl_int2 const pair = {{i1b, i2b}};

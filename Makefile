@@ -56,7 +56,7 @@ all:
 
 	g++ -shared -fPIC -o bin/libcvdcl.so $(CFLAGS) $(SOURCES) $(LIBS)
 
-	g++ -o bin/test-spiral $(CFLAGS) src/test-spiral.cc bin/libcvdcl.so $(LIBS)
+	g++ -o bin/test-radar $(CFLAGS) src/test-radar.cc bin/libcvdcl.so $(LIBS)
 	g++ -o bin/test-cholesky $(CFLAGS) src/cholesky.cc bin/libcvdcl.so $(LIBS)
 	g++ -o bin/test-se3-exp $(CFLAGS) src/test-se3.cc bin/libcvdcl.so $(LIBS)
 	g++ -o bin/test-pose $(CFLAGS) src/test-pose.cc bin/libcvdcl.so $(LIBS)

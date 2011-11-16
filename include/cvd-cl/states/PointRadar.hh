@@ -22,31 +22,31 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef __CVD_CL_POINT_SPIRAL_HH__
-#define __CVD_CL_POINT_SPIRAL_HH__
+#ifndef __CVD_CL_POINT_RADAR_HH__
+#define __CVD_CL_POINT_RADAR_HH__
 
 #include <cvd-cl/worker/Worker.hh>
 
 namespace CVD {
 namespace CL  {
 
-struct SpiralPoint {
+struct RadarPoint {
     cl_int2 position;
     cl_int  score;
     double  distance;
     double  angle;
 
-    inline bool operator <(SpiralPoint const & b) const {
+    inline bool operator <(RadarPoint const & b) const {
         return (angle < b.angle);
     }
 };
 
-typedef std::vector<SpiralPoint> SpiralPoints;
+typedef std::vector<RadarPoint> RadarPoints;
 
-void makePointSpiral(SpiralPoints & spiral, std::vector<cl_int2> const & positions, std::vector<int> const & scores, cl_int2 const center);
-void matchPointSpirals(std::vector<cl_int2> & pairs, SpiralPoints const & spiral1, SpiralPoints const & spiral2);
+void makePointRadar(RadarPoints & radar, std::vector<cl_int2> const & positions, std::vector<int> const & scores, cl_int2 const center);
+void matchPointRadars(std::vector<cl_int2> & pairs, RadarPoints const & radar1, RadarPoints const & radar2);
 
 } // namespace CL
 } // namespace CVD
 
-#endif /* __CVD_CL_POINT_SPIRAL_HH__ */
+#endif /* __CVD_CL_POINT_RADAR_HH__ */

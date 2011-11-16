@@ -36,7 +36,7 @@
 #include <cvd/image_io.h>
 #include <cvd/glwindow.h>
 
-#include <cvd-cl/states/PointSpiral.hh>
+#include <cvd-cl/states/PointRadar.hh>
 
 #include <boost/date_time.hpp>
 #include <boost/thread.hpp>
@@ -55,7 +55,7 @@ static void recorner(std::vector<cl_int2> & vecs, std::vector<CVD::ImageRef> con
 }
 
 static cl_int2 findCenter(std::vector<cl_int2> const & positions) {
-    // Allocate spiral points for each position.
+    // Allocate radar points for each position.
     cl_int const npoints = positions.size();
 
     // Start with center estimate at (0,0).
@@ -80,7 +80,7 @@ static cl_int2 findCenter(std::vector<cl_int2> const & positions) {
 
 int main(int argc, char **argv) {
     if (argc != 3) {
-        ::fprintf(stderr, "usage: test-spiral <path1> <path2>\n");
+        ::fprintf(stderr, "usage: test-radar <path1> <path2>\n");
         return 1;
     }
 
@@ -131,45 +131,45 @@ int main(int argc, char **argv) {
     window.make_current();
 
     while (true) {
-        CVD::CL::SpiralPoints spiral1;
-        CVD::CL::SpiralPoints spiral2;
+        CVD::CL::RadarPoints radar1;
+        CVD::CL::RadarPoints radar2;
 
         boost::system_time const t1 = boost::get_system_time();
-        CVD::CL::makePointSpiral(spiral1, positions1, scores1, center1);
+        CVD::CL::makePointRadar(radar1, positions1, scores1, center1);
         boost::system_time const t2 = boost::get_system_time();
-        CVD::CL::makePointSpiral(spiral2, positions2, scores2, center2);
+        CVD::CL::makePointRadar(radar2, positions2, scores2, center2);
         boost::system_time const t3 = boost::get_system_time();
 
         std::vector<cl_int2> matches;
-        CVD::CL::matchPointSpirals(matches, spiral1, spiral2);
+        CVD::CL::matchPointRadars(matches, radar1, radar2);
         int const nmatches = matches.size();
 
         boost::system_time const t4 = boost::get_system_time();
 
         ::fprintf(stderr, "Match found %8d corner pairs\n", nmatches);
 
-        ::fprintf(stderr, "%9ld us making spiral 1\n",  long((t2 - t1).total_microseconds()));
-        ::fprintf(stderr, "%9ld us making spiral 2\n",  long((t3 - t2).total_microseconds()));
-        ::fprintf(stderr, "%9ld us matching spirals\n", long((t4 - t3).total_microseconds()));
+        ::fprintf(stderr, "%9ld us making radar 1\n",  long((t2 - t1).total_microseconds()));
+        ::fprintf(stderr, "%9ld us making radar 2\n",  long((t3 - t2).total_microseconds()));
+        ::fprintf(stderr, "%9ld us matching radars\n", long((t4 - t3).total_microseconds()));
 
         CVD::glRasterPos(CVD::ImageRef(0, 0));
         CVD::glDrawPixels(image1);
         CVD::glRasterPos(CVD::ImageRef(size1.x, 0));
         CVD::glDrawPixels(image2);
 
-        // Blue for spirals.
+        // Blue for radars.
         glColor3f(0, 0, 1);
 
         glBegin(GL_LINE_STRIP);
         for (int ipoint = 0; ipoint < ncorners1; ipoint++) {
-            CVD::CL::SpiralPoint const & point = spiral1.at(ipoint);
+            CVD::CL::RadarPoint const & point = radar1.at(ipoint);
             glVertex2i(point.position.x, point.position.y);
         }
         glEnd();
 
         glBegin(GL_LINE_STRIP);
         for (int ipoint = 0; ipoint < ncorners2; ipoint++) {
-            CVD::CL::SpiralPoint const & point = spiral2.at(ipoint);
+            CVD::CL::RadarPoint const & point = radar2.at(ipoint);
             glVertex2i(point.position.x + size1.x, point.position.y);
         }
         glEnd();
@@ -179,8 +179,8 @@ int main(int argc, char **argv) {
 
         for (int imatch = 0; imatch < nmatches; imatch++) {
             cl_int2 const pair = matches.at(imatch);
-            cl_int2 const xy1  = spiral1.at(pair.x).position;
-            cl_int2 const xy2  = spiral2.at(pair.y).position;
+            cl_int2 const xy1  = radar1.at(pair.x).position;
+            cl_int2 const xy2  = radar2.at(pair.y).position;
 
             glBegin(GL_LINES);
             glVertex2i(xy1.x,           xy1.y);
