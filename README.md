@@ -9,7 +9,7 @@ It is related to
 by the <i>concepts</i> of its algorithms, although the algorithms in libcvd-cl are
 completely reinvented for highly parallel architectures.
 
-***
+
 
 Included algorithms
 -------------------
@@ -19,7 +19,7 @@ Included algorithms
     *   Blur grayscale images (<b>BlurGrayStep</b>)
     *   Blur colour images (<b>BlurRichStep</b>)
 
-    Remarks:
+*   Remarks:
 
     *   OpenCL code is pre-generated with a given convolution kernel.
 
@@ -38,7 +38,7 @@ Included algorithms
     *   Find corners in grayscale images (<b>PreFastGrayStep</b> then <b>FastGrayStep</b>)
     *   Find corners in colour images (<b>PreFastRichStep</b> then <b>FastRichStep</b>)
 
-    Remarks:
+*   Remarks:
 
     *   Tests 16 pixels in a ring, with variable corner ring size and threshold.
     *   OpenCL on CPU is slow, but OpenCL on a reasonable GPU is faster than C++ on CPU.
@@ -55,7 +55,7 @@ Included algorithms
     *   Build balanced tree/forest in C++ (<b>HipsMakeTreeStep</b>)
     *   Search balanced tree/forest in C++ (lossy, lossless) and OpenCL (lossy only) (<b>HipsTreeFindStep</b>)
 
-    Remarks:
+*   Remarks:
 
     *   Tests 64 pixels in concentric circles.
     *   Search kernels have optional naive rotational invariance using barrel shift.
@@ -73,26 +73,26 @@ Included algorithms
     *   Use SE3 matrix for point transforms (<b>SE3Run1Step</b>)
     *   Evaluate SE3 matrix for inliers (<b>SE3ScoreStep</b>)
 
-    Remarks:
+*   Remarks:
 
     *   Basic iterative computation, but does <i>not</i> refine with all inliers.
     *   OpenCL on CPU is quite fast, OpenCL on GPU is extremely fast.
 
 
 
-* <h3>2D point cloud "radar" matching</h3>
+*   <h3>2D point cloud "radar" matching</h3>
 
-  * Compute point radar (<b>makePointRadar()</b>)
-  * Match two point radars (<b>matchPointRadars()</b>)
+    *   Compute point radar (<b>makePointRadar()</b>)
+    *   Match two point radars (<b>matchPointRadars()</b>)
 
-  Remarks:
+* Remarks:
 
-  * Highly experimental, not published in the literature.
-  * Matches by spatial distribution of points in 2D.
-  * Conceptually similar to "semi-local constraints".
-  * Naturally invariant to 2D/3D scale, 2D translation and 2D rotation.
-  * Intolerant of large shear, 3D translation, and 3D rotation.
-  * Potentially useful for inter-frame tracking.
+    *   Highly experimental, not published in the literature.
+    *   Matches by spatial distribution of points in 2D.
+    *   Conceptually similar to "semi-local constraints".
+    *   Naturally invariant to 2D/3D scale, 2D translation and 2D rotation.
+    *   Intolerant of large shear, 3D translation, and 3D rotation.
+    *   Potentially useful for inter-frame tracking.
 
 
 
@@ -101,7 +101,7 @@ Included algorithms
     *   Compute point galaxy (<b>makePointGalaxy()</b>)
     *   Match two point galaxies (<b>matchPointGalaxies()</b>)
 
-    Remarks:
+* Remarks:
 
     *   Very highly experimental, yet to show promise.
     *   Matches by spatial distribution of points in 3D.
@@ -110,9 +110,6 @@ Included algorithms
     *   Requires consistent (x,y,z) scale.
     *   Potentially useful for inter-frame tracking.
 
-
-
-***
 
 
 Components
@@ -148,7 +145,7 @@ Components
     *   <i>(u,v,q)</i> point cloud (<b>UvqState</b>)
     *   <i>((u,v,q),(u,v))</i> point pair cloud (<b>UvqUvState</b>)
 
-    Remarks:
+*   Remarks:
 
     *   States may be created once and linked by multiple steps.
     *   Most states have methods to translate data to/from reasonable C++ types.
@@ -160,7 +157,7 @@ Components
 
     *   See "Included algorithms" above.
 
-    Remarks:
+*   Remarks:
 
     *   Steps may link multiple input and output states.
     *   Steps may be created once and run repeatedly as part of a pipeline.
