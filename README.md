@@ -16,8 +16,8 @@ Included algorithms
 
 *   <h3>Simple image blur</h3>
 
-    *   Blur grayscale images (<b>BlurGrayStep</b>)
-    *   Blur colour images (<b>BlurRichStep</b>)
+    *   Blur grayscale images (<code>BlurGrayStep</code>)
+    *   Blur colour images (<code>BlurRichStep</code>)
 
 *   Remarks:
 
@@ -27,16 +27,16 @@ Included algorithms
 
 *   <h3>Point cloud pre-processing</h3>
 
-    *   Convert <i>(x,y)</i> to <i>(u,v)</i> or <i>(u,v,q</i>) for a known camera (<b>ToUvqUvStep</b>)
-    *   Filter positions by depth (<b>ClipDepthStep</b>)
-    *   Perform arbitrary pixel->value mappings (<b>FxyStep</b>)
+    *   Convert <i>(x,y)</i> to <i>(u,v)</i> or <i>(u,v,q</i>) for a known camera (<code>ToUvqUvStep</code>)
+    *   Filter positions by depth (<code>ClipDepthStep</code>)
+    *   Perform arbitrary pixel->value mappings (<code>FxyStep</code>)
 
 
 
 *   <h3>FAST</h3>
 
-    *   Find corners in grayscale images (<b>PreFastGrayStep</b> then <b>FastGrayStep</b>)
-    *   Find corners in colour images (<b>PreFastRichStep</b> then <b>FastRichStep</b>)
+    *   Find corners in grayscale images (<code>PreFastGrayStep</code> then <code>FastGrayStep</code>)
+    *   Find corners in colour images (<code>PreFastRichStep</code> then <code>FastRichStep</code>)
 
 *   Remarks:
 
@@ -48,12 +48,12 @@ Included algorithms
 
 *   <h3>HIPS</h3>
 
-    *   Build descriptors for grayscale images (<b>HipsGrayStep</b> or <b>HipsBlendGrayStep</b>)
-    *   Build descriptors for colour images (<b>HipsRichStep</b> or <b>HipsBlendRichStep</b>)
-    *   Remove descriptors with high bit count (<b>HipsClipStep</b>)
-    *   Match descriptors by brute force (<b>HipsFindStep</b>)
-    *   Build balanced tree/forest in C++ (<b>HipsMakeTreeStep</b>)
-    *   Search balanced tree/forest in C++ (lossy, lossless) and OpenCL (lossy only) (<b>HipsTreeFindStep</b>)
+    *   Build descriptors for grayscale images (<code>HipsGrayStep</code> or <code>HipsBlendGrayStep</code>)
+    *   Build descriptors for colour images (<code>HipsRichStep</code> or <code>HipsBlendRichStep</code>)
+    *   Remove descriptors with high bit count (<code>HipsClipStep</code>)
+    *   Match descriptors by brute force (<code>HipsFindStep</code>)
+    *   Build balanced tree/forest in C++ (<code>HipsMakeTreeStep</code>)
+    *   Search balanced tree/forest in C++ (lossy, lossless) and OpenCL (lossy only) (<code>HipsTreeFindStep</code>)
 
 *   Remarks:
 
@@ -65,13 +65,13 @@ Included algorithms
 
 *   <h3>3-point pose using RANSAC</h3>
 
-    *   Assign matrix identity (<b>MatIdentStep</b>)
-    *   Randomly select point triples (<b>RandomIntStep</b> then <b>MixUvqUvStep</b>)
-    *   Generate Jacobian matrix (<b>PoseUvqWlsStep</b>)
-    *   Perform Cholesky decomposition and back-substitution (<b>CholeskyStep</b>)
-    *   Exponentiate SE3 matrix (<b>SE3ExpStep</b>)
-    *   Use SE3 matrix for point transforms (<b>SE3Run1Step</b>)
-    *   Evaluate SE3 matrix for inliers (<b>SE3ScoreStep</b>)
+    *   Assign matrix identity (<code>MatIdentStep</code>)
+    *   Randomly select point triples (<code>RandomIntStep</code> then <code>MixUvqUvStep</code>)
+    *   Generate Jacobian matrix (<code>PoseUvqWlsStep</code>)
+    *   Perform Cholesky decomposition and back-substitution (<code>CholeskyStep</code>)
+    *   Exponentiate SE3 matrix (<code>SE3ExpStep</code>)
+    *   Use SE3 matrix for point transforms (<code>SE3Run1Step</code>)
+    *   Evaluate SE3 matrix for inliers (<code>SE3ScoreStep</code>)
 
 *   Remarks:
 
@@ -82,8 +82,8 @@ Included algorithms
 
 *   <h3>2D point cloud "radar" matching</h3>
 
-    *   Compute point radar (<b>makePointRadar()</b>)
-    *   Match two point radars (<b>matchPointRadars()</b>)
+    *   Compute point radar (<code>makePointRadar()</code>)
+    *   Match two point radars (<code>matchPointRadars()</code>)
 
 * Remarks:
 
@@ -98,8 +98,8 @@ Included algorithms
 
 *   <h3>3D point cloud "galaxy" matching</h3>
 
-    *   Compute point galaxy (<b>makePointGalaxy()</b>)
-    *   Match two point galaxies (<b>matchPointGalaxies()</b>)
+    *   Compute point galaxy (<code>makePointGalaxy()</code>)
+    *   Match two point galaxies (<code>matchPointGalaxies()</code>)
 
 * Remarks:
 
@@ -129,21 +129,21 @@ Components
 
 *   <h3>C++ classes representing the OpenCL situation</h3>
 
-    *   <b>Worker</b> class bundles an OpenCL device, its context, and its command queue.
+    *   <code>Worker</code> class bundles an OpenCL device, its context, and its command queue.
 
 
 
 *   <h3>C++ classes defining data <i>states</i></h3>
 
-    *   Camera information per pixel (<b>CameraState</b>)
-    *   Integer counter (<b>CountState</b>)
-    *   HIPS balanced tree state (<b>HipsTreeState</b>)
-    *   Image data of any format (<b>ImageState</b>)
-    *   Variable-size list data of any type (<b>ListState</b>)
-    *   Matrix/vector data of small fixed size (<b>MatrixState</b>)
-    *   <i>(u,v)</i> point cloud (<b>UvState</b>)
-    *   <i>(u,v,q)</i> point cloud (<b>UvqState</b>)
-    *   <i>((u,v,q),(u,v))</i> point pair cloud (<b>UvqUvState</b>)
+    *   Camera information per pixel (<code>CameraState</code>)
+    *   Integer counter (<code>CountState</code>)
+    *   HIPS balanced tree state (<code>HipsTreeState</code>)
+    *   Image data of any format (<code>ImageState</code>)
+    *   Variable-size list data of any type (<code>ListState</code>)
+    *   Matrix/vector data of small fixed size (<code>MatrixState</code>)
+    *   <i>(u,v)</i> point cloud (<code>UvState</code>)
+    *   <i>(u,v,q)</i> point cloud (<code>UvqState</code>)
+    *   <i>((u,v,q),(u,v))</i> point pair cloud (<code>UvqUvState</code>)
 
 *   Remarks:
 
