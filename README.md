@@ -170,3 +170,19 @@ Components
 
     *   Messy; <i>not</i> intended for code reuse.
     *   May serve as working examples for library consumers.
+
+
+Resources for OpenCL developers
+------------------------------
+
+*   <h3>Standards body</h3>
+
+    *   [Khronos](http://www.khronos.org/opencl/)
+
+*   <h3>Implementation vendors</h3>
+
+    *   [AMD](http://developer.amd.com/sdks/AMDAPPSDK/documentation/Pages/default.aspx)
+    *   [Apple](http://developer.apple.com/library/mac/documentation/Performance/Conceptual/OpenCL_MacProgGuide/)
+    *   [IBM](http://www.alphaworks.ibm.com/tech/opencl/)
+    *   [Intel](http://software.intel.com/en-us/articles/vcsource-tools-opencl-sdk/)
+    *   [NVIDIA](http://developer.nvidia.com/opencl/)
