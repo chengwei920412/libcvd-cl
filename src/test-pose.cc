@@ -95,8 +95,8 @@ static void readCamera(Camera::Linear * camera, char const * path) {
 
 static void learnCamera(Camera::Linear const & cvd_camera, CVD::CL::CameraState & camera) {
     // Loop over all coordinates.
-    for (int y = 0; y < camera.ny; y++) {
-        for (int x = 0; x < camera.nx; x++) {
+    for (int y = 0; y < int(camera.ny); y++) {
+        for (int x = 0; x < int(camera.nx); x++) {
             // Construct (x, y) vector.
             // NB: The camera size does not match the image size,
             // however, the offset is 0, so use (x, y) directly.
