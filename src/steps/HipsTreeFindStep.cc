@@ -22,6 +22,7 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 
 #include "cvd-cl/steps/HipsTreeFindStep.hh"
+#include "cvd-cl/steps/DescriptorTree.hh"
 #include "kernels/hips-tfind.hh"
 
 #include <algorithm>
@@ -62,29 +63,6 @@ HipsTreeFindStep::~HipsTreeFindStep() {
     // Do nothing.
 }
 
-template <typename T>
-static int bitcount (T v){
-  v = v - ((v >> 1) & (T)~(T)0/3);                           // temp
-  v = (v & (T)~(T)0/15*3) + ((v >> 2) & (T)~(T)0/15*3);      // temp
-  v = (v + (v >> 4)) & (T)~(T)0/255*15;                      // temp
-  return (T)(v * ((T)~(T)0/255)) >> (sizeof(T) - 1) * CHAR_BIT; // count
-}
-
-static cl_uint bitcount4(cl_ulong4 const & t, cl_ulong4 const & r) {
-    cl_uint total = 0;
-    for (cl_uint i = 0; i < 4; i++)
-        total += bitcount(t.s[i] & ~r.s[i]);
-    return total;
-}
-
-static cl_ulong4 rotate4(cl_ulong4 const & t, cl_ulong lshift) {
-    cl_ulong const rshift = (64 - lshift);
-    cl_ulong4 out;
-    for (cl_uint i = 0; i < 4; i++)
-        out.s[i] = ((t.s[i] << lshift) | (t.s[i] >> rshift));
-    return out;
-}
-
 void HipsTreeFindStep::findByQueue() {
     // Refer to tree shape.
     HipsTreeShape const & shape = i_tree.shape;
@@ -96,82 +74,11 @@ void HipsTreeFindStep::findByQueue() {
     // Read test descriptors from worker.
     std::vector<cl_ulong4> tests;
     i_hips.get(&tests);
-    cl_uint const ntests = tests.size();
 
     // Prepare pair vector.
     std::vector<cl_int2> pairs;
-    pairs.reserve(ntests * 4);
 
-    // Set number of rotations by parameter.
-    cl_uint const nrot = (rotate ? 16 : 1);
-
-    // Prepare integer for atomic counter.
-    cl_uint atom_itest = 0;
-
-    #pragma omp parallel default(shared)
-    {
-        // Prepare node stack.
-        std::vector<cl_uint> stack;
-        stack.reserve(shape.nKeepNodes);
-
-        // Prepare pair vector.
-        std::vector<cl_int2> mypairs;
-        mypairs.reserve(ntests * 4);
-
-        while (true) {
-            // Atomically retrieve test descriptor index.
-            cl_uint const itest = __sync_fetch_and_add(&atom_itest, 1);
-            if (itest >= ntests)
-                break;
-
-            // Refer to test descriptor.
-            cl_ulong4 const & test0 = tests.at(itest);
-
-            // Try all rotations.
-            for (cl_uint irot = 0; irot < nrot; irot++) {
-                cl_ulong4 const test = rotate4(test0, irot * 4);
-
-                // Seed stack with single tree root.
-                stack.push_back(0);
-
-                // Perform selective depth-first search of the tree.
-                while (stack.empty() == false) {
-                    // Pop last element in the stack.
-                    cl_uint const inode = stack.back();
-                    stack.pop_back();
-
-                    // Refer to descriptor node.
-                    cl_ulong4 const & node = tree.at(inode);
-
-                    // Calculate descriptor pair error.
-                    cl_uint const error = bitcount4(test, node);
-
-                    // Check error against threshold.
-                    if (error <= maxerr) {
-                        if (inode >= shape.iTreeLeaf0) {
-                            // This is a leaf, record the match.
-                            cl_uint const ileaf = maps.at(inode - shape.iTreeLeaf0);
-                            cl_int2 const pair = {{ileaf, itest}};
-                            mypairs.push_back(pair);
-                        } else {
-                            // This is an internal node, add its children to the stack.
-                            cl_uint const inext0 = (inode  * 2);
-                            cl_uint const inext1 = (inext0 + 1);
-                            cl_uint const inext2 = (inext0 + 2);
-                            stack.push_back(inext2);
-                            stack.push_back(inext1);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Synchronously accumulate pairs.
-        #pragma omp critical
-        {
-            pairs.insert(pairs.end(), mypairs.begin(), mypairs.end());
-        }
-    }
+    DescriptorTree<cl_ulong4>::searchDescriptorTree(tree, maps, shape, tests, pairs);
 
     // Crop pair list.
     if (pairs.size() > o_matches.size)
