@@ -78,7 +78,12 @@ void HipsTreeFindStep::findByQueue() {
     // Prepare pair vector.
     std::vector<cl_int2> pairs;
 
-    DescriptorTree<cl_ulong4>::searchDescriptorTree(tree, maps, shape, tests, pairs);
+    // Prepare option structure.
+    TreeSearchOptions options;
+    options.threshold  = maxerr;
+    options.rotations  = (rotate ? 16 : 1);
+    options.exhaustive = true;
+    DescriptorTree<cl_ulong4>::searchDescriptorTree(tree, maps, shape, tests, options, pairs);
 
     // Crop pair list.
     if (pairs.size() > o_matches.size)

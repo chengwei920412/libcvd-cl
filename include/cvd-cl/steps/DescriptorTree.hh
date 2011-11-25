@@ -33,6 +33,12 @@
 namespace CVD {
 namespace CL  {
 
+struct TreeSearchOptions {
+    int  threshold;
+    int  rotations;
+    bool exhaustive;
+};
+
 // Dummy structure to combine several functions.
 template<class BDT>
 struct DescriptorTree {
@@ -298,13 +304,9 @@ public:
         std::vector<cl_ushort> const & maps,
         HipsTreeShape          const & shape,
         std::vector<BDT>       const & tests,
+        TreeSearchOptions      const & options,
         std::vector<cl_int2>         & pairs
     ) {
-
-        // FIXED parameters.
-        // TODO: Pass from option structure.
-        cl_uint const maxerr = 3;
-        cl_uint const nrot = 1;
 
         // Note test vector size.
         cl_uint const ntests = tests.size();
@@ -336,11 +338,12 @@ public:
                 BDT const & test0 = tests.at(itest);
 
                 // Try all rotations.
-                for (cl_uint irot = 0; irot < nrot; irot++) {
+                for (int irot = 0; irot < options.rotations; irot++) {
                     // TODO: General rotation function.
                     BDT const test = test0;
 
                     // Seed stack with single tree root.
+                    stack.clear();
                     stack.push_back(0);
 
                     // Perform selective depth-first search of the tree.
@@ -353,15 +356,19 @@ public:
                         cl_ulong4 const & node = tree.at(inode);
 
                         // Calculate descriptor pair error.
-                        cl_uint const error = errorBitDescriptors(test, node);
+                        int const error = errorBitDescriptors(test, node);
 
                         // Check error against threshold.
-                        if (error <= maxerr) {
+                        if (error <= options.threshold) {
                             if (inode >= shape.iTreeLeaf0) {
                                 // This is a leaf, record the match.
                                 cl_uint const ileaf = maps.at(inode - shape.iTreeLeaf0);
                                 cl_int2 const pair = {{ileaf, itest}};
                                 mypairs.push_back(pair);
+
+                                // If not in exhaustive mode, break out for this rotation.
+                                if (options.exhaustive == false)
+                                    break;
                             } else {
                                 // This is an internal node, add its children to the stack.
                                 cl_uint const inext0 = (inode  * 2);
