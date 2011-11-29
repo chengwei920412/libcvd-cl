@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
-# Copyright (C) 2011  Dmitri Nikulin, Monash University
+# Copyright (C) 2011  Dmitri Nikulin
+# Copyright (C) 2011  Monash University
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -54,7 +55,8 @@ IS_NOT = [" ", "~"]
 
 CHOICES = [(XI, YI, ZI) for XI in IS_NOT for YI in IS_NOT for ZI in IS_NOT]
 
-print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
+print """// Copyright (C) 2011  Dmitri Nikulin
+// Copyright (C) 2011  Monash University
 //
 // Permission is hereby granted, free of charge, to any person
 // obtaining a copy of this software and associated documentation

@@ -1,5 +1,5 @@
-// Copyright (C) 2011  Monash University
 // Copyright (C) 2011  Dmitri Nikulin
+// Copyright (C) 2011  Monash University
 //
 // Permission is hereby granted, free of charge, to any person
 // obtaining a copy of this software and associated documentation

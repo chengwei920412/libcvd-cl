@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
-# Copyright (C) 2011  Dmitri Nikulin, Monash University
+# Copyright (C) 2011  Dmitri Nikulin
+# Copyright (C) 2011  Monash University
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -23,7 +24,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-print """// Copyright (C) 2011  Dmitri Nikulin, Monash University
+print """// Copyright (C) 2011  Dmitri Nikulin
+// Copyright (C) 2011  Monash University
 //
 // Permission is hereby granted, free of charge, to any person
 // obtaining a copy of this software and associated documentation
