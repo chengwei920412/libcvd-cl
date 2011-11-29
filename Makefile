@@ -1,11 +1,11 @@
 CFLAGS   = -std=gnu++98 -fopenmp -pthread -O2 -march=native
 CFLAGS  += -I/usr/local/include -Iinclude -Isrc
 CFLAGS  += -Wall -Wextra -Wno-unused -Wno-ignored-qualifiers -fmessage-length=0
-CFLAGS  += -g3 -DCVD_IMAGE_DEBUG -O0
+#CFLAGS  += -g3 -DCVD_IMAGE_DEBUG -O0
 #CFLAGS  += -DCVD_CL_VERBOSE
 #CFLAGS  += -DCVD_CL_DEBUG
 #CFLAGS  += -DNDEBUG
-CFLAGS  += -DBZ_DEBUG
+#CFLAGS  += -DBZ_DEBUG
 
 LIBS     = -lOpenCL -lGL -lcvd -lm -lblitz -lboost_program_options-mt
 
