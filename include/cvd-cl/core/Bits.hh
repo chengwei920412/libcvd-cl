@@ -32,7 +32,9 @@ namespace CL  {
 
 /// \brief Reset memory to zero.
 ///
-/// Equivalent to \c memset(data, 0, nbytes)
+/// \code
+/// memset(data, 0, nbytes);
+/// \endcode
 ///
 /// \param data    Pointer to memory that will be zeroed.
 /// \param nbytes  Number of bytes in \a data to zero.
@@ -40,13 +42,20 @@ void    memZero     (void * data, size_t nbytes);
 
 /// \brief Invert all bits in memory.
 ///
+/// \code
+/// data = ~data;
+/// \endcode
+///
 /// \param data    Pointer to memory that will be flipped.
 /// \param nbytes  Number of bytes in \a data to flip.
 void    memFlip     (void * data, size_t nbytes);
 
 /// \brief Copy memory between two pointers.
 ///
-/// Equivalent to \c memcpy(odata, idata, nbytes)
+/// \code
+/// memcpy(odata, idata, nbytes);
+/// \endcode
+///
 ///
 /// \param idata   Pointer to memory that will be copied FROM.
 /// \param odata   Pointer to memory that will be copied TO.

@@ -51,7 +51,6 @@ public:
     /// \brief De-construct the WorkerStep (does nothing).
     virtual ~WorkerStep();
 
-    /// \override
     virtual int64_t measure(int repeat=10);
 
     /// \brief Worker associated with this Worker.

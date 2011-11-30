@@ -55,7 +55,7 @@ public:
 
     /// \brief Call execute() repeatedly and estimate average runtime.
     ///
-    /// \param Number of times to call execute().
+    /// \param repeat  Number of times to call execute().
     virtual int64_t measure(int repeat=10);
 };
 
