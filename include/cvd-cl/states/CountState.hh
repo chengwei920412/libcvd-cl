@@ -30,7 +30,7 @@
 namespace CVD {
 namespace CL  {
 
-/// \brief A WorkerState representing a bounded counter.
+/// \brief WorkerState representing a bounded counter.
 ///
 /// Use this as a component of more complicated states
 /// such as variable-sized lists (see ListState).

@@ -31,7 +31,7 @@
 namespace CVD {
 namespace CL  {
 
-/// \brief Variable-sized list of a given Plain-Old-Data type.
+/// \brief WorkerState representing a variable-sized list of a given Plain-Old-Data type.
 ///
 /// The memory is synchronised to/from the Worker directly,
 /// so use only types that are compatible between C++ and OpenCL,
