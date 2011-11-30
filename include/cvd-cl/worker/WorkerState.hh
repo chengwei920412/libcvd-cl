@@ -31,12 +31,29 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief An abstract State associated with a Worker.
+///
+/// States contain data in between processing by WorkerState objects.
+/// States should expose member functions that allow their data to be
+/// copied to and from host (C++) code.
+/// States should allocate resources when they are constructed, if possible,
+/// so that any exceptions can occur early and be avoided when executing steps.
+///
+/// \see WorkerStep
 class WorkerState : public State {
 public:
 
+    /// \brief Construct the WorkerState for the given \a worker.
+    ///
+    /// This simply assigns the #worker reference.
+    ///
+    /// \param worker Worker to associate with this state.
     explicit WorkerState(Worker & worker);
+
+    /// \brief De-construct the WorkerState (does nothing).
     virtual ~WorkerState();
 
+    /// \brief Worker associated with this WorkerState.
     Worker & worker;
 };
 

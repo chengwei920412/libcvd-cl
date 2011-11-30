@@ -31,14 +31,30 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief An abstract Step associated with a Worker and some set of WorkerState objects.
+///
+/// Like Step, a WorkerStep should be constructed with references to input and output WorkerState objects,
+/// possibly none.
+/// A WorkerStep may allocate resources such as a compiled program, see Worker::compile.
+///
+/// \see WorkerState
 class WorkerStep : public Step {
 public:
 
+    /// \brief Construct the WorkerStep for the given \a worker.
+    ///
+    /// This simply assigns the #worker reference.
+    ///
+    /// \param worker Worker to associate with this step.
     explicit WorkerStep(Worker & worker);
+
+    /// \brief De-construct the WorkerStep (does nothing).
     virtual ~WorkerStep();
 
+    /// \override
     virtual int64_t measure(int repeat=10);
 
+    /// \brief Worker associated with this Worker.
     Worker & worker;
 };
 
