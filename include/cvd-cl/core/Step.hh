@@ -33,14 +33,29 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief A completely abstract step of computation.
+///
+/// A Step should be constructed with references to input and output State objects,
+/// possibly none.
+///
+/// \see WorkerStep
 class Step : public boost::noncopyable {
 public:
 
+    /// \brief Construct the Step (does nothing).
     explicit Step();
+
+    /// \brief De-construct the Step (does nothing).
     virtual ~Step();
 
+    /// \brief Execute the Step.
+    ///
+    /// Override this method in sub-classes.
     virtual void execute() = 0;
 
+    /// \brief Call execute() repeatedly and estimate average runtime.
+    ///
+    /// \param Number of times to call execute().
     virtual int64_t measure(int repeat=10);
 };
 

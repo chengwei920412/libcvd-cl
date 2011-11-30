@@ -31,15 +31,28 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief An exception thrown when a function or method pre-condition is not satisfied.
 class ExpectationError : public std::invalid_argument {
 public:
 
+    /// \brief Construct the ExpectationError with a given message string.
+    ///
+    /// Avoid using this directly, use ::expect or a similar wrapper.
+    ///
+    /// \param message Message string
+    ///
+    /// \see expect
     explicit ExpectationError(const std::string & message) :
         std::invalid_argument(message) {
         // Do nothing.
     }
 };
 
+/// \brief Check that a pre-condition \a state is satisfied, and if not, throw an ExpectationError
+/// with the given \a message.
+///
+/// \param message  Message given to the ExpectationError if the \a state is not true.
+/// \param state     State to check before throwing an exception.
 static void expect(char const * message, bool state) {
     if (state == false)
         throw ExpectationError(message);

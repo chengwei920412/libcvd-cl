@@ -30,10 +30,17 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief A completely abstract data state, intended to be an input or output
+/// for a Step.
+///
+/// \see WorkerState
 class State : public boost::noncopyable {
 public:
 
+    /// \brief Construct the State (does nothing).
     explicit State();
+
+    /// \brief De-construct the State (does nothing).
     virtual ~State();
 };
 
