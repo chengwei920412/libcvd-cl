@@ -35,6 +35,12 @@ macro  = ("__CVD_CL_EMBED_%s_HH__" % name)
 print("#ifndef %s" % macro)
 print("#define %s" % macro)
 print
+print("namespace CVD {")
+print("namespace CL  {")
+print
+print("/// \\brief Embedded OpenCL program source.")
+print("///")
+print("/// \\see Worker::compile")
 print("char static const %s [] = {" % name)
 
 lines  = []
@@ -46,5 +52,8 @@ while len(bytes) > 0:
 
 print("      0")
 print("};")
+print
+print("} // namespace CL")
+print("} // namespace CVD")
 print
 print("#endif /* %s */" % macro)

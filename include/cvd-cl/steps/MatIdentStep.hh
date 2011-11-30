@@ -28,16 +28,13 @@
 #include <cvd-cl/states/MatrixState.hh>
 #include <cvd-cl/worker/WorkerStep.hh>
 
-namespace CVD {
-namespace CL  {
-
-// Include kernels inside namespace.
-namespace kernels {
 #include "kernels/mat-mki-3.hh"
 #include "kernels/mat-mki-4.hh"
 #include "kernels/mat-mki-5.hh"
 #include "kernels/mat-mki-6.hh"
-}
+
+namespace CVD {
+namespace CL  {
 
 template<size_t rows>
 class MatIdentStep : public WorkerStep {
@@ -58,7 +55,6 @@ public:
 
         // Select a kernel based on the size.
         // This is decidable at compile-time.
-        using namespace CVD::CL::kernels;
         switch (rows) {
         case 3: worker.compile(&program, &kernel, OCL_MAT_MKI_3, "mat_mki_3"); break;
         case 4: worker.compile(&program, &kernel, OCL_MAT_MKI_4, "mat_mki_4"); break;

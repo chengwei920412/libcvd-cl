@@ -107,7 +107,7 @@ static void testClExp(cl::Device & device, mats_t const & imats, tras_t const & 
     cl::Program program;
     cl::Kernel  kernel;
 
-    worker.compile(&program, &kernel, OCL_SE3_EXP, "se3_exp");
+    worker.compile(&program, &kernel, CVD::CL::OCL_SE3_EXP, "se3_exp");
 
     kernel.setArg(0, clV);
     kernel.setArg(1, clM);

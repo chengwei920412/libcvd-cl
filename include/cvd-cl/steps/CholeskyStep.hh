@@ -28,16 +28,13 @@
 #include <cvd-cl/states/MatrixState.hh>
 #include <cvd-cl/worker/WorkerStep.hh>
 
-namespace CVD {
-namespace CL  {
-
-// Include kernels inside namespace.
-namespace kernels {
 #include "kernels/cholesky3.hh"
 #include "kernels/cholesky4.hh"
 #include "kernels/cholesky5.hh"
 #include "kernels/cholesky6.hh"
-}
+
+namespace CVD {
+namespace CL  {
 
 template<size_t rows>
 class CholeskyStep : public WorkerStep {
@@ -65,7 +62,6 @@ public:
 
         // Select a kernel based on the size.
         // This is decidable at compile-time.
-        using namespace CVD::CL::kernels;
         switch (rows) {
         case 3: worker.compile(&program, &kernel, OCL_CHOLESKY_3, "cholesky3"); break;
         case 4: worker.compile(&program, &kernel, OCL_CHOLESKY_4, "cholesky4"); break;

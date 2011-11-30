@@ -28,16 +28,13 @@
 #include <cvd-cl/states/MatrixState.hh>
 #include <cvd-cl/worker/WorkerStep.hh>
 
-namespace CVD {
-namespace CL  {
-
-// Include kernels inside namespace.
-namespace kernels {
 #include "kernels/mat-mul-3.hh"
 #include "kernels/mat-mul-4.hh"
 #include "kernels/mat-mul-5.hh"
 #include "kernels/mat-mul-6.hh"
-}
+
+namespace CVD {
+namespace CL  {
 
 template<size_t rows>
 class MatMulStep : public WorkerStep {
@@ -59,7 +56,6 @@ public:
 
         // Select a kernel based on the size.
         // This is decidable at compile-time.
-        using namespace CVD::CL::kernels;
         switch (rows) {
         case 3: worker.compile(&program, &kernel, OCL_MAT_MUL_3, "mat_mul_3"); break;
         case 4: worker.compile(&program, &kernel, OCL_MAT_MUL_4, "mat_mul_4"); break;
