@@ -37,16 +37,36 @@ namespace CL  {
 // The defaults are likely fine for most POD types, but will not be
 // nearly as fast as specialised code.
 
+/// \brief Clear a bit descriptor to its zero state.
+///
+/// \param desc  Pointer to descriptor.
 template<class BDT>
 void clearBitDescriptor(BDT * desc) {
     memZero(desc, sizeof(BDT));
 }
 
+/// \brief Combine two descriptors, usually by bitwise OR.
+///
+/// \param idesc1  Pointer to descriptor to read FROM.
+/// \param idesc2  Pointer to descriptor to read FROM.
+/// \param odesc   Pointer to descriptor to write TO.
 template<class BDT>
 void mergeBitDescriptors(BDT * odesc, BDT const & idesc1, BDT const & idesc2) {
     memOR(odesc, &idesc1, &idesc2, sizeof(BDT));
 }
 
+/// \brief Calculate the "difference" between two descriptors.
+///
+/// Must be symmetrical and non-negative.
+/// Not necessarily the same as the "error" of a test descriptor
+/// against a reference descriptor, which must also be
+/// non-negative but does not have to be symmetrical.
+///
+/// \param idesc1  Pointer to descriptor.
+/// \param idesc2  Pointer to descriptor.
+/// \return Difference between the two descriptors.
+///
+/// \see ::errorBitDescriptors
 template<class BDT>
 int diffBitDescriptors(BDT const & idesc1, BDT const & idesc2) {
     BDT bitxor;
@@ -54,6 +74,16 @@ int diffBitDescriptors(BDT const & idesc1, BDT const & idesc2) {
     return memBitCount(&bitxor, sizeof(BDT));
 }
 
+/// \brief Calculate the "error" of a test descriptor with
+/// respect to a reference descriptor.
+///
+/// Must be non-negative but not necessarily symmetrical.
+///
+/// \param tdesc  Pointer to test descriptor.
+/// \param rdesc  Pointer to reference descriptor.
+/// \return Error of the test descriptor with respect to the reference descriptor.
+///
+/// \see ::diffBitDescriptors
 template<class BDT>
 int errorBitDescriptors(BDT const & tdesc, BDT const & rdesc) {
     // Compute (~rdesc).

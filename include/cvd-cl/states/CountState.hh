@@ -30,19 +30,38 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief A WorkerState representing a bounded counter.
+///
+/// Use this as a component of more complicated states
+/// such as variable-sized lists (see ListState).
 class CountState : public WorkerState {
 public:
 
+    /// \brief Construct the CountState with a given \a worker and \a size.
+    ///
+    /// \param worker  Worker for which this CountState will be allocated.
+    /// \param size    Upper bound for #count.
     explicit CountState(Worker & worker, cl_uint size);
+
+    /// De-construct the CountState (releases memory).
     virtual ~CountState();
 
+    /// \brief Update the count, blocking until completion.
+    ///
+    /// \param ncount  New count value.
     void setCount(cl_uint ncount);
+
+    /// \brief Query the count, blocking until it is available.
+    ///
+    /// \return Current count value.
     cl_uint getCount();
 
-    // Public immutable member.
+    /// \brief Upper bound for #count.
+    ///
+    /// This may represent a related quantity such as the maximum size of a list.
     cl_uint      const size;
 
-    // Public OpenCL buffer for state access.
+    /// \brief OpenCL buffer of a single 32-bit unsigned integer.
     cl::Buffer         count;
 };
 

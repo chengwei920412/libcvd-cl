@@ -34,6 +34,16 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief Assign an ImageState from a Blitz pixel data array.
+///
+/// \pre \code
+/// image.ny == array.length(0)
+/// image.nx == array.length(1)
+/// channels == array.length(2)
+/// \endcode
+///
+/// \param image  ImageState to assign to.
+/// \param array  Pixel data to assign from.
 template<class Pixel, cl_uint channels>
 void setImage(ImageState<Pixel, channels> & image, blitz::Array<Pixel, 3> const & array) {
     assert(image.ny == (cl_uint) array.length(0));
@@ -43,6 +53,17 @@ void setImage(ImageState<Pixel, channels> & image, blitz::Array<Pixel, 3> const 
     image.set(array.data());
 }
 
+
+/// \brief Assign Blitz pixel data array from an ImageState.
+///
+/// \pre \code
+/// image.ny == array.length(0)
+/// image.nx == array.length(1)
+/// channels == array.length(2)
+/// \endcode
+///
+/// \param array  Pixel data to assign to.
+/// \param image  ImageState to assign from.
 template<class Pixel, cl_uint channels>
 void getImage(ImageState<Pixel, channels> & image, blitz::Array<Pixel, 3> & array) {
     assert(image.ny == (cl_uint) array.length(0));
@@ -52,8 +73,23 @@ void getImage(ImageState<Pixel, channels> & image, blitz::Array<Pixel, 3> & arra
     image.get(array.data());
 }
 
+/// \brief Invoke \c glDrawPixels for a Blitz pixel data array of 32-bit RGBA.
+///
+/// \pre \code
+/// array.length(2) == 4
+/// \endcode
+///
+/// \param array  Pixel data to draw from.
 void glDrawPixelsRGBA(blitz::Array<cl_uchar, 3> const & array);
 
+/// \brief Read plaintext RGBD data into a Blitz pixel data array.
+///
+/// The arrays will be resized based on the first two lines of the
+/// plaintext file.
+///
+/// \param colour  Colour pixel data array for output.
+/// \param depth   Depth pixel data array for output.
+/// \param path    Path to plaintext file.
 void readTextRGBD(
     blitz::Array<cl_uchar, 3> & colour,
     blitz::Array<cl_float, 3> & depth,
