@@ -32,16 +32,34 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerState representing a 2D image with a given pixel type and number of channels per pixel.
 template<class Pixel, cl_uint channels>
 class ImageState : public WorkerState {
 public:
 
+    /// \brief Typedef to reify PixelType (type-based OpenCL adapter).
     typedef PixelType  <Pixel>    Type;
+
+    /// \brief Typedef to reify PixelOrder (type-based OpenCL adapter).
     typedef PixelOrder <channels> Order;
 
+    /// \brief Number of bytes per channel value.
     cl_uint static const bytesPerChannel = sizeof(Pixel);
+
+    /// \brief Number of bytes per pixel.
     cl_uint static const bytesPerPixel   = (bytesPerChannel * channels);
 
+    /// \brief Construct the ImageState with a given \a worker and size.
+    ///
+    /// \pre \code
+    /// ny > 0
+    /// nx > 0
+    /// \endcode
+    ///
+    /// \param worker   Worker for which this ImageState will be allocated.
+    /// \param ny       Number of pixels in the Y axis.
+    /// \param nx       Number of pixels in the X axis.
+    /// \param flags    OpenCL memory flags.
     explicit ImageState(Worker & worker, cl_uint ny, cl_uint nx, cl_mem_flags flags = CL_MEM_READ_WRITE) :
         WorkerState    (worker),
         ny             (ny),
@@ -74,43 +92,65 @@ public:
         region[2] = 1;
     }
 
+    /// \brief De-construct the ImageState (releases memory).
     virtual ~ImageState()
     {
         // De-allocate image.
         image = cl::Image2D();
     }
 
+    /// \brief Assign the image data from unmanaged memory.
+    ///
+    /// \param data  Pointer to unmanaged but type-safe memory.
     void set(Pixel const * data) {
         // Cast to non-const void due to error in cl.hpp.
         Pixel * vdata = const_cast<Pixel *>(data);
         worker.queue.enqueueWriteImage(image, CL_TRUE, origin, region, rowPitch, 0, vdata);
     }
 
+    /// \brief Query the image data to unmanaged memory.
+    ///
+    /// \param data  Pointer to unmanaged but type-safe memory.
     void get(Pixel * data) {
         worker.queue.enqueueReadImage(image, CL_TRUE, origin, region, rowPitch, 0, data);
     }
 
+    /// \brief Assign all image data to zero regardless of size and type.
     void zero() {
         std::vector<Pixel> const zero(elements, static_cast<Pixel>(0));
         set(zero.data());
     }
 
-    // Public immutable members.
+    /// \brief Number of pixels in the Y axis.
     cl_uint      const  ny;
+
+    /// \brief Number of pixels in the X axis.
     cl_uint      const  nx;
+
+    /// \brief OpenCL memory flags.
     cl_mem_flags const  flags;
+
+    /// \brief Total number of pixels in the image (#ny * #nx).
     cl_uint      const  pixels;
+
+    /// \brief Total number of numbers in the image (#pixels * \a channels).
     cl_uint      const  elements;
+
+    /// \brief Size of each row of the image data in bytes (#nx * #bytesPerPixel).
     cl_uint      const  rowPitch;
+
+    /// \brief Size of the image data in bytes (#ny * #rowPitch).
     cl_uint      const  bytesPerImage;
 
-    // Members left public for WorkerStep access.
+    /// \brief OpenCL image memory.
     cl::Image2D         image;
 
 private:
 
-    // Origin and region.
+    /// \brief Convenience origin (0,0,0).
     cl::size_t<3>       origin;
+
+    /// \brief Convenience region (nx,ny,1).
     cl::size_t<3>       region;
 };
 
