@@ -30,10 +30,19 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerState representing a fixed-size sequence of sets of (u,v,q) records.
 template<size_t setSize>
 class UvqState : public UvState<setSize> {
 public:
 
+    /// \brief Construct the UvqState with a given \a worker and \a setCount.
+    ///
+    /// The \a setCount is the number of sets of (u,v,q) records.
+    /// The \a setSize template parameter is the size of each set of (u,v,q) records.
+    /// The total number of #records is the product of these two numbers.
+    ///
+    /// \param worker   Worker for which this UvqState will be allocated.
+    /// \param setCount Number of (u,v,q) record sets contained in this state.
     explicit UvqState(Worker & worker, size_t setCount) :
         UvState<setSize> (worker, setCount),
         qs               (worker, setCount)
@@ -41,11 +50,12 @@ public:
         // Do nothing.
     }
 
+    /// \brief De-construct the UvqState (releases memory).
     virtual ~UvqState() {
         // Do nothing.
     }
 
-    // Public sub-states.
+    /// \brief MatrixState of each q component.
     MatrixState<setSize, 1> qs;
 };
 

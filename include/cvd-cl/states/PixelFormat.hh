@@ -30,13 +30,16 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief Specialised template mapping an integer primitive type
+/// to a concrete OpenCL definition.
 template<class _ChannelScalar>
 class PixelType : private boost::noncopyable {
 public:
 
-    // Reveal _ChannelScalar template parameter as public type.
+    /// \brief Reveal _ChannelScalar template parameter as public type.
     typedef _ChannelScalar ChannelScalar;
 
+    /// \brief Number of bytes per channel.
     ::cl_uint static const bytesPerChannel = sizeof(ChannelScalar);
 
     // Define in explicit specialisations:
@@ -51,11 +54,13 @@ private:
     PixelType();
 };
 
+/// \brief Specialised template mapping a number of channels
+/// to a concrete OpenCL definition.
 template<cl_uint _channels>
 class PixelOrder : private boost::noncopyable {
 public:
 
-    // Reveal channels template parameter as public constant.
+    /// \brief Reveal channels template parameter as public constant.
     ::cl_uint static const channels = _channels;
 
     // Define in explicit specialisations:

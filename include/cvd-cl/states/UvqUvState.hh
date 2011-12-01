@@ -30,10 +30,18 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerState representing a variable-size sequence of sets of ((u,v,q),(u,v)) records.
 template<size_t setSize>
 class UvqUvState : public WorkerState {
 public:
 
+    /// \brief Construct the UvqUvState with a given \a worker and \a maxCount.
+    ///
+    /// The \a maxCount is the maximum number of sets of records.
+    /// The \a setSize template parameter is the size of each set of records.
+    ///
+    /// \param worker   Worker for which this UvqUvState will be allocated.
+    /// \param maxCount Maximum number of record sets contained in this state.
     explicit UvqUvState(Worker & worker, size_t maxCount) :
         WorkerState (worker),
         maxCount    (maxCount),
@@ -45,19 +53,24 @@ public:
         // Do nothing.
     }
 
+    /// \brief De-construct the UvqUvState (releases memory).
     virtual ~UvqUvState() {
         // Do nothing.
     }
 
-    // Public immutable members.
+    /// \brief Maximum number of record sets contained in this state.
     size_t       const maxCount;
-    size_t       const maxRecords; // = maxCount * setSize
 
-    // Public mutable member.
+    /// \brief Maximum number of records contained in this state.
+    size_t       const maxRecords;
+
+    /// \brief Current number of record sets contained in this state.
     size_t             setCount;
 
-    // Public sub-states.
+    /// \brief UvqState for (u,v,q) part of each record.
     UvqState <setSize> uvq;
+
+    /// \brief UvState for (u,v) part of each record.
     UvState  <setSize> uv;
 };
 

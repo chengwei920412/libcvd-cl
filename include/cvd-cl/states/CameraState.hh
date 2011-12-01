@@ -31,30 +31,56 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerState representing (u,v,q) mappings for each pixel of a camera.
 class CameraState : public WorkerState {
 public:
 
+    /// \brief Typedef to reify associated Blitz array type.
     typedef blitz::Array<cl_float, 3> BlitzArray;
 
+    /// \brief Construct the CameraState with a given \a worker and size.
+    ///
+    /// \pre \code
+    /// ny > 0
+    /// nx > 0
+    /// \endcode
+    ///
+    /// \param worker   Worker for which this CameraState will be allocated.
+    /// \param ny       Number of pixels in the Y axis.
+    /// \param nx       Number of pixels in the X axis.
     explicit CameraState(Worker & worker, cl_uint ny, cl_uint nx);
+
+    /// \brief De-construct the CameraState (releases memory).
     virtual ~CameraState();
 
-    // Public immutable members.
+    /// \brief Number of pixels in the Y axis.
     cl_uint      const  ny;
+
+    /// \brief Number of pixels in the X axis.
     cl_uint      const  nx;
 
-    // Public arrays.
+    /// \brief Array of u data.
     BlitzArray          udata;
+
+    /// \brief Array of v data.
     BlitzArray          vdata;
+
+    /// \brief Array of q data.
     BlitzArray          qdata;
 
-    // Public sub-states.
+    /// \brief ImageState for u data.
     FloatImageState     umap;
+
+    /// \brief ImageState for v data.
     FloatImageState     vmap;
+
+    /// \brief ImageState for q data.
     FloatImageState     qmap;
 
-    // Public methods.
+    /// \brief Copy camera data to worker memory.
     void copyFromWorker();
+
+    /// \brief Copy camera data from worker memory.
     void copyToWorker();
 };
 

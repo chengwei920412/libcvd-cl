@@ -33,6 +33,9 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerState representing a fixed-size sequence of fixed-size matrices.
+///
+/// Rows and columns are given as template parameters and form part of the reified type.
 template<size_t rows, size_t cols>
 class MatrixState : public WorkerState {
 private:
@@ -44,8 +47,13 @@ private:
 
 public:
 
+    /// \brief Total number of elements per matrix.
     size_t static const elms = (rows * cols);
 
+    /// \brief Construct the MatrixState with a given \a worker and \a count.
+    ///
+    /// \param worker   Worker for which this MatrixState will be allocated.
+    /// \param count    Number of matrices contained in this state.
     explicit MatrixState(Worker & worker, size_t count)  :
         WorkerState (worker),
         count       (count),
@@ -56,10 +64,18 @@ public:
         memory = cl::Buffer(worker.context, CL_MEM_READ_WRITE, bytes);
     }
 
+    /// \brief De-construct the MatrixState (releases memory).
     virtual ~MatrixState() {
         // Do nothing.
     }
 
+    /// \brief Assign the matrix data from a vector of floats.
+    ///
+    /// \pre \code
+    /// #floats == items.size()
+    /// \endcode
+    ///
+    /// \param items   Vector of floats of the same total size as #memory.
     void setFloats(std::vector<cl_float> const & items) {
         expect("MatrixState::setFloats() must have exact size",
             floats == items.size());
@@ -67,13 +83,23 @@ public:
         worker.queue.enqueueWriteBuffer(memory, CL_TRUE, 0, bytes, items.data());
     }
 
+    /// \brief Query the matrix data into a vector of floats.
+    ///
+    /// \param items   Vector of floats.
     void getFloats(std::vector<cl_float> * items) {
-        expect("MatrixState::getFloats() must have exact size",
-            floats == items->size());
+        items->resize(floats);
 
         worker.queue.enqueueReadBuffer(memory, CL_TRUE, 0, bytes, items->data());
     }
 
+    /// \brief Assign the matrix data from a matrix of the same total size,
+    /// regardless of row and column dimensions, directly on the #worker.
+    ///
+    /// \pre \code
+    /// bytes == that.bytes
+    /// \endcode
+    ///
+    /// \param that    MatrixState of same total size.
     template<size_t rows2, size_t cols2>
     void copyFrom(MatrixState<rows2, cols2> & that) {
         expect("MatrixState::copyFrom() must have exact size",
@@ -84,6 +110,14 @@ public:
         worker.queue.finish();
     }
 
+    /// \brief Assign the matrix data from a matrix of the same total size,
+    /// regardless of row and column dimensions, using host memory.
+    ///
+    /// \pre \code
+    /// bytes == that.bytes
+    /// \endcode
+    ///
+    /// \param that    MatrixState of same total size.
     template<size_t rows2, size_t cols2>
     void copyFromViaHost(MatrixState<rows2, cols2> & that) {
         expect("MatrixState::copyFrom() must have exact size",
@@ -99,12 +133,16 @@ public:
         setFloats(items);
     }
 
-    // Public immutable members.
+    /// \brief Number of matrices contained in #memory.
     size_t       const count;
+
+    /// \brief Number of floating point numbers contained in #memory.
     size_t       const floats;
+
+    /// \brief Number of bytes contained in #memory.
     size_t       const bytes;
 
-    // Public OpenCL buffer for state access.
+    /// \brief OpenCL buffer for matrix data.
     cl::Buffer         memory;
 };
 

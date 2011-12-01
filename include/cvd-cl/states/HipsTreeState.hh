@@ -31,43 +31,69 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerState representing a dense HIPS tree or forest.
+///
+/// \see HipsTreeShape
+/// \see DescriptorTree
 class HipsTreeState : public WorkerState {
 public:
 
+    /// \brief Construct the HipsTreeState with a given \a worker,
+    /// number of leaves and number of forest levels.
+    ///
+    /// \pre See HipsTreeShape::HipsTreeShape() for preconditions.
+    ///
+    /// \param nLeaves      Leaves in the HIPS tree
+    /// \param nKeepLevels  Levels kept of the tree, from leaves up.
     explicit HipsTreeState(Worker & worker, cl_uint nLeaves = 512, cl_uint nKeepLevels = 5);
+
+    /// \brief De-construct the HipsTreeState (releases memory).
     virtual ~HipsTreeState();
 
+    /// \brief Write tree data from a flat descriptor vector.
+    ///
+    /// \pre \code
+    /// list.size() == shape.nTreeNodes
+    /// \endcode
+    ///
+    /// \param list Descriptor vector.
     void setTree(std::vector<cl_ulong4> const & list);
+
+    /// \brief Write tree map data from a flat integer vector.
+    ///
+    /// \pre \code
+    /// list.size() == shape.nLeaves
+    /// \endcode
+    ///
+    /// \param list Integer vector.
     void setMaps(std::vector<cl_ushort> const & list);
 
+    /// \brief Stored copy from last setTree().
     std::vector<cl_ulong4> lastTree;
+
+    /// \brief Stored copy from last setMaps().
     std::vector<cl_ushort> lastMaps;
 
-
-    /** Virtual and actual shape of the HIPS descriptor forest. */
+    /// \brief Calculated tree shape.
     HipsTreeShape const shape;
 
-    /**
-     * OpenCL image object for HIPS descriptor forest.
-     *
-     * Each pixel is an RGBA of 32-bit unsigned integers, 128 bits in total.
-     * Each row is a 256 bit HIPS descriptor, contiguous in host-side memory.
-     *
-     * height = nKeepNodes
-     * width  = 2
-     *
-     * This order is used to keep cl_ulong4 elements adjacent.
-     */
+    /// \brief OpenCL image object for HIPS descriptor forest.
+    ///
+    /// Each pixel is an RGBA of 32-bit unsigned integers, 128 bits in total.
+    /// Each row is a 256 bit HIPS descriptor, contiguous in host-side memory.
+    ///
+    /// height = nKeepNodes
+    /// width  = 2
+    ///
+    /// This order is used to keep cl_ulong4 elements adjacent.
     cl::Image2D    tree;
 
-    /**
-     * OpenCL image object for the original index of each tree leaf.
-     *
-     * Each pixel is an RGBA of 16-bit unsigned integers, only .x of which is used.
-     *
-     * height = nLeaves
-     * width  = 1
-     */
+    /// \brief OpenCL image object for the original index of each tree leaf.
+    ///
+    /// Each pixel is an RGBA of 16-bit unsigned integers, only .x of which is used.
+    ///
+    /// height = nLeaves
+    /// width  = 1
     cl::Image2D    maps;
 };
 
