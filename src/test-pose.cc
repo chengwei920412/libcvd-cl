@@ -37,7 +37,6 @@
 #include <cvd-cl/steps/PreFastGrayStep.hh>
 #include <cvd-cl/steps/ClipDepthStep.hh>
 #include <cvd-cl/steps/FastGrayStep.hh>
-#include <cvd-cl/steps/HipsGrayStep.hh>
 #include <cvd-cl/steps/HipsBlendGrayStep.hh>
 #include <cvd-cl/steps/HipsMakeTreeStep.hh>
 #include <cvd-cl/steps/HipsTreeFindStep.hh>
@@ -236,7 +235,7 @@ static void testPipeline(
     CVD::CL::PreFastGrayStep runPreFast2 (imageNeat, corners1, opts.fast_threshold);
     CVD::CL::ClipDepthStep   runClip2    (camera.qmap,  corners1, corners2);
     CVD::CL::FastGrayStep    runFast2    (imageNeat, corners2, im2corners, opts.fast_threshold, opts.fast_ring);
-    CVD::CL::HipsGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips);
+    CVD::CL::HipsBlendGrayStep    runHips2    (imageNeat,                                                  im2corners, im2hips, 1);
     CVD::CL::HipsClipStep    runHipsClip2(im2hips, opts.hips_maxbits);
 
     // Create step for HIPS tree based on stage 1.
