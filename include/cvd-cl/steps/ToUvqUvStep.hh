@@ -33,26 +33,48 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerStep to translate paired point lists to ((u,v,q),(u,v)) records.
+///
+/// \see HipsFindStep
+/// \see HipsTreeFindStep
 class ToUvqUvStep : public WorkerStep {
 public:
 
+    /// \brief Construct the step.
+    ///
+    /// \param i_camera   Input camera configuration.
+    /// \param i_xy1      Input point list 1.
+    /// \param i_xy2      Input point list 2.
+    /// \param i_matches  Input match indices between list 1 and list 2.
+    /// \param o_uvquv    Output ((u,v,q),(u,v)) records.
     explicit ToUvqUvStep(CameraState & i_camera, PointListState & i_xy1, PointListState & i_xy2, PointListState & i_matches, UvqUvState<1> & o_uvquv);
+
+    /// \brief De-construct the step.
     virtual ~ToUvqUvStep();
 
     virtual void execute();
 
 protected:
 
-    // Inputs.
+    /// \brief Input camera configuration.
     CameraState     & i_camera;
+
+    /// \brief Input point list 1.
     PointListState  & i_xy1;
+
+    /// \brief Input point list 2.
     PointListState  & i_xy2;
+
+    /// \brief Input match indices between list 1 and list 2.
     PointListState  & i_matches;
 
-    // Outputs.
+    /// \brief Output ((u,v,q),(u,v)) records.
     UvqUvState<1>   & o_uvquv;
 
+    /// \brief OpenCL program.
     cl::Program       program;
+
+    /// \brief OpenCL kernel.
     cl::Kernel        kernel;
 };
 

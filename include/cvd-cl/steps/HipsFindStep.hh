@@ -31,27 +31,41 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerStep to perform a brute-force HIPS descriptor search.
 class HipsFindStep : public WorkerStep {
 public:
 
+    /// \brief Construct the step.
+    ///
+    /// \param i_hips1     Test descriptor list.
+    /// \param i_hips2     Reference descriptor list.
+    /// \param o_matches   Output list of matches.
+    /// \param maxerr      Maximum error to accept for matches.
     explicit HipsFindStep(HipsListState & i_hips1, HipsListState & i_hips2, PointListState & o_matches, cl_int maxerr=3);
+
+    /// \brief De-construct the step.
     virtual ~HipsFindStep();
 
     virtual void execute();
 
 protected:
 
-    // Inputs.
+    /// \brief Test descriptor list.
     HipsListState  & i_hips1;
+
+    /// \brief Reference descriptor list.
     HipsListState  & i_hips2;
 
-    // Outputs.
+    /// \brief Output list of matches.
     PointListState & o_matches;
 
-    // Parameters.
+    /// \brief Maximum error to accept for matches.
     cl_int const     maxerr;
 
+    /// \brief OpenCL program.
     cl::Program      program;
+
+    /// \brief OpenCL kernel.
     cl::Kernel       kernel;
 };
 

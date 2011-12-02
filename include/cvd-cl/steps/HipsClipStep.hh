@@ -31,23 +31,33 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerStep to filter HIPS descriptors with a high set-bit count.
 class HipsClipStep : public WorkerStep {
 public:
 
+    /// \brief Construct the step.
+    ///
+    /// \param io_hips   HIPS descriptor list to modify in-place.
+    /// \param maxbits   Threshold above which HIPS descriptors are zeroed.
     explicit HipsClipStep(HipsListState & io_hips, cl_int maxbits=150);
+
+    /// \brief De-construct the step.
     virtual ~HipsClipStep();
 
     virtual void execute();
 
 protected:
 
-    // Inputs-outputs.
+    /// \brief HIPS descriptor list to modify in-place.
     HipsListState  & io_hips;
 
-    // Parameters.
+    /// \brief Threshold above which HIPS descriptors are zeroed.
     cl_int const     maxbits;
 
+    /// \brief OpenCL program.
     cl::Program      program;
+
+    /// \brief OpenCL kernel.
     cl::Kernel       kernel;
 };
 

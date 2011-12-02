@@ -43,6 +43,7 @@ public:
     ///
     /// \pre See HipsTreeShape::HipsTreeShape() for preconditions.
     ///
+    /// \param worker       Worker for which this state will be allocated.
     /// \param nLeaves      Leaves in the HIPS tree
     /// \param nKeepLevels  Levels kept of the tree, from leaves up.
     explicit HipsTreeState(Worker & worker, cl_uint nLeaves = 512, cl_uint nKeepLevels = 5);

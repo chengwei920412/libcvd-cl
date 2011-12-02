@@ -36,6 +36,7 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerStep to compute matrix multiplication.
 template<size_t rows>
 class MatMulStep : public WorkerStep {
 private:
@@ -46,8 +47,13 @@ private:
 
 public:
 
+    /// \brief Typedef to reify MatrixState.
     typedef MatrixState<rows, rows> MyMatrix;
 
+    /// \brief Construct the step to compute \f$C = AB\f$.
+    ///
+    /// \param i_a   Input matrix \f$A\f$.
+    /// \param io_b  Input matrix \f$B\f$ before execution, output matrix \f$C\f$ after execution.
     explicit MatMulStep(MyMatrix & i_a, MyMatrix & io_b) :
         WorkerStep (i_a.worker),
         i_a        (i_a),
@@ -65,6 +71,7 @@ public:
         }
     }
 
+    /// \brief De-construct the step.
     virtual ~MatMulStep() {
         // Do nothing.
     }
@@ -83,13 +90,16 @@ public:
 
 protected:
 
-    // Inputs.
+    /// \brief Input matrix \f$A\f$.
     MyMatrix       & i_a;
 
-    // Input-outputs.
+    /// \brief Input matrix \f$B\f$ before execution, output matrix \f$C\f$ after execution.
     MyMatrix       & io_b;
 
+    /// \brief OpenCL program.
     cl::Program      program;
+
+    /// \brief OpenCL kernel.
     cl::Kernel       kernel;
 };
 

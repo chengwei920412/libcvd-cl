@@ -32,23 +32,34 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerStep to compute a balanced descriptor tree.
+///
+/// This delegates to DescriptorTree and so is run on the host,
+/// not the worker.  Being associated with the Worker allows it to
+/// read from and write to worker states.
 class HipsMakeTreeStep : public WorkerStep {
 public:
 
+    /// \brief Construct the step.
+    ///
+    /// \param i_hips   Input descriptor list.
+    /// \param o_tree   Output dense descriptor tree.
     explicit HipsMakeTreeStep(HipsListState & i_hips, HipsTreeState & o_tree);
+
+    /// \brief De-construct the step.
     virtual ~HipsMakeTreeStep();
 
     virtual void execute();
 
 protected:
 
-    // Inputs.
+    /// \brief Input descriptor list.
     HipsListState  & i_hips;
 
-    // Outputs.
+    /// \brief Output dense descriptor tree.
     HipsTreeState  & o_tree;
 
-    // No program or kernel, this is done on CPU.
+    // No program or kernel, this is done on the host.
 };
 
 } // namespace CL

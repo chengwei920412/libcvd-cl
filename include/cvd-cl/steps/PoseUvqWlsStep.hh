@@ -31,25 +31,43 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerStep to compute WLS for 3-point pose.
+///
+/// \see CholeskyStep
 class PoseUvqWlsStep : public WorkerStep {
 public:
 
+    /// \brief Construct the step.
+    ///
+    /// \param i_uvquv   Randomly selected sets of 3 ((u,v,q),(u,v)) records.
+    /// \param i_m       Input previous SE3 pose estimate.
+    /// \param o_a       Output matrix.
+    /// \param o_b       Output vector.
     explicit PoseUvqWlsStep(UvqUvState<3> & i_uvquv, MatrixState<4, 4> & i_m, MatrixState<6, 6> & o_a, MatrixState<6, 1> & o_b);
+
+    /// \brief De-construct the step.
     virtual ~PoseUvqWlsStep();
 
     virtual void execute();
 
 protected:
 
-    // Inputs.
+    /// \brief Randomly selected sets of 3 ((u,v,q),(u,v)) records.
     UvqUvState<3>     & i_uvquv;
+
+    /// \brief Input previous SE3 pose estimate.
     MatrixState<4, 4> & i_m;
 
-    // Outputs.
+    /// \brief Output matrix.
     MatrixState<6, 6> & o_a;
+
+    /// \brief Output vector.
     MatrixState<6, 1> & o_b;
 
+    /// \brief OpenCL program.
     cl::Program         program;
+
+    /// \brief OpenCL kernel.
     cl::Kernel          kernel;
 };
 

@@ -33,22 +33,38 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief Option structure to configure dense descriptor tree search.
 struct TreeSearchOptions {
     int  threshold;
     int  rotations;
     bool exhaustive;
 };
 
-// Dummy structure to combine several functions.
+/// \brief Empty structure grouping types and functions for dense descriptor tree construction and search.
 template<class BDT>
 struct DescriptorTree {
 public:
 
+    /// \brief A single level of a dense descriptor tree.
     typedef struct TreeLevel {
+        /// \brief Vector of binary descriptors, comprising nodes at this level \f$L\f$.
         std::vector<BDT>        descs;
+
+        /// \brief Vector of pairs of indices into the lower level \f$L+1\f$,
+        /// corresponding to descriptors at this level.
         std::vector<cl_ushort2> pairs;
     } TreeLevel;
 
+    /// \brief Choose pairs of similar binary descriptors.
+    ///
+    /// This is used to build a higher tree level from a lower tree level.
+    /// The current algorithm does not produce globally optimal difference.
+    ///
+    /// Avoid using this function directly, and use the higher-level
+    /// buildDescriptorTree().
+    ///
+    /// \param hips    Vector of binary descriptors.
+    /// \param pairs   Buffer to fill with index pairs.
     static void pairBitDescriptors(std::vector<BDT> const & hips, std::vector<cl_ushort2> & pairs) {
         // Number of bit descriptors.
         size_t const nhips = hips.size();
@@ -119,6 +135,16 @@ public:
         }
     }
 
+    /// \brief Blend binary descriptor pairs into new binary descriptors.
+    ///
+    /// This is used following pairBitDescriptors() to blend chosen pairs.
+    ///
+    /// Avoid using this function directly, and use the higher-level
+    /// buildDescriptorTree().
+    ///
+    /// \param i_hips   Input descriptors at existing lower level \f$L+1\f$.
+    /// \param pairs    Pairs of indices within i_hips.
+    /// \param o_hips   Output descriptors at new level \f$L\f$.
     static void blendBitDescriptors(
         std::vector<BDT>        const & i_hips,
         std::vector<cl_ushort2> const & pairs,
@@ -146,6 +172,21 @@ public:
         }
     }
 
+    /// \brief Populate a single dense vector from multiple tree levels.
+    ///
+    /// This function is recursive, using the stack to remember tree
+    /// structure in both the dense tree and layered tree.
+    ///
+    /// Avoid using this function directly, and use the higher-level
+    /// buildDescriptorTree().
+    ///
+    /// \param shape     Tree shape.
+    /// \param levels    Pre-computed tree levels.
+    /// \param tree      Vector of binary descriptors in binary tree format (output).
+    /// \param maps      Vector of leaf indices mapping dense tree to original descriptors (output).
+    /// \param ilevel    Current level \f$L\f$, starting from \f$L=0\f$.
+    /// \param inode     Current node index within level.
+    /// \param icell     Current cell index within dense \a tree.
     static void fillDescriptorTree(
         HipsTreeShape              const & shape,
         std::vector<TreeLevel>     const & levels,
@@ -197,6 +238,13 @@ public:
         fillDescriptorTree(shape, levels, tree, maps, ilevel - 1, inode2, icell2);
     }
 
+    /// \brief Compute and populate a dense binary descriptor tree
+    /// for a given set of binary descriptors.
+    ///
+    /// \param i_hips    Vector of binary descriptors.
+    /// \param shape     Intended tree shape.
+    /// \param tree      Vector of binary descriptors in binary tree format (output).
+    /// \param maps      Vector of leaf indices mapping dense tree to original descriptors (output).
     static void buildDescriptorTree(
         std::vector<BDT>       const & i_hips,
         HipsTreeShape          const & shape,
@@ -299,6 +347,14 @@ public:
 #endif
     }
 
+    /// \brief Search dense binary descriptor using a set of query descriptors.
+    ///
+    /// \param tree      Vector of binary descriptors in binary tree format.
+    /// \param maps      Vector of leaf indices mapping dense tree to original descriptors.
+    /// \param shape     Tree shape used during construction.
+    /// \param tests     Vector of test descriptors used as search query.
+    /// \param options   Tree search options.
+    /// \param pairs     Buffer to fill with matched pairs.
     static void searchDescriptorTree(
         std::vector<BDT>       const & tree,
         std::vector<cl_ushort> const & maps,

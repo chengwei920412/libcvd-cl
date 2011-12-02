@@ -36,6 +36,7 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerStep to replace matrix data with appropriate matrix identity.
 template<size_t rows>
 class MatIdentStep : public WorkerStep {
 private:
@@ -46,8 +47,12 @@ private:
 
 public:
 
+    /// \brief Typedef to reify MatrixState.
     typedef MatrixState<rows, rows> MyMatrix;
 
+    /// \brief Contruct the step.
+    ///
+    /// \param o_a  MatrixState to overwrite with identity.
     explicit MatIdentStep(MyMatrix & o_a) :
         WorkerStep (o_a.worker),
         o_a        (o_a)
@@ -64,6 +69,7 @@ public:
         }
     }
 
+    /// \brief De-construct the step.
     virtual ~MatIdentStep() {
         // Do nothing.
     }
@@ -81,10 +87,13 @@ public:
 
 protected:
 
-    // Outputs.
+    /// \brief MatrixState to overwrite with identity.
     MyMatrix       & o_a;
 
+    /// \brief OpenCL program.
     cl::Program      program;
+
+    /// \brief OpenCL kernel.
     cl::Kernel       kernel;
 };
 

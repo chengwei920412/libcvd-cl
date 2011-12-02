@@ -32,30 +32,52 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerStep to perform a dense tree search.
+///
+/// Host-side dense tree search is available in DescriptorTree.
+/// Use this step to outsource the search to the Worker,
+/// also reducing runtime given a productive Worker.
 class HipsTreeFindStep : public WorkerStep {
 public:
 
+    /// \brief Construct the step.
+    ///
+    /// \param i_tree      Input dense descriptor tree (reference descriptors).
+    /// \param i_hips      Input list of test descriptors.
+    /// \param o_matches   Output list of matches.
+    /// \param maxerr      Maximum error to accept for matches.
+    /// \param rotate      Option to test rotations of the HIPS test descriptors.
     explicit HipsTreeFindStep(HipsTreeState & i_tree, HipsListState & i_hips, PointListState & o_matches, cl_uint maxerr=3, bool rotate=true);
+
+    /// \brief De-construct the step.
     virtual ~HipsTreeFindStep();
 
     virtual void execute();
 
 protected:
 
+    /// \brief Run and compare host-side dense tree search.
     void findByQueue();
 
-    // Inputs.
+    /// \brief Input dense descriptor tree (reference descriptors).
     HipsTreeState  & i_tree;
+
+    /// \brief Input list of test descriptors.
     HipsListState  & i_hips;
 
-    // Outputs.
+    /// \brief Output list of matches.
     PointListState & o_matches;
 
-    // Parameters.
+    /// \brief Maximum error to accept for matches.
     cl_uint const    maxerr;
+
+    /// \brief Option to test rotations of the HIPS test descriptors.
     bool    const    rotate;
 
+    /// \brief OpenCL program.
     cl::Program      program;
+
+    /// \brief OpenCL kernel.
     cl::Kernel       kernel;
 };
 

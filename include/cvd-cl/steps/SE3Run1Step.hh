@@ -32,25 +32,43 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerStep to execute matrix multiplication based on a single matrix.
+///
+/// \see SE3ScoreStep
 class SE3Run1Step : public WorkerStep {
 public:
 
+    /// \brief Construct the step.
+    ///
+    /// \param i_uvquv   Input ((u,v,q),(u,v)) records (only first (u,v,q) is used).
+    /// \param i_mats    Input SE3 matrices.
+    /// \param i_which   Input buffer selecting the matrix to use.
+    /// \param o_uvs     Output multiplied (u,v) vectors.
     explicit SE3Run1Step(UvqUvState<1> & i_uvquv, MatrixState<4, 4> & i_mats, CountState & i_which, Float2ListState & o_uvs);
+
+    /// \brief De-construct the step.
     virtual ~SE3Run1Step();
 
     virtual void execute();
 
 protected:
 
-    // Inputs.
+    /// \brief Input ((u,v,q),(u,v)) records (only first (u,v,q) is used).
     UvqUvState<1>     & i_uvquv;
+
+    /// \brief Input SE3 matrices.
     MatrixState<4, 4> & i_mats;
+
+    /// \brief Input buffer selecting the matrix to use.
     CountState        & i_which;
 
-    // Outputs.
+    /// \brief Output multiplied (u,v) vectors.
     Float2ListState   & o_uvs;
 
+    /// \brief OpenCL program.
     cl::Program      program;
+
+    /// \brief OpenCL kernel.
     cl::Kernel       kernel;
 };
 

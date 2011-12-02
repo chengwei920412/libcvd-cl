@@ -31,20 +31,40 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerStep to blur a colour image.
+///
+/// \see BlurGrayStep
 class BlurRichStep : public WorkerStep {
 public:
 
+    /// \brief Construct the step.
+    ///
+    /// \pre \code
+    /// i_image.ny == o_image.ny
+    /// i_image.nx == o_image.nx
+    /// \endcode
+    ///
+    /// \param i_image   Input image.
+    /// \param o_image   Output image of same size.
     explicit BlurRichStep(RichImageState & i_image, RichImageState & o_image);
+
+    /// \brief De-construct the step.
     virtual ~BlurRichStep();
 
     virtual void execute();
 
 protected:
 
+    /// \brief Input image.
     RichImageState & i_image;
+
+    /// \brief Output image.
     RichImageState & o_image;
 
+    /// \brief OpenCL program.
     cl::Program      program;
+
+    /// \brief OpenCL kernel.
     cl::Kernel       kernel;
 };
 

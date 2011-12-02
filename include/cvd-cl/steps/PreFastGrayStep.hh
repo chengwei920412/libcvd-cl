@@ -32,26 +32,37 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerStep to select points that are reasonably likely to later satisfy a FAST corner test.
 class PreFastGrayStep : public WorkerStep {
 public:
 
+    /// \brief Construct the step.
+    ///
+    /// \param i_image     Input image.
+    /// \param o_points    Output point list.
+    /// \param threshold   FAST threshold.
     explicit PreFastGrayStep(GrayImageState & i_image, PointListState & o_points, cl_int threshold=40);
+
+    /// \brief De-construct the step.
     virtual ~PreFastGrayStep();
 
     virtual void execute();
 
 protected:
 
-    // Inputs.
+    /// \brief Input image.
     GrayImageState & i_image;
 
-    // Outputs.
+    /// \brief Output point list.
     PointListState & o_points;
 
-    // Parameters.
+    /// \brief FAST threshold.
     cl_int const     threshold;
 
+    /// \brief OpenCL program.
     cl::Program      program;
+
+    /// \brief OpenCL kernel.
     cl::Kernel       kernel;
 };
 

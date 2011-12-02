@@ -32,28 +32,42 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerStep to randomly select sets of 3 ((u,v,q),(u,v)) records.
 class MixUvqUvStep : public WorkerStep {
 public:
 
+    /// \brief Construct the step.
+    ///
+    /// \param i_uvquv  Input records (sets of 1 record).
+    /// \param o_uvquv  Output records (sets of 3 records).
     explicit MixUvqUvStep(UvqUvState<1> & i_uvquv, UvqUvState<3> & o_uvquv);
+
+    /// \brief De-construct the step.
     virtual ~MixUvqUvStep();
 
     virtual void execute();
 
 protected:
 
-    // Inputs.
+    /// \brief Input records (sets of 1 record).
     UvqUvState<1>   & i_uvquv;
 
-    // Outputs.
+    /// \brief Output records (sets of 3 records).
     UvqUvState<3>   & o_uvquv;
 
-    // Internal.
+    /// \brief Maximum number of records, used for random generator.
     CountState        m_max;
+
+    /// \brief Buffer for randomly generated integers.
     IntListState      m_ints;
+
+    /// \brief RandomIntStep to generate random integers.
     RandomIntStep     randomise;
 
+    /// \brief OpenCL program.
     cl::Program       program;
+
+    /// \brief OpenCL kernel.
     cl::Kernel        kernel;
 };
 

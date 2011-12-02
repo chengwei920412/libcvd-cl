@@ -31,23 +31,37 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerStep to compute SE3 exponentiation.
+///
+/// \see CholeskyStep
+/// \see SE3ScoreStep
+/// \see SE3Run1Step
 class SE3ExpStep : public WorkerStep {
 public:
 
+    /// \brief Construct the step.
+    ///
+    /// \param i_vecs   Input set of pose vectors.
+    /// \param o_mats   Output set of SE3 matrices.
     explicit SE3ExpStep(MatrixState<6, 1> & i_vecs, MatrixState<4, 4> & o_mats);
+
+    /// \brief De-construct the step.
     virtual ~SE3ExpStep();
 
     virtual void execute();
 
 protected:
 
-    // Inputs.
+    /// \brief Input set of pose vectors.
     MatrixState<6, 1> & i_vecs;
 
-    // Outputs.
+    /// \brief Output set of SE3 matrices.
     MatrixState<4, 4> & o_mats;
 
+    /// \brief OpenCL program.
     cl::Program      program;
+
+    /// \brief OpenCL kernel.
     cl::Kernel       kernel;
 };
 

@@ -32,28 +32,45 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerStep to filter a point list by FAST corner criteria.
 class FastGrayStep : public WorkerStep {
 public:
 
+    /// \brief Construct the step.
+    ///
+    /// \param i_image     Input image.
+    /// \param i_points    Input point list.
+    /// \param o_points    Output point list.
+    /// \param threshold   FAST threshold.
+    /// \param ring        Consecutive bits required in FAST ring.
     explicit FastGrayStep(GrayImageState & i_image, PointListState & i_points, PointListState & o_points, cl_int threshold=40, cl_int ring=9);
+
+    /// \brief De-construct the step.
     virtual ~FastGrayStep();
 
     virtual void execute();
 
 protected:
 
-    // Inputs.
+    /// \brief Input image.
     GrayImageState & i_image;
+
+    /// \brief Input point list.
     PointListState & i_points;
 
-    // Outputs.
+    /// \brief Output point list.
     PointListState & o_points;
 
-    // Parameters.
+    /// \brief FAST threshold.
     cl_int const     threshold;
+
+    /// \brief Consecutive bits required in FAST ring.
     cl_int const     ring;
 
+    /// \brief OpenCL program.
     cl::Program      program;
+
+    /// \brief OpenCL kernel.
     cl::Kernel       kernel;
 };
 

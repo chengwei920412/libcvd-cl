@@ -32,24 +32,37 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerStep to filter point list by depth within an interval.
 class ClipDepthStep : public WorkerStep {
 public:
 
+    /// \brief Construct the step.
+    ///
+    /// \param i_depth   Input depth map (see also CameraState).
+    /// \param i_points  Input point list.
+    /// \param o_points  Output point list.
     explicit ClipDepthStep(FloatImageState & i_depth, PointListState & i_points, PointListState & o_points);
+
+    /// \brief De-construct the step.
     virtual ~ClipDepthStep();
 
     virtual void execute();
 
 protected:
 
-    // Inputs.
+    /// \brief Input depth map (see also CameraState).
     FloatImageState  & i_depth;
+
+    /// \brief Input point list.
     PointListState   & i_points;
 
-    // Outputs.
+    /// \brief Output point list.
     PointListState   & o_points;
 
+    /// \brief OpenCL program.
     cl::Program        program;
+
+    /// \brief OpenCL kernel.
     cl::Kernel         kernel;
 };
 

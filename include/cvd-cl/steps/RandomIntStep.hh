@@ -31,23 +31,33 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerStep to select random integers.
 class RandomIntStep : public WorkerStep {
 public:
 
+    /// \brief Construct the step.
+    ///
+    /// \param i_max    Buffer for integer maximum.
+    /// \param o_ints   Output list of integers.
     explicit RandomIntStep(CountState & i_max, IntListState & o_ints);
+
+    /// \brief De-construct the step.
     virtual ~RandomIntStep();
 
     virtual void execute();
 
 protected:
 
-    // Inputs.
+    /// \brief Buffer for integer maximum.
     CountState      & i_max;
 
-    // Outputs.
+    /// \brief Output list of integers.
     IntListState    & o_ints;
 
+    /// \brief OpenCL program.
     cl::Program       program;
+
+    /// \brief OpenCL kernel.
     cl::Kernel        kernel;
 };
 

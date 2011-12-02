@@ -36,6 +36,10 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerStep to approximate a Cholesky decomposition and back-substitution.
+///
+/// \see PoseUvqWlsStep
+/// \see SE3ExpStep
 template<size_t rows>
 class CholeskyStep : public WorkerStep {
 private:
@@ -46,9 +50,17 @@ private:
 
 public:
 
+    /// \brief Typedef to reify MatrixState for matrix inputs.
     typedef MatrixState<rows, rows> MyMatrix;
+
+    /// \brief Typedef to reify MatrixState for vector inputs and outputs.
     typedef MatrixState<rows, 1   > MyVector;
 
+    /// \brief Construct the step to solve \f$b = Ax\f$ for \f$x\f$.
+    ///
+    /// \param i_a Input matrix \f$A\f$.
+    /// \param i_b Input vector \f$b\f$.
+    /// \param o_x Output vector \f$x\f$.
     explicit CholeskyStep(MyMatrix & i_a, MyVector & i_b, MyVector & o_x) :
         WorkerStep (i_a.worker),
         i_a        (i_a),
@@ -71,6 +83,7 @@ public:
         }
     }
 
+    /// \brief De-construct the step.
     virtual ~CholeskyStep() {
         // Do nothing.
     }
@@ -90,14 +103,19 @@ public:
 
 protected:
 
-    // Inputs.
+    /// Input matrix \f$A\f$.
     MyMatrix       & i_a;
+
+    /// Input vector \f$b\f$.
     MyVector       & i_b;
 
-    // Outputs.
+    /// Output vector \f$x\f$.
     MyVector       & o_x;
 
+    /// OpenCL program.
     cl::Program      program;
+
+    /// OpenCL kernel.
     cl::Kernel       kernel;
 };
 

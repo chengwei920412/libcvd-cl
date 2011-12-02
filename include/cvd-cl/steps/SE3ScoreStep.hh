@@ -32,24 +32,39 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerStep to execute matrix multiplication and compare with expected coordinates.
+///
+/// \see SE3Run1Step
 class SE3ScoreStep : public WorkerStep {
 public:
 
+    /// \brief Construct the step.
+    ///
+    /// \param i_uvquv   Input ((u,v,q),(u,v)) records.
+    /// \param i_mats    Input SE3 matrices.
+    /// \param o_scores  Output per-matrix error scores (lower is better).
     explicit SE3ScoreStep(UvqUvState<1> & i_uvquv, MatrixState<4, 4> & i_mats, FloatListState & o_scores);
+
+    /// \brief De-construct the step.
     virtual ~SE3ScoreStep();
 
     virtual void execute();
 
 protected:
 
-    // Inputs.
+    /// \brief Input ((u,v,q),(u,v)) records.
     UvqUvState<1>     & i_uvquv;
+
+    /// \brief Input SE3 matrices.
     MatrixState<4, 4> & i_mats;
 
-    // Outputs.
+    /// \brief Output per-matrix error scores (lower is better).
     FloatListState    & o_scores;
 
+    /// \brief OpenCL program.
     cl::Program      program;
+
+    /// \brief OpenCL kernel.
     cl::Kernel       kernel;
 };
 

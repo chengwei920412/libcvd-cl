@@ -32,24 +32,37 @@
 namespace CVD {
 namespace CL  {
 
+/// \brief WorkerStep to translate a point list to a float list.
 class FxyStep : public WorkerStep {
 public:
 
+    /// \brief Construct the step.
+    ///
+    /// \param i_xy   Input point list.
+    /// \param i_map  Input map from points to floats.
+    /// \param o_f    Output float list.
     explicit FxyStep(PointListState & i_xy, FloatImageState & i_map, FloatListState & o_f);
+
+    /// \brief De-construct the step.
     virtual ~FxyStep();
 
     virtual void execute();
 
 protected:
 
-    // Inputs.
+    /// \brief Input point list.
     PointListState  & i_xy;
+
+    /// \brief Input map from points to floats.
     FloatImageState & i_map;
 
-    // Outputs.
+    /// \brief Output float list.
     FloatListState  & o_f;
 
+    /// \brief OpenCL program.
     cl::Program       program;
+
+    /// \brief OpenCL kernel.
     cl::Kernel        kernel;
 };
 
