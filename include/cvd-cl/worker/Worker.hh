@@ -36,7 +36,8 @@
 namespace CVD {
 namespace CL  {
 
-/// A single OpenCL device that can maintain states and execute steps.
+/// \brief A single OpenCL device that can maintain states and execute steps.
+///
 /// \see WorkerState
 /// \see WorkerStep
 class Worker : public boost::noncopyable {
@@ -97,13 +98,16 @@ public:
     cl::NDRange const        defaultLocal;
 
     /// \brief Round global size up to a multiple of #defaultLocalSize.
+    ///
     /// \param items  Number of items actually in the global work size.
+    ///
     /// \return An integer at least as large as \a items and a
     ///         multiple of #defaultLocalSize.
     size_t                   padGlobalSize(size_t items);
 
     /// \brief Round global size up to a multiple of #defaultLocalSize
     /// and wrap in a \c cl::NDRange.
+    ///
     /// \return A \c cl::NDRange with 1 dimension at least as large as \a items and a
     ///         multiple of #defaultLocalSize.
     cl::NDRange              padGlobal(size_t items);
